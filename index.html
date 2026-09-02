@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f4f7f4" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Reisezeit" />
+  <title>viacruz Reisezeit</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="assets/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand">viacruz <span>Reisezeit</span></div>
+        <div class="tagline">Deine Orte. Deine Reisen.</div>
+      </div>
+      <button class="icon-btn" id="settingsBtn" aria-label="Einstellungen" title="Einstellungen">⚙︎</button>
+    </header>
+
+    <main id="app" class="content" aria-live="polite"></main>
+
+    <nav class="bottom-nav" aria-label="Hauptnavigation">
+      <button data-route="home" class="nav-item active"><span>⌂</span><small>Start</small></button>
+      <button data-route="camping" class="nav-item"><span>△</span><small>Campingplätze</small></button>
+      <button data-route="stellplatz" class="nav-item"><span>▣</span><small>Stellplätze</small></button>
+      <button data-route="urlaub" class="nav-item"><span>◇</span><small>Urlaub</small></button>
+      <button data-route="search" class="nav-item"><span>⌕</span><small>Suche</small></button>
+    </nav>
+  </div>
+
+  <dialog id="entryDialog" class="sheet">
+    <form method="dialog" id="entryForm" class="sheet-card">
+      <div class="sheet-head">
+        <div>
+          <div class="eyebrow">Schnelleingabe</div>
+          <h2>Neuen Ort speichern</h2>
+        </div>
+        <button class="icon-btn close" value="cancel" aria-label="Schließen">×</button>
+      </div>
+
+      <label>Typ
+        <select id="entryType" required>
+          <option value="camping">Campingplatz</option>
+          <option value="stellplatz">Stellplatz</option>
+          <option value="hotel">Hotel</option>
+          <option value="ferien">Ferienwohnung/Ferienhaus</option>
+          <option value="besonders">Besondere Unterkunft</option>
+          <option value="reiseziel">Reiseziel/Ausflugsziel</option>
+        </select>
+      </label>
+
+      <label>Name
+        <input id="entryName" autocomplete="off" required placeholder="z. B. Camping Seeblick" />
+      </label>
+
+      <div class="grid-2">
+        <label>Land
+          <input id="entryCountry" autocomplete="country-name" placeholder="z. B. Italien" />
+        </label>
+        <label>Region/Gebiet
+          <input id="entryRegion" autocomplete="off" placeholder="z. B. Gardasee" />
+        </label>
+      </div>
+
+      <label>Website oder Quelle
+        <input id="entrySource" autocomplete="url" placeholder="https:// … oder Empfehlung" />
+      </label>
+
+      <div class="sheet-actions">
+        <button type="button" class="btn secondary" id="cancelEntry">Abbrechen</button>
+        <button type="submit" class="btn primary">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="detailDialog" class="sheet">
+    <div class="sheet-card detail-sheet" id="detailContent"></div>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
