@@ -46,7 +46,8 @@ function normalizeExternalUrl(value=''){
   const raw=String(value||'').trim();
   if(!raw) return '';
   if(/^https?:\/\//i.test(raw)) return raw;
-  if(/^(www\.)/i.test(raw)) return `https://${raw}`;
+  if(/^www\./i.test(raw)) return `https://${raw}`;
+  if(/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(?:[/:?#].*)?$/i.test(raw)) return `https://${raw}`;
   return '';
 }
 function sourceLabel(e){ return e.sourceType || (e.source && !normalizeExternalUrl(e.source) ? e.source : ''); }
@@ -151,7 +152,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.2.5 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.2.6 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -186,7 +187,7 @@ document.getElementById('cancelEntry').onclick=()=>document.getElementById('entr
 document.getElementById('entryForm').addEventListener('submit', e=>{
   e.preventDefault();
   const entry={
-    id:uid(), type:entryType.value, name:entryName.value.trim(), country:entryCountry.value.trim(), region:entryRegion.value.trim(), source:'', sourceType:entrySourceType.value, sourceUrl:entrySourceUrl.value.trim(),
+    id:uid(), type:entryType.value, name:entryName.value.trim(), country:entryCountry.value.trim(), region:entryRegion.value.trim(), source:'', sourceType:entrySourceType.value, sourceUrl:normalizeExternalUrl(entrySourceUrl.value) || entrySourceUrl.value.trim(),
     geoTags:[entryCountry.value.trim(),entryRegion.value.trim()].filter(Boolean), tags:[], favorite:false, wantToVisit:false, visited:false, deleted:false,
     createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), location:null, accessPoint:null, visits:[], media:[], details:{}
   };
@@ -320,7 +321,7 @@ document.getElementById('campingEditForm').addEventListener('submit',ev=>{
   ev.preventDefault();
   const e=state.entries.find(x=>x.id===document.getElementById('campingEditId').value); if(!e)return;
   const s=ensureCampingDetails(e);
-  e.name=document.getElementById('campingName').value.trim()||e.name; e.country=document.getElementById('campingCountry').value.trim(); e.region=document.getElementById('campingRegion').value.trim(); e.travelRegions=splitList(document.getElementById('campingTravelRegions').value); e.town=document.getElementById('campingTown').value.trim(); e.address=document.getElementById('campingAddress').value.trim(); e.source=''; e.sourceType=document.getElementById('campingSourceType').value; e.sourceUrl=document.getElementById('campingSourceUrl').value.trim(); e.phone=document.getElementById('campingPhone').value.trim(); e.email=document.getElementById('campingEmail').value.trim();
+  e.name=document.getElementById('campingName').value.trim()||e.name; e.country=document.getElementById('campingCountry').value.trim(); e.region=document.getElementById('campingRegion').value.trim(); e.travelRegions=splitList(document.getElementById('campingTravelRegions').value); e.town=document.getElementById('campingTown').value.trim(); e.address=document.getElementById('campingAddress').value.trim(); e.source=''; e.sourceType=document.getElementById('campingSourceType').value; e.sourceUrl=normalizeExternalUrl(document.getElementById('campingSourceUrl').value) || document.getElementById('campingSourceUrl').value.trim(); e.phone=document.getElementById('campingPhone').value.trim(); e.email=document.getElementById('campingEmail').value.trim();
   e.geoTags=[e.country,e.region,e.town,...e.travelRegions].filter(Boolean);
   s.operationType=document.getElementById('campingOperationType').value; s.openFrom=s.operationType==='seasonal'?document.getElementById('campingOpenFrom').value:''; s.openTo=s.operationType==='seasonal'?document.getElementById('campingOpenTo').value:''; s.summerCamping=document.getElementById('campingSummer').value; s.winterCamping=document.getElementById('campingWinter').value; s.minStay=document.getElementById('campingMinStay').value?Number(document.getElementById('campingMinStay').value):null; s.reservation=document.getElementById('campingReservation').value; s.spontaneousArrival=document.getElementById('campingSpontaneous').value; s.arrivalFrom=document.getElementById('campingArrivalFrom').value; s.arrivalTo=document.getElementById('campingArrivalTo').value; s.departureFrom=document.getElementById('campingDepartureFrom').value; s.departureTo=document.getElementById('campingDepartureTo').value; s.notes=document.getElementById('campingSeasonNotes').value.trim();
   e.updatedAt=new Date().toISOString(); saveEntries(); document.getElementById('campingEditDialog').close(); render(); openDetail(e.id);
