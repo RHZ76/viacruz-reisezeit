@@ -72,3 +72,13 @@ button{cursor:pointer}
   min-width:0;
 }
 @media (max-width:430px){.grid-2{grid-template-columns:minmax(0,1fr)}}
+
+/* v0.2.3 – Status, Quelle und responsive Detailaktionen */
+.detail-actions .btn{width:100%;min-width:0;white-space:normal;line-height:1.15;padding:7px 12px;min-height:46px;height:auto}
+.detail-actions.single-action{grid-template-columns:1fr}
+.source-link{display:inline-flex;align-items:center;margin-top:8px;font-size:13px;font-weight:750;color:var(--accent-dark);text-decoration:none}
+.source-link:hover{text-decoration:underline}
+@media (max-width:430px){
+  .detail-actions{grid-template-columns:1fr}
+  .detail-actions .btn{min-height:46px}
+}

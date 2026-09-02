@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.2.2-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.2.3-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -67,9 +67,24 @@
         </label>
       </div>
 
-      <label>Website oder Quelle
-        <input id="entrySource" autocomplete="url" placeholder="https:// … oder Empfehlung" />
-      </label>
+      <div class="grid-2">
+        <label>Quelle
+          <select id="entrySourceType">
+            <option value="">Nicht angegeben</option>
+            <option value="Instagram">Instagram</option>
+            <option value="Google">Google</option>
+            <option value="Facebook">Facebook</option>
+            <option value="YouTube">YouTube</option>
+            <option value="Campingportal">Campingportal</option>
+            <option value="Empfehlung">Empfehlung</option>
+            <option value="Zeitschrift">Zeitschrift</option>
+            <option value="Sonstige">Sonstige</option>
+          </select>
+        </label>
+        <label>Link zur Quelle
+          <input id="entrySourceUrl" type="url" inputmode="url" autocomplete="url" placeholder="https:// …" />
+        </label>
+      </div>
 
       <div class="sheet-actions">
         <button type="button" class="btn secondary" id="cancelEntry">Abbrechen</button>
@@ -128,9 +143,24 @@
           </label>
         </div>
 
-        <label>Website oder Quelle
-          <input id="campingSource" autocomplete="url" placeholder="https:// … oder Empfehlung" />
-        </label>
+        <div class="grid-2">
+          <label>Quelle
+            <select id="campingSourceType">
+              <option value="">Nicht angegeben</option>
+              <option value="Instagram">Instagram</option>
+              <option value="Google">Google</option>
+              <option value="Facebook">Facebook</option>
+              <option value="YouTube">YouTube</option>
+              <option value="Campingportal">Campingportal</option>
+              <option value="Empfehlung">Empfehlung</option>
+              <option value="Zeitschrift">Zeitschrift</option>
+              <option value="Sonstige">Sonstige</option>
+            </select>
+          </label>
+          <label>Link zur Quelle
+            <input id="campingSourceUrl" type="url" inputmode="url" autocomplete="url" placeholder="https:// …" />
+          </label>
+        </div>
 
         <div class="grid-2">
           <label>Telefon
@@ -235,6 +265,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.2.2-r1"></script>
+  <script src="app.js?v=0.2.3-r1"></script>
 </body>
 </html>
