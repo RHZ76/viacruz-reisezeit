@@ -138,7 +138,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.2.3 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.2.4 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -191,7 +191,11 @@ function campingDetailCards(e){
   const period=season.operationType==='seasonal' && (season.openFrom||season.openTo) ? `${formatDate(season.openFrom)||'offen'} – ${formatDate(season.openTo)||'offen'}` : '';
   const reservation=valueLabel(season.reservation,{unknown:'Unbekannt','not-needed':'Nicht nötig',possible:'Möglich',recommended:'Empfohlen',required:'Erforderlich'});
   const regions=(e.travelRegions||[]).join(', ') || 'Noch nicht hinterlegt';
-  return `<div class="info-card detail-section-card"><small>Grunddaten</small><strong>${escapeHtml(e.town||e.region||e.country||'Noch nicht ergänzt')}</strong><div class="mini-grid"><div class="mini-item"><small>Reiseregion</small><strong>${escapeHtml(regions)}</strong></div><div class="mini-item"><small>Kontakt</small><strong>${escapeHtml(e.phone||e.email||'Noch nicht hinterlegt')}</strong></div></div></div>
+  const contactLinks=[];
+  if(e.phone) contactLinks.push(`<a class="contact-link" href="tel:${escapeHtml(String(e.phone).replace(/[^+\d]/g,''))}">${escapeHtml(e.phone)}</a>`);
+  if(e.email) contactLinks.push(`<a class="contact-link" href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>`);
+  const contactHtml=contactLinks.length?contactLinks.join('<br>'):'<strong>Noch nicht hinterlegt</strong>';
+  return `<div class="info-card detail-section-card"><small>Grunddaten</small><strong>${escapeHtml(e.town||e.region||e.country||'Noch nicht ergänzt')}</strong><div class="mini-grid"><div class="mini-item"><small>Reiseregion</small><strong>${escapeHtml(regions)}</strong></div><div class="mini-item"><small>Kontakt</small>${contactHtml}</div></div></div>
   <div class="info-card detail-section-card"><small>Saison & Aufenthalt</small><strong>${escapeHtml(op)}${period?` · ${escapeHtml(period)}`:''}</strong><div class="mini-grid"><div class="mini-item"><small>Sommer / Winter</small><strong>${yesNoUnknown(season.summerCamping)} / ${yesNoUnknown(season.winterCamping)}</strong></div><div class="mini-item"><small>Reservierung</small><strong>${escapeHtml(reservation)}</strong></div></div></div>`;
 }
 

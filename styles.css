@@ -82,3 +82,28 @@ button{cursor:pointer}
   .detail-actions{grid-template-columns:1fr}
   .detail-actions .btn{min-height:46px}
 }
+
+/* v0.2.4 – native Datum/Uhrzeit optisch vertikal zentrieren + Kontaktlinks */
+.sheet-card input[type="date"],
+.sheet-card input[type="time"]{
+  line-height:44px;
+  padding-top:0;
+  padding-bottom:0;
+}
+.sheet-card input[type="date"]::-webkit-date-and-time-value,
+.sheet-card input[type="time"]::-webkit-date-and-time-value{
+  display:flex;
+  align-items:center;
+  height:44px;
+  line-height:normal;
+  margin:0;
+}
+.contact-link{
+  display:inline-block;
+  margin-top:4px;
+  color:var(--accent-dark);
+  font-weight:750;
+  text-decoration:none;
+  overflow-wrap:anywhere;
+}
+.contact-link:hover{text-decoration:underline}
