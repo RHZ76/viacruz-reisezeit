@@ -82,6 +82,159 @@
     <div class="sheet-card detail-sheet" id="detailContent"></div>
   </dialog>
 
+
+  <dialog id="campingEditDialog" class="sheet edit-sheet-dialog">
+    <form method="dialog" id="campingEditForm" class="sheet-card edit-sheet-card">
+      <div class="sheet-head sticky-sheet-head">
+        <div>
+          <div class="eyebrow">Campingplatz bearbeiten</div>
+          <h2>Grunddaten & Saison</h2>
+        </div>
+        <button type="button" class="icon-btn close" id="closeCampingEdit" aria-label="Schließen">×</button>
+      </div>
+
+      <input type="hidden" id="campingEditId" />
+
+      <section class="edit-section">
+        <div class="edit-section-head">
+          <h3>Grunddaten</h3>
+          <p>Allgemeine Angaben zum Campingplatz.</p>
+        </div>
+
+        <label>Name
+          <input id="campingName" required autocomplete="off" />
+        </label>
+
+        <div class="grid-2">
+          <label>Land
+            <input id="campingCountry" autocomplete="country-name" placeholder="z. B. Italien" />
+          </label>
+          <label>Region/Bundesland
+            <input id="campingRegion" autocomplete="off" placeholder="z. B. Lombardei" />
+          </label>
+        </div>
+
+        <label>Gebiet/Reiseregion
+          <input id="campingTravelRegions" autocomplete="off" placeholder="z. B. Gardasee, Norditalien" />
+          <span class="field-help">Mehrere Zuordnungen durch Komma trennen.</span>
+        </label>
+
+        <div class="grid-2">
+          <label>Ort
+            <input id="campingTown" autocomplete="address-level2" />
+          </label>
+          <label>Adresse
+            <input id="campingAddress" autocomplete="street-address" />
+          </label>
+        </div>
+
+        <label>Website oder Quelle
+          <input id="campingSource" autocomplete="url" placeholder="https:// … oder Empfehlung" />
+        </label>
+
+        <div class="grid-2">
+          <label>Telefon
+            <input id="campingPhone" type="tel" autocomplete="tel" />
+          </label>
+          <label>E-Mail
+            <input id="campingEmail" type="email" autocomplete="email" />
+          </label>
+        </div>
+      </section>
+
+      <section class="edit-section">
+        <div class="edit-section-head">
+          <h3>Saison & Aufenthalt</h3>
+          <p>Öffnungszeiten, Reservierung und An-/Abreise.</p>
+        </div>
+
+        <label>Betriebsart
+          <select id="campingOperationType">
+            <option value="unknown">Unbekannt</option>
+            <option value="year-round">Ganzjährig</option>
+            <option value="seasonal">Saisonal</option>
+          </select>
+        </label>
+
+        <div class="grid-2 seasonal-fields" id="campingSeasonDates">
+          <label>Geöffnet von
+            <input id="campingOpenFrom" type="date" />
+          </label>
+          <label>Geöffnet bis
+            <input id="campingOpenTo" type="date" />
+          </label>
+        </div>
+
+        <div class="grid-2">
+          <label>Sommercamping
+            <select id="campingSummer">
+              <option value="unknown">Unbekannt</option>
+              <option value="yes">Möglich</option>
+              <option value="no">Nicht möglich</option>
+            </select>
+          </label>
+          <label>Wintercamping
+            <select id="campingWinter">
+              <option value="unknown">Unbekannt</option>
+              <option value="yes">Möglich</option>
+              <option value="no">Nicht möglich</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="grid-2">
+          <label>Mindestaufenthalt (Nächte)
+            <input id="campingMinStay" type="number" min="1" inputmode="numeric" placeholder="optional" />
+          </label>
+          <label>Reservierung
+            <select id="campingReservation">
+              <option value="unknown">Unbekannt</option>
+              <option value="not-needed">Nicht nötig</option>
+              <option value="possible">Möglich</option>
+              <option value="recommended">Empfohlen</option>
+              <option value="required">Erforderlich</option>
+            </select>
+          </label>
+        </div>
+
+        <label>Spontane Anreise
+          <select id="campingSpontaneous">
+            <option value="unknown">Unbekannt</option>
+            <option value="yes">Möglich</option>
+            <option value="no">Nicht möglich</option>
+          </select>
+        </label>
+
+        <div class="grid-2">
+          <label>Anreise von
+            <input id="campingArrivalFrom" type="time" />
+          </label>
+          <label>Anreise bis
+            <input id="campingArrivalTo" type="time" />
+          </label>
+        </div>
+
+        <div class="grid-2">
+          <label>Abreise von
+            <input id="campingDepartureFrom" type="time" />
+          </label>
+          <label>Abreise bis
+            <input id="campingDepartureTo" type="time" />
+          </label>
+        </div>
+
+        <label>Besondere Hinweise
+          <textarea id="campingSeasonNotes" rows="4" placeholder="z. B. Mittagsruhe, späteste Schrankenöffnung …"></textarea>
+        </label>
+      </section>
+
+      <div class="sheet-actions sticky-sheet-actions">
+        <button type="button" class="btn secondary" id="cancelCampingEdit">Abbrechen</button>
+        <button type="submit" class="btn primary">Änderungen speichern</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="app.js"></script>
 </body>
 </html>

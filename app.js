@@ -24,7 +24,11 @@ function saveEntries(){
 }
 function escapeHtml(v=''){ return String(v).replace(/[&<>'"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m])); }
 function count(predicate){ return state.entries.filter(e => !e.deleted && predicate(e)).length; }
-function locationText(e){ return [e.region,e.country].filter(Boolean).join(', ') || 'Ort noch nicht ergänzt'; }
+function locationText(e){ return [e.town,e.region,e.country].filter(Boolean).join(', ') || 'Ort noch nicht ergänzt'; }
+function splitList(v=''){ return String(v).split(',').map(x=>x.trim()).filter(Boolean); }
+function valueLabel(value,map,fallback='Unbekannt'){ return map[value] || fallback; }
+function yesNoUnknown(value){ return valueLabel(value,{yes:'Möglich',no:'Nicht möglich',unknown:'Unbekannt'}); }
+function formatDate(value){ if(!value)return ''; const d=new Date(value+'T00:00:00'); return Number.isNaN(d.getTime())?value:d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}); }
 
 function render(){
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.route===state.route));
@@ -113,7 +117,7 @@ function searchView(){
 
 function matchesQuery(e,q){
   if(!q.trim()) return true;
-  const hay=[e.name,e.country,e.region,e.source,...(e.tags||[]),...(e.geoTags||[])].filter(Boolean).join(' ').toLowerCase();
+  const hay=[e.name,e.country,e.region,e.town,e.address,e.source,...(e.tags||[]),...(e.geoTags||[]),...(e.travelRegions||[])].filter(Boolean).join(' ').toLowerCase();
   return q.toLowerCase().trim().split(/\s+/).every(part=>hay.includes(part));
 }
 
@@ -125,7 +129,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.1.0 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.2.0 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -171,20 +175,31 @@ document.getElementById('entryForm').addEventListener('submit', e=>{
 document.querySelectorAll('.nav-item').forEach(b=>b.onclick=()=>{state.route=b.dataset.route;state.query='';render();});
 document.getElementById('settingsBtn').onclick=()=>{state.route='settings';render();};
 
+function campingDetailCards(e){
+  if(e.type!=='camping') return `<div class="info-card"><small>Technisches Fundament</small><strong>Gemeinsame ID · zentrale Standortfelder · Besuchshistorie · Medienliste · typbezogene Details</strong></div>`;
+  const season=e.details?.camping?.season || {};
+  const op=valueLabel(season.operationType,{unknown:'Unbekannt','year-round':'Ganzjährig',seasonal:'Saisonal'});
+  const period=season.operationType==='seasonal' && (season.openFrom||season.openTo) ? `${formatDate(season.openFrom)||'offen'} – ${formatDate(season.openTo)||'offen'}` : '';
+  const reservation=valueLabel(season.reservation,{unknown:'Unbekannt','not-needed':'Nicht nötig',possible:'Möglich',recommended:'Empfohlen',required:'Erforderlich'});
+  const regions=(e.travelRegions||[]).join(', ') || 'Noch nicht hinterlegt';
+  return `<div class="info-card detail-section-card"><small>Grunddaten</small><strong>${escapeHtml(e.town||e.region||e.country||'Noch nicht ergänzt')}</strong><div class="mini-grid"><div class="mini-item"><small>Reiseregion</small><strong>${escapeHtml(regions)}</strong></div><div class="mini-item"><small>Kontakt</small><strong>${escapeHtml(e.phone||e.email||'Noch nicht hinterlegt')}</strong></div></div></div>
+  <div class="info-card detail-section-card"><small>Saison & Aufenthalt</small><strong>${escapeHtml(op)}${period?` · ${escapeHtml(period)}`:''}</strong><div class="mini-grid"><div class="mini-item"><small>Sommer / Winter</small><strong>${yesNoUnknown(season.summerCamping)} / ${yesNoUnknown(season.winterCamping)}</strong></div><div class="mini-item"><small>Reservierung</small><strong>${escapeHtml(reservation)}</strong></div></div></div>`;
+}
+
 function openDetail(id){
   const e=state.entries.find(x=>x.id===id); if(!e)return;
   const content=document.getElementById('detailContent');
   content.innerHTML=`<div class="sheet-head"><div><div class="eyebrow">${typeLabels[e.type]}</div><h2>${escapeHtml(e.name)}</h2><div class="detail-meta">${escapeHtml(locationText(e))}</div></div><button class="icon-btn close" id="closeDetail">×</button></div>
   <div class="detail-grid"><div class="info-card"><small>Status</small><strong>${e.favorite?'★ Favorit':e.wantToVisit?'Möchte ich besuchen':'Noch ohne Status'}</strong></div><div class="info-card"><small>Quelle</small><strong>${escapeHtml(e.source||'Noch nicht hinterlegt')}</strong></div></div>
-  <div class="info-card"><small>Technisches Fundament</small><strong>Gemeinsame ID · zentrale Standortfelder · Besuchshistorie · Medienliste · typbezogene Details</strong></div>
+  ${campingDetailCards(e)}
   <div class="detail-actions"><button class="btn secondary" id="favoriteDetail">${e.favorite?'★ Favorit entfernen':'☆ Als Favorit'}</button><button class="btn secondary" id="wantDetail">${e.wantToVisit?'Von Wunschliste entfernen':'♡ Möchte ich besuchen'}</button></div>
-  <div class="detail-actions"><button class="btn secondary" id="editBasic">Grunddaten bearbeiten</button><button class="btn danger" id="trashDetail">In Papierkorb</button></div>`;
+  <div class="detail-actions"><button class="btn secondary" id="editBasic">${e.type==='camping'?'Campingplatz bearbeiten':'Grunddaten bearbeiten'}</button><button class="btn danger" id="trashDetail">In Papierkorb</button></div>`;
   const dlg=document.getElementById('detailDialog'); dlg.showModal();
   document.getElementById('closeDetail').onclick=()=>dlg.close();
   document.getElementById('favoriteDetail').onclick=()=>{e.favorite=!e.favorite;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
   document.getElementById('wantDetail').onclick=()=>{e.wantToVisit=!e.wantToVisit;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
   document.getElementById('trashDetail').onclick=()=>{if(confirm('Diesen Eintrag in den Papierkorb verschieben?')){e.deleted=true;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();}};
-  document.getElementById('editBasic').onclick=()=>editBasic(e);
+  document.getElementById('editBasic').onclick=()=>e.type==='camping'?openCampingEditor(e):editBasic(e);
 }
 function editBasic(e){
   const name=prompt('Name',e.name); if(name===null)return;
@@ -193,6 +208,40 @@ function editBasic(e){
   e.name=name.trim()||e.name; e.country=country.trim(); e.region=region.trim(); e.geoTags=[e.country,e.region].filter(Boolean); e.updatedAt=new Date().toISOString(); saveEntries();
   document.getElementById('detailDialog').close(); render(); openDetail(e.id);
 }
+
+function ensureCampingDetails(e){
+  e.details=e.details||{};
+  e.details.camping=e.details.camping||{};
+  e.details.camping.season=e.details.camping.season||{};
+  return e.details.camping.season;
+}
+function setField(id,value=''){ const el=document.getElementById(id); if(el) el.value=value??''; }
+function toggleSeasonDateFields(){
+  const seasonal=document.getElementById('campingOperationType')?.value==='seasonal';
+  const wrap=document.getElementById('campingSeasonDates'); if(!wrap)return;
+  wrap.classList.toggle('is-disabled',!seasonal);
+  wrap.querySelectorAll('input').forEach(i=>i.disabled=!seasonal);
+}
+function openCampingEditor(e){
+  const s=ensureCampingDetails(e);
+  setField('campingEditId',e.id); setField('campingName',e.name); setField('campingCountry',e.country); setField('campingRegion',e.region);
+  setField('campingTravelRegions',(e.travelRegions||[]).join(', ')); setField('campingTown',e.town); setField('campingAddress',e.address); setField('campingSource',e.source); setField('campingPhone',e.phone); setField('campingEmail',e.email);
+  setField('campingOperationType',s.operationType||'unknown'); setField('campingOpenFrom',s.openFrom); setField('campingOpenTo',s.openTo); setField('campingSummer',s.summerCamping||'unknown'); setField('campingWinter',s.winterCamping||'unknown'); setField('campingMinStay',s.minStay); setField('campingReservation',s.reservation||'unknown'); setField('campingSpontaneous',s.spontaneousArrival||'unknown'); setField('campingArrivalFrom',s.arrivalFrom); setField('campingArrivalTo',s.arrivalTo); setField('campingDepartureFrom',s.departureFrom); setField('campingDepartureTo',s.departureTo); setField('campingSeasonNotes',s.notes);
+  document.getElementById('detailDialog').close(); toggleSeasonDateFields(); document.getElementById('campingEditDialog').showModal();
+}
+
+document.getElementById('campingOperationType').addEventListener('change',toggleSeasonDateFields);
+document.getElementById('closeCampingEdit').onclick=()=>document.getElementById('campingEditDialog').close();
+document.getElementById('cancelCampingEdit').onclick=()=>document.getElementById('campingEditDialog').close();
+document.getElementById('campingEditForm').addEventListener('submit',ev=>{
+  ev.preventDefault();
+  const e=state.entries.find(x=>x.id===document.getElementById('campingEditId').value); if(!e)return;
+  const s=ensureCampingDetails(e);
+  e.name=document.getElementById('campingName').value.trim()||e.name; e.country=document.getElementById('campingCountry').value.trim(); e.region=document.getElementById('campingRegion').value.trim(); e.travelRegions=splitList(document.getElementById('campingTravelRegions').value); e.town=document.getElementById('campingTown').value.trim(); e.address=document.getElementById('campingAddress').value.trim(); e.source=document.getElementById('campingSource').value.trim(); e.phone=document.getElementById('campingPhone').value.trim(); e.email=document.getElementById('campingEmail').value.trim();
+  e.geoTags=[e.country,e.region,e.town,...e.travelRegions].filter(Boolean);
+  s.operationType=document.getElementById('campingOperationType').value; s.openFrom=s.operationType==='seasonal'?document.getElementById('campingOpenFrom').value:''; s.openTo=s.operationType==='seasonal'?document.getElementById('campingOpenTo').value:''; s.summerCamping=document.getElementById('campingSummer').value; s.winterCamping=document.getElementById('campingWinter').value; s.minStay=document.getElementById('campingMinStay').value?Number(document.getElementById('campingMinStay').value):null; s.reservation=document.getElementById('campingReservation').value; s.spontaneousArrival=document.getElementById('campingSpontaneous').value; s.arrivalFrom=document.getElementById('campingArrivalFrom').value; s.arrivalTo=document.getElementById('campingArrivalTo').value; s.departureFrom=document.getElementById('campingDepartureFrom').value; s.departureTo=document.getElementById('campingDepartureTo').value; s.notes=document.getElementById('campingSeasonNotes').value.trim();
+  e.updatedAt=new Date().toISOString(); saveEntries(); document.getElementById('campingEditDialog').close(); render(); openDetail(e.id);
+});
 
 function createBackup(){
   const payload={app:'viacruz Reisezeit',dataVersion:1,createdAt:new Date().toISOString(),entries:state.entries,settings:JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')};
