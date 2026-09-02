@@ -40,3 +40,10 @@ button{cursor:pointer}
 .sticky-sheet-actions{position:sticky;bottom:-20px;z-index:3;margin:20px -20px -20px;padding:12px 20px calc(20px + env(safe-area-inset-bottom));background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-top:1px solid rgba(219,228,220,.8)}
 .detail-section-card{margin-top:10px}.detail-section-card .mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}.detail-section-card .mini-item{background:white;border:1px solid var(--line);border-radius:11px;padding:10px}.detail-section-card .mini-item small{font-size:11px}.detail-section-card .mini-item strong{font-size:13px;line-height:1.35}
 @media (max-width:430px){.edit-sheet-dialog{width:calc(100% - 16px);max-height:calc(100dvh - 12px)}.edit-sheet-card{max-height:calc(100dvh - 12px);padding-left:14px;padding-right:14px}.sticky-sheet-head{margin-left:-14px;margin-right:-14px;padding-left:14px;padding-right:14px}.edit-section{padding:13px}.sticky-sheet-actions{margin-left:-14px;margin-right:-14px;padding-left:14px;padding-right:14px}.detail-section-card .mini-grid{grid-template-columns:1fr}}
+
+/* v0.2.1 – Rasterkorrekturen Startseite + Datum/Zeit */
+.category-card strong{display:block}
+.category-card small{display:block;margin-top:6px;line-height:1.25}
+.grid-2 > label{min-width:0}
+.sheet-card input,.sheet-card select{min-width:0;max-width:100%}
+.sheet-card input[type="date"],.sheet-card input[type="time"]{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box}

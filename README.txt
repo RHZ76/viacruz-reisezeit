@@ -1,4 +1,4 @@
-viacruz Reisezeit v0.2.0
+viacruz Reisezeit v0.2.1
 
 Ausbaustufe:
 - bestehendes Grundlayout aus v0.1.0 beibehalten
