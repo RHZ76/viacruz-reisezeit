@@ -47,3 +47,28 @@ button{cursor:pointer}
 .grid-2 > label{min-width:0}
 .sheet-card input,.sheet-card select{min-width:0;max-width:100%}
 .sheet-card input[type="date"],.sheet-card input[type="time"]{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+
+/* v0.2.2 – iPhone Rasterfix für Datum-/Zeitfelder */
+.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid-2 > label{width:100%;min-width:0;max-width:100%;overflow:hidden}
+.sheet-card input[type="date"],
+.sheet-card input[type="time"]{
+  display:block;
+  inline-size:100%;
+  width:100%;
+  min-inline-size:0;
+  min-width:0;
+  max-inline-size:100%;
+  max-width:100%;
+  height:46px;
+  box-sizing:border-box;
+  overflow:hidden;
+  -webkit-appearance:none;
+  appearance:none;
+}
+.sheet-card input[type="date"]::-webkit-date-and-time-value,
+.sheet-card input[type="time"]::-webkit-date-and-time-value{
+  text-align:left;
+  min-width:0;
+}
+@media (max-width:430px){.grid-2{grid-template-columns:minmax(0,1fr)}}
