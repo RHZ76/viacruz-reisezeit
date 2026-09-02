@@ -1,4 +1,4 @@
-viacruz Reisezeit v0.2.4
+viacruz Reisezeit v0.2.5
 
 Rasterkorrektur für Datum-/Zeitfelder in Campingplatz > Saison & Aufenthalt.
 

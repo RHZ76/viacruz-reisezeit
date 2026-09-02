@@ -29,6 +29,19 @@ function splitList(v=''){ return String(v).split(',').map(x=>x.trim()).filter(Bo
 function valueLabel(value,map,fallback='Unbekannt'){ return map[value] || fallback; }
 function yesNoUnknown(value){ return valueLabel(value,{yes:'Möglich',no:'Nicht möglich',unknown:'Unbekannt'}); }
 function formatDate(value){ if(!value)return ''; const d=new Date(value+'T00:00:00'); return Number.isNaN(d.getTime())?value:d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function detailRow(label,value,rawHtml=false){
+  if(value===undefined || value===null || value==='') return '';
+  return `<div class="detail-row"><span>${escapeHtml(label)}</span><strong>${rawHtml?value:escapeHtml(value)}</strong></div>`;
+}
+function knownYesNo(value,yes='Ja',no='Nein'){
+  if(value==='yes') return yes;
+  if(value==='no') return no;
+  return '';
+}
+function phoneHref(value=''){
+  const clean=String(value||'').trim().replace(/[^\d+]/g,'');
+  return clean ? `tel:${clean}` : '';
+}
 function normalizeExternalUrl(value=''){
   const raw=String(value||'').trim();
   if(!raw) return '';
@@ -138,7 +151,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.2.4 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.2.5 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -187,16 +200,59 @@ document.getElementById('settingsBtn').onclick=()=>{state.route='settings';rende
 function campingDetailCards(e){
   if(e.type!=='camping') return `<div class="info-card"><small>Technisches Fundament</small><strong>Gemeinsame ID · zentrale Standortfelder · Besuchshistorie · Medienliste · typbezogene Details</strong></div>`;
   const season=e.details?.camping?.season || {};
-  const op=valueLabel(season.operationType,{unknown:'Unbekannt','year-round':'Ganzjährig',seasonal:'Saisonal'});
-  const period=season.operationType==='seasonal' && (season.openFrom||season.openTo) ? `${formatDate(season.openFrom)||'offen'} – ${formatDate(season.openTo)||'offen'}` : '';
-  const reservation=valueLabel(season.reservation,{unknown:'Unbekannt','not-needed':'Nicht nötig',possible:'Möglich',recommended:'Empfohlen',required:'Erforderlich'});
-  const regions=(e.travelRegions||[]).join(', ') || 'Noch nicht hinterlegt';
-  const contactLinks=[];
-  if(e.phone) contactLinks.push(`<a class="contact-link" href="tel:${escapeHtml(String(e.phone).replace(/[^+\d]/g,''))}">${escapeHtml(e.phone)}</a>`);
-  if(e.email) contactLinks.push(`<a class="contact-link" href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>`);
-  const contactHtml=contactLinks.length?contactLinks.join('<br>'):'<strong>Noch nicht hinterlegt</strong>';
-  return `<div class="info-card detail-section-card"><small>Grunddaten</small><strong>${escapeHtml(e.town||e.region||e.country||'Noch nicht ergänzt')}</strong><div class="mini-grid"><div class="mini-item"><small>Reiseregion</small><strong>${escapeHtml(regions)}</strong></div><div class="mini-item"><small>Kontakt</small>${contactHtml}</div></div></div>
-  <div class="info-card detail-section-card"><small>Saison & Aufenthalt</small><strong>${escapeHtml(op)}${period?` · ${escapeHtml(period)}`:''}</strong><div class="mini-grid"><div class="mini-item"><small>Sommer / Winter</small><strong>${yesNoUnknown(season.summerCamping)} / ${yesNoUnknown(season.winterCamping)}</strong></div><div class="mini-item"><small>Reservierung</small><strong>${escapeHtml(reservation)}</strong></div></div></div>`;
+  const regions=(e.travelRegions||[]).join(', ');
+  const phone=e.phone ? `<a class="contact-link" href="${escapeHtml(phoneHref(e.phone))}">${escapeHtml(e.phone)}</a>` : '';
+  const email=e.email ? `<a class="contact-link" href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>` : '';
+  const srcLabel=sourceLabel(e);
+  const srcUrl=sourceUrl(e);
+  const source=srcLabel || srcUrl ? `${escapeHtml(srcLabel||'Internet')}${srcUrl?` <a class="inline-link" href="${escapeHtml(srcUrl)}" target="_blank" rel="noopener noreferrer">öffnen ↗</a>`:''}` : '';
+
+  const basicRows=[
+    detailRow('Land',e.country),
+    detailRow('Region/Bundesland',e.region),
+    detailRow('Gebiet/Reiseregion',regions),
+    detailRow('Ort',e.town),
+    detailRow('Adresse',e.address),
+    detailRow('Telefon',phone,true),
+    detailRow('E-Mail',email,true),
+    detailRow('Quelle',source,true)
+  ].filter(Boolean).join('');
+
+  const op=valueLabel(season.operationType,{unknown:'','year-round':'Ganzjährig',seasonal:'Saisonal'},'');
+  const period=season.operationType==='seasonal' && (season.openFrom||season.openTo)
+    ? `${formatDate(season.openFrom)||'–'} bis ${formatDate(season.openTo)||'–'}` : '';
+  const reservation=valueLabel(season.reservation,{unknown:'','not-needed':'Nicht nötig',possible:'Möglich',recommended:'Empfohlen',required:'Erforderlich'},'');
+  const spontaneous=knownYesNo(season.spontaneousArrival,'Möglich','Nicht möglich');
+  const summer=knownYesNo(season.summerCamping,'Möglich','Nicht möglich');
+  const winter=knownYesNo(season.winterCamping,'Möglich','Nicht möglich');
+  const arrival=(season.arrivalFrom||season.arrivalTo)?`${season.arrivalFrom||'–'} bis ${season.arrivalTo||'–'}`:'';
+  const departure=(season.departureFrom||season.departureTo)?`${season.departureFrom||'–'} bis ${season.departureTo||'–'}`:'';
+  const stayRows=[
+    detailRow('Betriebsart',op),
+    detailRow('Geöffnet',period),
+    detailRow('Sommercamping',summer),
+    detailRow('Wintercamping',winter),
+    detailRow('Mindestaufenthalt',season.minStay?`${season.minStay} ${Number(season.minStay)===1?'Nacht':'Nächte'}`:''),
+    detailRow('Reservierung',reservation),
+    detailRow('Spontane Anreise',spontaneous),
+    detailRow('Anreise',arrival),
+    detailRow('Abreise',departure),
+    season.notes?`<div class="detail-note"><span>Besondere Hinweise</span><p>${escapeHtml(season.notes).replace(/\n/g,'<br>')}</p></div>`:''
+  ].filter(Boolean).join('');
+
+  const basicSummary=[e.town||e.region||e.country,regions].filter(Boolean).slice(0,2).join(' · ') || 'Grunddaten';
+  const staySummary=[op,period,reservation].filter(Boolean).slice(0,2).join(' · ') || 'Aufenthalt';
+
+  return `<div class="detail-accordions">
+    <details class="detail-accordion">
+      <summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
+      <div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div>
+    </details>
+    <details class="detail-accordion">
+      <summary><span><small>Saison & Aufenthalt</small><strong>${escapeHtml(staySummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
+      <div class="accordion-body">${stayRows||'<div class="detail-empty">Noch keine Angaben zu Saison und Aufenthalt gespeichert.</div>'}</div>
+    </details>
+  </div>`;
 }
 
 function openDetail(id){
