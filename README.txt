@@ -14,3 +14,5 @@ Noch nicht Bestandteil dieser Ausbaustufe:
 - Bilderverwaltung
 - Karte/Marker/Navigation
 - erweiterte Filter
+
+Technik: Cache-Aktualisierung für GitHub Pages/PWA gehärtet (v0.2.1-r2).
