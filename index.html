@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.2-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.3-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -203,6 +203,66 @@
         <label>Was ist im Grundpreis enthalten?<textarea id="campingPriceIncluded" rows="3" placeholder="z. B. 2 Personen, Stellplatz, Warmwasser …"></textarea></label>
         <div class="detail-note"><span>Bereits vorhandene Kosten</span><p>Stromkosten und Hundekosten werden aus den jeweiligen Bereichen übernommen und nicht doppelt gespeichert.</p></div>
         <label>Hinweise zu Preisen<textarea id="campingPriceNotes" rows="4" placeholder="z. B. Hauptsaison teurer, Duschen extra, Rabatt möglich …"></textarea></label>
+      </section>
+
+      <section class="edit-section">
+        <div class="edit-section-head">
+          <h3>Persönlich</h3>
+          <p>Dein eigener Status, deine Einschätzung und deine bisherigen Aufenthalte.</p>
+        </div>
+
+        <div class="grid-2">
+          <label>Status
+            <select id="campingPersonalStatus">
+              <option value="none">Nicht festgelegt</option>
+              <option value="want">Möchte ich besuchen</option>
+              <option value="visited">Besucht</option>
+            </select>
+          </label>
+          <label class="personal-favorite-label">Favorit
+            <span class="favorite-toggle"><input id="campingPersonalFavorite" type="checkbox" /> Als Favorit markieren</span>
+          </label>
+        </div>
+
+        <label>Warum gespeichert?
+          <textarea id="campingPersonalWhy" rows="3" placeholder="z. B. Schöner Platz direkt am Gardasee, für das Frühjahr vormerken …"></textarea>
+        </label>
+
+        <div class="field-group">
+          <div class="field-group-title">Eigene Bewertung <span class="field-help-inline">1 = schwach · 5 = sehr gut</span></div>
+          <div class="rating-grid">
+            <label>Gesamt<select id="campingRatingOverall"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+            <label>Lage<select id="campingRatingLocation"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+            <label>Ruhe<select id="campingRatingQuiet"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+            <label>Sauberkeit<select id="campingRatingCleanliness"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+            <label>Sanitär<select id="campingRatingSanitary"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+            <label>Preis-Leistung<select id="campingRatingValue"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+          </div>
+        </div>
+
+        <label>Würde ich wiederkommen?
+          <select id="campingPersonalReturn">
+            <option value="unknown">Noch nicht beurteilt</option>
+            <option value="yes">Ja</option>
+            <option value="maybe">Vielleicht</option>
+            <option value="no">Nein</option>
+          </select>
+        </label>
+
+        <div class="visit-editor">
+          <div class="visit-editor-head">
+            <div>
+              <strong>Besuchshistorie</strong>
+              <span>Mehrere Aufenthalte bleiben getrennt erhalten.</span>
+            </div>
+            <button type="button" class="btn secondary compact-btn" id="addCampingVisit">Besuch hinzufügen</button>
+          </div>
+          <div id="campingVisitList" class="visit-editor-list"></div>
+        </div>
+
+        <label>Persönliche Notizen
+          <textarea id="campingPersonalNotes" rows="4" placeholder="Allgemeine persönliche Notizen zu diesem Campingplatz …"></textarea>
+        </label>
       </section>
 
       <section class="edit-section">
@@ -911,6 +971,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.2-r1"></script>
+  <script src="app.js?v=0.3.3-r1"></script>
 </body>
 </html>

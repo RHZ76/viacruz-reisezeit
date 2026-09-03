@@ -152,7 +152,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.2 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.3 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -207,6 +207,7 @@ function campingDetailCards(e){
   const leisure=e.details?.camping?.leisure || {};
   const dog=e.details?.camping?.dog || {};
   const prices=e.details?.camping?.prices || {};
+  const personal=e.details?.camping?.personal || {};
   const regions=(e.travelRegions||[]).join(', ');
   const phone=e.phone ? `<a class="contact-link" href="${escapeHtml(phoneHref(e.phone))}">${escapeHtml(e.phone)}</a>` : '';
   const email=e.email ? `<a class="contact-link" href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>` : '';
@@ -392,6 +393,37 @@ function campingDetailCards(e){
   ].filter(Boolean).join('');
   const priceSummary=[priceRange,prices.approxTotal!=null?`ca. ${formatNumber(prices.approxTotal)} € / Nacht`:'',prices.year!=null?`Preisstand ${prices.year}`:'',electricityCost==='Strom inklusive'?'Strom inklusive':''].filter(Boolean).slice(0,2).join(' · ') || 'Preise & Gebühren';
 
+  const statusText=e.visited?'Besucht':e.wantToVisit?'Möchte ich besuchen':'';
+  const favoriteText=e.favorite?'★ Favorit':'';
+  const returnText=valueLabel(personal.returnIntent,{unknown:'',yes:'Ja',maybe:'Vielleicht',no:'Nein'},'');
+  const ratingLabels=[
+    ['Gesamt',personal.ratings?.overall],['Lage',personal.ratings?.location],['Ruhe',personal.ratings?.quiet],
+    ['Sauberkeit',personal.ratings?.cleanliness],['Sanitär',personal.ratings?.sanitary],['Preis-Leistung',personal.ratings?.value]
+  ];
+  const ratingRows=ratingLabels.map(([label,val])=>detailRow(label,val!=null?`${formatNumber(val,1)} / 5`:'' )).filter(Boolean).join('');
+  const visits=Array.isArray(e.visits)?e.visits:[];
+  const visitRows=visits.length?`<div class="visit-history">${visits.map((v,index)=>{
+    const nights=visitNights(v.arrival,v.departure);
+    const dateText=(v.arrival||v.departure)?`${formatDate(v.arrival)||'–'} bis ${formatDate(v.departure)||'–'}`:'Datum nicht angegeben';
+    const meta=[nights!=null?`${nights} ${nights===1?'Nacht':'Nächte'}`:'',v.pitch?`Platz ${v.pitch}`:''].filter(Boolean).join(' · ');
+    return `<div class="visit-history-card"><div class="visit-history-head"><strong>Aufenthalt ${index+1}</strong><span>${escapeHtml(dateText)}</span></div>${meta?`<small>${escapeHtml(meta)}</small>`:''}${v.note?`<p>${escapeHtml(v.note).replace(/\n/g,'<br>')}</p>`:''}</div>`;
+  }).join('')}</div>`:'';
+  const personalRows=[
+    detailRow('Status',[statusText,favoriteText].filter(Boolean).join(' · ')),
+    e.why?`<div class="detail-note"><span>Warum gespeichert?</span><p>${escapeHtml(e.why).replace(/\n/g,'<br>')}</p></div>`:'',
+    ratingRows,
+    detailRow('Würde ich wiederkommen?',returnText),
+    visits.length?`<div class="detail-note"><span>Besuchshistorie</span>${visitRows}</div>`:'',
+    e.notes?`<div class="detail-note"><span>Persönliche Notizen</span><p>${escapeHtml(e.notes).replace(/\n/g,'<br>')}</p></div>`:''
+  ].filter(Boolean).join('');
+  const ratingAverage=personalRatingAverage(personal);
+  const personalSummary=[
+    statusText,
+    favoriteText,
+    ratingAverage!=null?`${formatNumber(ratingAverage,1)} / 5`:'',
+    visits.length?`${visits.length} ${visits.length===1?'Besuch':'Besuche'}`:''
+  ].filter(Boolean).slice(0,3).join(' · ') || 'Persönlich';
+
   const basicSummary=[e.town||e.region||e.country,regions].filter(Boolean).slice(0,2).join(' · ') || 'Grunddaten';
   const staySummary=[op,period,reservation].filter(Boolean).slice(0,2).join(' · ') || 'Aufenthalt';
   const pitchSummaryParts=[
@@ -422,6 +454,10 @@ function campingDetailCards(e){
     <details class="detail-accordion">
       <summary><span><small>Preise &amp; Gebühren</small><strong>${escapeHtml(priceSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
       <div class="accordion-body">${priceRows||'<div class="detail-empty">Noch keine Preisangaben gespeichert.</div>'}</div>
+    </details>
+    <details class="detail-accordion">
+      <summary><span><small>Persönlich</small><strong>${escapeHtml(personalSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
+      <div class="accordion-body">${personalRows||'<div class="detail-empty">Noch keine persönlichen Angaben gespeichert.</div>'}</div>
     </details>
     <details class="detail-accordion">
       <summary><span><small>Saison & Aufenthalt</small><strong>${escapeHtml(staySummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
@@ -497,6 +533,7 @@ function ensureCampingDetails(e){
   e.details.camping.leisure=e.details.camping.leisure||{};
   e.details.camping.dog=e.details.camping.dog||{};
   e.details.camping.prices=e.details.camping.prices||{};
+  e.details.camping.personal=e.details.camping.personal||{};
   return e.details.camping.season;
 }
 function ensureCampingLocation(e){
@@ -509,6 +546,7 @@ function ensureCampingLeisure(e){
 }
 function ensureCampingDog(e){ensureCampingDetails(e);return e.details.camping.dog;}
 function ensureCampingPrices(e){ensureCampingDetails(e);return e.details.camping.prices;}
+function ensureCampingPersonal(e){ensureCampingDetails(e);return e.details.camping.personal;}
 function ensureCampingFacilities(e){
   ensureCampingDetails(e);
   return e.details.camping.facilities;
@@ -533,6 +571,54 @@ function formatNumber(value,max=2){
   return Number(value).toLocaleString('de-DE',{maximumFractionDigits:max});
 }
 function setField(id,value=''){ const el=document.getElementById(id); if(el) el.value=value??''; }
+function visitNights(arrival,departure){
+  if(!arrival||!departure)return null;
+  const a=new Date(arrival+'T00:00:00Z'),d=new Date(departure+'T00:00:00Z');
+  const n=Math.round((d-a)/86400000);
+  return Number.isFinite(n)&&n>=0?n:null;
+}
+function ratingValue(id){
+  const v=document.getElementById(id)?.value;
+  return v?Number(v):null;
+}
+function personalRatingAverage(personal){
+  const r=personal?.ratings||{};
+  const values=[r.overall,r.location,r.quiet,r.cleanliness,r.sanitary,r.value].filter(v=>Number.isFinite(Number(v))).map(Number);
+  if(!values.length)return null;
+  return values.reduce((a,b)=>a+b,0)/values.length;
+}
+function renderCampingVisitEditor(visits=[]){
+  const list=document.getElementById('campingVisitList'); if(!list)return;
+  const normalized=Array.isArray(visits)?visits:[];
+  list.innerHTML=normalized.length?normalized.map(v=>`
+    <div class="visit-editor-card" data-visit-id="${escapeHtml(v.id||uid())}">
+      <div class="visit-card-head"><strong>Aufenthalt</strong><button type="button" class="visit-remove" aria-label="Besuch entfernen">Entfernen</button></div>
+      <div class="grid-2">
+        <label>Anreise<input class="visit-arrival" type="date" value="${escapeHtml(v.arrival||'')}" /></label>
+        <label>Abreise<input class="visit-departure" type="date" value="${escapeHtml(v.departure||'')}" /></label>
+      </div>
+      <label>Stellplatz / Parzellennummer<input class="visit-pitch" type="text" value="${escapeHtml(v.pitch||'')}" placeholder="z. B. 114" /></label>
+      <label>Persönliche Besuchsnotiz<textarea class="visit-note" rows="3" placeholder="Was war bei diesem Aufenthalt besonders?">${escapeHtml(v.note||'')}</textarea></label>
+    </div>`).join(''):'<div class="visit-editor-empty">Noch kein Aufenthalt gespeichert.</div>';
+  list.querySelectorAll('.visit-remove').forEach(btn=>btn.onclick=()=>{btn.closest('.visit-editor-card')?.remove();if(!list.querySelector('.visit-editor-card'))list.innerHTML='<div class="visit-editor-empty">Noch kein Aufenthalt gespeichert.</div>';});
+}
+function addCampingVisitEditor(){
+  const current=collectCampingVisits();
+  current.push({id:uid(),arrival:'',departure:'',pitch:'',note:'',createdAt:new Date().toISOString()});
+  renderCampingVisitEditor(current);
+  document.querySelector('#campingVisitList .visit-editor-card:last-child')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function collectCampingVisits(){
+  return [...document.querySelectorAll('#campingVisitList .visit-editor-card')].map(card=>({
+    id:card.dataset.visitId||uid(),
+    arrival:card.querySelector('.visit-arrival')?.value||'',
+    departure:card.querySelector('.visit-departure')?.value||'',
+    pitch:card.querySelector('.visit-pitch')?.value.trim()||'',
+    note:card.querySelector('.visit-note')?.value.trim()||'',
+    createdAt:card.dataset.createdAt||new Date().toISOString()
+  })).filter(v=>v.arrival||v.departure||v.pitch||v.note);
+}
+
 function toggleSeasonDateFields(){
   const seasonal=document.getElementById('campingOperationType')?.value==='seasonal';
   const wrap=document.getElementById('campingSeasonDates'); if(!wrap)return;
@@ -578,6 +664,7 @@ function openCampingEditor(e){
   const p=ensureCampingPitch(e);
   const f=ensureCampingFacilities(e);
   const l=ensureCampingLocation(e);
+  const personal=ensureCampingPersonal(e);
   setField('campingEditId',e.id); setField('campingName',e.name); setField('campingCountry',e.country); setField('campingRegion',e.region);
   setField('campingTravelRegions',(e.travelRegions||[]).join(', ')); setField('campingTown',e.town); setField('campingAddress',e.address); setField('campingSourceType',sourceLabel(e)); setField('campingSourceUrl',sourceUrl(e)); setField('campingPhone',e.phone); setField('campingEmail',e.email);
   setField('campingOperationType',s.operationType||'unknown'); setField('campingOpenFrom',s.openFrom); setField('campingOpenTo',s.openTo); setField('campingSummer',s.summerCamping||'unknown'); setField('campingWinter',s.winterCamping||'unknown'); setField('campingMinStay',s.minStay); setField('campingReservation',s.reservation||'unknown'); setField('campingSpontaneous',s.spontaneousArrival||'unknown'); setField('campingArrivalFrom',s.arrivalFrom); setField('campingArrivalTo',s.arrivalTo); setField('campingDepartureFrom',s.departureFrom); setField('campingDepartureTo',s.departureTo); setField('campingSeasonNotes',s.notes);
@@ -665,6 +752,18 @@ function openCampingEditor(e){
   const dog=ensureCampingDog(e);setField('campingDogAllowed',dog.allowed||'unknown');setField('campingDogMaxCount',dog.maxCount);setField('campingDogFeeType',dog.feeType||'unknown');setField('campingDogFee',dog.fee);setField('campingDogLeash',dog.leash||'unknown');setField('campingDogRestricted',dog.restricted||'unknown');setField('campingDogRun',dog.run||'unknown');setField('campingDogBeach',dog.beach||'unknown');setField('campingDogSwimming',dog.swimming||'unknown');setField('campingDogShower',dog.shower||'unknown');setField('campingDogRestaurant',dog.restaurant||'unknown');setField('campingDogNotes',dog.notes);updateDogConditionalFields();
   const prices=ensureCampingPrices(e);
   setField('campingPriceYear',prices.year);setField('campingPriceApproxTotal',prices.approxTotal);setField('campingPriceFrom',prices.from);setField('campingPriceTo',prices.to);setField('campingPriceBase',prices.base);setField('campingPriceBasePersons',prices.basePersons);setField('campingPriceExtraPerson',prices.extraPerson);setField('campingPriceChild',prices.child);setField('campingPriceTouristTax',prices.touristTax);setField('campingPriceReservationFee',prices.reservationFee);setField('campingPriceOtherLabel',prices.otherLabel);setField('campingPriceOtherAmount',prices.otherAmount);setField('campingPriceIncluded',prices.included);setField('campingPriceNotes',prices.notes);
+  setField('campingPersonalStatus',e.visited?'visited':e.wantToVisit?'want':'none');
+  const favoriteEl=document.getElementById('campingPersonalFavorite'); if(favoriteEl) favoriteEl.checked=!!e.favorite;
+  setField('campingPersonalWhy',e.why||'');
+  setField('campingRatingOverall',personal.ratings?.overall);
+  setField('campingRatingLocation',personal.ratings?.location);
+  setField('campingRatingQuiet',personal.ratings?.quiet);
+  setField('campingRatingCleanliness',personal.ratings?.cleanliness);
+  setField('campingRatingSanitary',personal.ratings?.sanitary);
+  setField('campingRatingValue',personal.ratings?.value);
+  setField('campingPersonalReturn',personal.returnIntent||'unknown');
+  setField('campingPersonalNotes',e.notes||'');
+  renderCampingVisitEditor(e.visits||[]);
 
   document.getElementById('detailDialog').close();
   toggleSeasonDateFields();
@@ -682,6 +781,7 @@ document.getElementById('campingFacilitiesDryer').addEventListener('change',togg
 document.getElementById('campingFacilitiesBread').addEventListener('change',toggleFacilitiesConditionalFields);
 document.getElementById('closeCampingEdit').onclick=()=>document.getElementById('campingEditDialog').close();
 document.getElementById('cancelCampingEdit').onclick=()=>document.getElementById('campingEditDialog').close();
+document.getElementById('addCampingVisit')?.addEventListener('click',addCampingVisitEditor);
 ['Restaurant','Snack','Bar','Cafe','BeerGarden','IceCream'].forEach(id=>document.getElementById('campingLeisure'+id)?.addEventListener('change',updateLeisureConditionalFields));
 document.getElementById('campingLeisureBeach')?.addEventListener('change',updateLeisureConditionalFields);
 document.getElementById('campingEditForm').addEventListener('submit',ev=>{
@@ -780,6 +880,24 @@ document.getElementById('campingEditForm').addEventListener('submit',ev=>{
   leisure.character=getCheckboxGroup('campingLeisureCharacter');leisure.size=document.getElementById('campingLeisureSize').value;leisure.pitchCount=numericField('campingLeisurePitchCount');
   const dog=ensureCampingDog(e);dog.allowed=document.getElementById('campingDogAllowed').value;
   if(dog.allowed==='yes'){dog.maxCount=numericField('campingDogMaxCount');dog.feeType=document.getElementById('campingDogFeeType').value;dog.fee=dog.feeType==='paid'?numericField('campingDogFee'):null;dog.leash=document.getElementById('campingDogLeash').value;dog.restricted=document.getElementById('campingDogRestricted').value;dog.run=document.getElementById('campingDogRun').value;dog.beach=document.getElementById('campingDogBeach').value;dog.swimming=document.getElementById('campingDogSwimming').value;dog.shower=document.getElementById('campingDogShower').value;dog.restaurant=document.getElementById('campingDogRestaurant').value;dog.notes=document.getElementById('campingDogNotes').value.trim();}else{dog.maxCount=null;dog.feeType='unknown';dog.fee=null;dog.leash='unknown';dog.restricted='unknown';dog.run='unknown';dog.beach='unknown';dog.swimming='unknown';dog.shower='unknown';dog.restaurant='unknown';dog.notes='';}
+
+  const personal=ensureCampingPersonal(e);
+  const personalStatus=document.getElementById('campingPersonalStatus').value;
+  e.visited=personalStatus==='visited';
+  e.wantToVisit=personalStatus==='want';
+  e.favorite=!!document.getElementById('campingPersonalFavorite').checked;
+  e.why=document.getElementById('campingPersonalWhy').value.trim();
+  personal.ratings={
+    overall:ratingValue('campingRatingOverall'),
+    location:ratingValue('campingRatingLocation'),
+    quiet:ratingValue('campingRatingQuiet'),
+    cleanliness:ratingValue('campingRatingCleanliness'),
+    sanitary:ratingValue('campingRatingSanitary'),
+    value:ratingValue('campingRatingValue')
+  };
+  personal.returnIntent=document.getElementById('campingPersonalReturn').value;
+  e.visits=collectCampingVisits();
+  e.notes=document.getElementById('campingPersonalNotes').value.trim();
 
   const prices=ensureCampingPrices(e);
   prices.year=numericField('campingPriceYear');prices.approxTotal=numericField('campingPriceApproxTotal');prices.from=numericField('campingPriceFrom');prices.to=numericField('campingPriceTo');prices.base=numericField('campingPriceBase');prices.basePersons=numericField('campingPriceBasePersons');prices.extraPerson=numericField('campingPriceExtraPerson');prices.child=numericField('campingPriceChild');prices.touristTax=numericField('campingPriceTouristTax');prices.reservationFee=numericField('campingPriceReservationFee');prices.otherLabel=document.getElementById('campingPriceOtherLabel').value.trim();prices.otherAmount=numericField('campingPriceOtherAmount');prices.included=document.getElementById('campingPriceIncluded').value.trim();prices.notes=document.getElementById('campingPriceNotes').value.trim();
