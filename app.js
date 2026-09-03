@@ -219,8 +219,12 @@ function homeView(){
 
 function categoryCard(route,label,num,sub){ return `<button class="category-card" data-route-go="${route}"><div><strong>${label}</strong><small>${sub}</small></div><div class="count">${num}</div></button>`; }
 function placeCard(e){
+  const titleMedia=imageById(e,e.titleImageId);
+  const thumb=titleMedia?.dataUrl
+    ? `<img src="${titleMedia.dataUrl}" alt="" />`
+    : `${typeIcons[e.type] || '●'}`;
   return `<button class="place-card" data-detail="${e.id}">
-    <div class="place-thumb">${typeIcons[e.type] || '●'}</div>
+    <div class="place-thumb ${titleMedia?.dataUrl?'has-image':''}">${thumb}</div>
     <div class="place-main"><strong>${escapeHtml(e.name)}</strong><span>${escapeHtml(locationText(e))}</span>
       <div class="badge-row"><span class="badge">${typeLabels[e.type]}</span>${e.favorite?'<span class="badge">★ Favorit</span>':''}${e.wantToVisit?'<span class="badge">Möchte ich besuchen</span>':''}</div>
     </div><div class="chev">›</div>

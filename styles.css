@@ -222,3 +222,7 @@ button{cursor:pointer}
   .media-card-actions{grid-template-columns:1fr}
   .detail-title-image{width:calc(100% + 40px)}
 }
+
+/* v0.3.4-r2 – Titelbild auch in Sammlungs-Karten */
+.place-thumb.has-image{padding:0;overflow:hidden}
+.place-thumb.has-image img{width:100%;height:100%;display:block;object-fit:cover}
