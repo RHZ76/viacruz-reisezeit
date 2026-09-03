@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.0-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.1-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -848,6 +848,28 @@
         </div>
       </section>
 
+      <section class="edit-section">
+        <div class="edit-section-head"><h3>Hund</h3><p>Regeln, Kosten und Ausstattung für Hunde.</p></div>
+        <div class="grid-2"><label>Hunde erlaubt<select id="campingDogAllowed"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select></label></div>
+        <div id="campingDogDetails" class="conditional-fields">
+          <div class="grid-2">
+            <label>Maximale Anzahl Hunde <span class="field-help-inline">optional</span><input id="campingDogMaxCount" type="number" min="0" step="1" inputmode="numeric"></label>
+            <label>Hundekosten<select id="campingDogFeeType"><option value="unknown">Unbekannt</option><option value="free">Kostenlos</option><option value="paid">Kostenpflichtig</option></select></label>
+          </div>
+          <div id="campingDogFeeWrap" class="conditional-fields"><label>Preis pro Hund / Nacht in € <span class="field-help-inline">optional</span><input id="campingDogFee" type="number" min="0" step="0.01" inputmode="decimal"></label></div>
+          <div class="grid-2">
+            <label>Leinenpflicht<select id="campingDogLeash"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select></label>
+            <label>Eingeschränkte Bereiche<select id="campingDogRestricted"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select></label>
+            <label>Hundeauslauf / Hundewiese<select id="campingDogRun"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+            <label>Hundestrand<select id="campingDogBeach"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+            <label>Bademöglichkeit für Hunde<select id="campingDogSwimming"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+            <label>Hundedusche<select id="campingDogShower"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+            <label>Hunde im Restaurant erlaubt<select id="campingDogRestaurant"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select></label>
+          </div>
+          <label>Hinweise für Hunde<textarea id="campingDogNotes" rows="4" placeholder="z. B. Saisonbeschränkungen, bestimmte Platzbereiche oder besondere Regeln …"></textarea></label>
+        </div>
+      </section>
+
       <div class="sheet-actions sticky-sheet-actions">
         <button type="button" class="btn secondary" id="cancelCampingEdit">Abbrechen</button>
         <button type="submit" class="btn primary">Änderungen speichern</button>
@@ -855,6 +877,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.0-r1"></script>
+  <script src="app.js?v=0.3.1-r1"></script>
 </body>
 </html>

@@ -152,7 +152,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.0 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.1 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -205,6 +205,7 @@ function campingDetailCards(e){
   const facilities=e.details?.camping?.facilities || {};
   const location=e.details?.camping?.location || {};
   const leisure=e.details?.camping?.leisure || {};
+  const dog=e.details?.camping?.dog || {};
   const regions=(e.travelRegions||[]).join(', ');
   const phone=e.phone ? `<a class="contact-link" href="${escapeHtml(phoneHref(e.phone))}">${escapeHtml(e.phone)}</a>` : '';
   const email=e.email ? `<a class="contact-link" href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>` : '';
@@ -365,6 +366,9 @@ function campingDetailCards(e){
     detailRow('Charakter',(leisure.character||[]).map(v=>characterLabels[v]).filter(Boolean).join(', ')),detailRow('Größe',leisure.size&&leisure.size!=='unknown'?sizeLabels[leisure.size]:''),detailRow('Anzahl Stellplätze',leisure.pitchCount!=null?String(leisure.pitchCount):'')
   ].filter(Boolean).join('');
 
+  const dogFeeText=dog.feeType==='free'?'Kostenlos':dog.feeType==='paid'?(dog.fee!=null?`${formatNumber(dog.fee)} € / Hund / Nacht`:'Kostenpflichtig'):'';
+  const dogRows=dog.allowed==='unknown'||!dog.allowed?'':[detailRow('Hunde erlaubt',dog.allowed==='yes'?'Ja':'Nein'),dog.allowed==='yes'?detailRow('Maximale Anzahl Hunde',dog.maxCount!=null?String(dog.maxCount):''):'',dog.allowed==='yes'?detailRow('Hundekosten',dogFeeText):'',dog.allowed==='yes'?detailRow('Leinenpflicht',knownYesNo(dog.leash,'Ja','Nein')):'',dog.allowed==='yes'?detailRow('Eingeschränkte Bereiche',knownYesNo(dog.restricted,'Ja','Nein')):'',dog.allowed==='yes'?detailRow('Hundeauslauf / Hundewiese',knownYesNo(dog.run,'Vorhanden','Nicht vorhanden')):'',dog.allowed==='yes'?detailRow('Hundestrand',knownYesNo(dog.beach,'Vorhanden','Nicht vorhanden')):'',dog.allowed==='yes'?detailRow('Bademöglichkeit für Hunde',knownYesNo(dog.swimming,'Vorhanden','Nicht vorhanden')):'',dog.allowed==='yes'?detailRow('Hundedusche',knownYesNo(dog.shower,'Vorhanden','Nicht vorhanden')):'',dog.allowed==='yes'?detailRow('Hunde im Restaurant erlaubt',knownYesNo(dog.restaurant,'Ja','Nein')):'',dog.allowed==='yes'&&dog.notes?`<div class="detail-note"><span>Hinweise für Hunde</span><p>${escapeHtml(dog.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
+
   const basicSummary=[e.town||e.region||e.country,regions].filter(Boolean).slice(0,2).join(' · ') || 'Grunddaten';
   const staySummary=[op,period,reservation].filter(Boolean).slice(0,2).join(' · ') || 'Aufenthalt';
   const pitchSummaryParts=[
@@ -385,6 +389,7 @@ function campingDetailCards(e){
     ld.centre?.km!=null?`Zentrum ${formatNumber(ld.centre.km)} km`:''
   ].filter(Boolean).slice(0,3).join(' · ') || 'Lage & Umgebung';
   const leisureSummary=[gastro.restaurant?.status==='yes'?'Restaurant':'',bw.outdoorPool==='yes'?'Freibad':'',bw.indoorPool==='yes'?'Hallenbad':'',sport.playground==='yes'?'Spielplatz':'',...(leisure.character||[]).map(v=>characterLabels[v]).filter(Boolean)].filter(Boolean).slice(0,3).join(' · ') || 'Freizeit & Gastronomie';
+  const dogSummary=dog.allowed==='yes'?['Hunde erlaubt',dog.feeType==='free'?'kostenlos':'',dog.run==='yes'?'Hundewiese':''].filter(Boolean).join(' · '):dog.allowed==='no'?'Hunde nicht erlaubt':'Hund';
 
   return `<div class="detail-accordions">
     <details class="detail-accordion">
@@ -410,6 +415,10 @@ function campingDetailCards(e){
     <details class="detail-accordion">
       <summary><span><small>Freizeit &amp; Gastronomie</small><strong>${escapeHtml(leisureSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
       <div class="accordion-body">${leisureRows||'<div class="detail-empty">Noch keine Angaben zu Freizeit und Gastronomie gespeichert.</div>'}</div>
+    </details>
+    <details class="detail-accordion">
+      <summary><span><small>Hund</small><strong>${escapeHtml(dogSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
+      <div class="accordion-body">${dogRows||'<div class="detail-empty">Noch keine Angaben zu Hunden gespeichert.</div>'}</div>
     </details>
   </div>`;
 }
@@ -459,6 +468,7 @@ function ensureCampingDetails(e){
   e.details.camping.facilities=e.details.camping.facilities||{};
   e.details.camping.location=e.details.camping.location||{};
   e.details.camping.leisure=e.details.camping.leisure||{};
+  e.details.camping.dog=e.details.camping.dog||{};
   return e.details.camping.season;
 }
 function ensureCampingLocation(e){
@@ -469,6 +479,7 @@ function ensureCampingLeisure(e){
   ensureCampingDetails(e);
   return e.details.camping.leisure;
 }
+function ensureCampingDog(e){ensureCampingDetails(e);return e.details.camping.dog;}
 function ensureCampingFacilities(e){
   ensureCampingDetails(e);
   return e.details.camping.facilities;
@@ -520,8 +531,11 @@ function toggleFacilitiesConditionalFields(){
     if(wrap){wrap.classList.toggle('is-disabled',!active);wrap.querySelectorAll('input,select').forEach(el=>el.disabled=!active);}
   });
 }
+function updateDogConditionalFields(){const a=document.getElementById('campingDogAllowed'),d=document.getElementById('campingDogDetails');if(d)d.hidden=!a||a.value!=='yes';const f=document.getElementById('campingDogFeeType'),w=document.getElementById('campingDogFeeWrap');if(w)w.hidden=!f||f.value!=='paid';}
 function updateLeisureConditionalFields(){
-  ['Restaurant','Snack','Bar','Cafe','BeerGarden','IceCream'].forEach(id=>{
+  document.getElementById('campingDogAllowed')?.addEventListener('change',updateDogConditionalFields);
+document.getElementById('campingDogFeeType')?.addEventListener('change',updateDogConditionalFields);
+['Restaurant','Snack','Bar','Cafe','BeerGarden','IceCream'].forEach(id=>{
     const status=document.getElementById('campingLeisure'+id);
     const label=document.querySelector(`[data-leisure-season="${id}"]`);
     if(label) label.hidden=!status || status.value!=='yes';
@@ -619,6 +633,7 @@ function openCampingEditor(e){
   Object.entries(sportIds).forEach(([key,id])=>setField('campingLeisure'+id,sport[key]||'unknown'));
   setCheckboxGroup('campingLeisureCharacter',leisure.character);setField('campingLeisureSize',leisure.size||'unknown');setField('campingLeisurePitchCount',leisure.pitchCount);
   updateLeisureConditionalFields();
+  const dog=ensureCampingDog(e);setField('campingDogAllowed',dog.allowed||'unknown');setField('campingDogMaxCount',dog.maxCount);setField('campingDogFeeType',dog.feeType||'unknown');setField('campingDogFee',dog.fee);setField('campingDogLeash',dog.leash||'unknown');setField('campingDogRestricted',dog.restricted||'unknown');setField('campingDogRun',dog.run||'unknown');setField('campingDogBeach',dog.beach||'unknown');setField('campingDogSwimming',dog.swimming||'unknown');setField('campingDogShower',dog.shower||'unknown');setField('campingDogRestaurant',dog.restaurant||'unknown');setField('campingDogNotes',dog.notes);updateDogConditionalFields();
 
   document.getElementById('detailDialog').close();
   toggleSeasonDateFields();
@@ -732,6 +747,8 @@ document.getElementById('campingEditForm').addEventListener('submit',ev=>{
   const sportIds={playground:'Playground',tableTennis:'TableTennis',tennis:'Tennis',miniGolf:'MiniGolf',fitness:'Fitness',bikeRental:'BikeRental',eBikeRental:'EBikeRental',waterSports:'WaterSports',entertainment:'Entertainment',kidsProgram:'KidsProgram'};
   leisure.sport={};Object.entries(sportIds).forEach(([key,id])=>leisure.sport[key]=document.getElementById('campingLeisure'+id).value);
   leisure.character=getCheckboxGroup('campingLeisureCharacter');leisure.size=document.getElementById('campingLeisureSize').value;leisure.pitchCount=numericField('campingLeisurePitchCount');
+  const dog=ensureCampingDog(e);dog.allowed=document.getElementById('campingDogAllowed').value;
+  if(dog.allowed==='yes'){dog.maxCount=numericField('campingDogMaxCount');dog.feeType=document.getElementById('campingDogFeeType').value;dog.fee=dog.feeType==='paid'?numericField('campingDogFee'):null;dog.leash=document.getElementById('campingDogLeash').value;dog.restricted=document.getElementById('campingDogRestricted').value;dog.run=document.getElementById('campingDogRun').value;dog.beach=document.getElementById('campingDogBeach').value;dog.swimming=document.getElementById('campingDogSwimming').value;dog.shower=document.getElementById('campingDogShower').value;dog.restaurant=document.getElementById('campingDogRestaurant').value;dog.notes=document.getElementById('campingDogNotes').value.trim();}else{dog.maxCount=null;dog.feeType='unknown';dog.fee=null;dog.leash='unknown';dog.restricted='unknown';dog.run='unknown';dog.beach='unknown';dog.swimming='unknown';dog.shower='unknown';dog.restaurant='unknown';dog.notes='';}
 
   e.updatedAt=new Date().toISOString(); saveEntries(); document.getElementById('campingEditDialog').close(); render(); openDetail(e.id);
 });
