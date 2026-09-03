@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.1-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.2-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -169,6 +169,40 @@
             <input id="campingEmail" type="email" autocomplete="email" />
           </label>
         </div>
+      </section>
+
+      <section class="edit-section">
+        <div class="edit-section-head">
+          <h3>Preise & Gebühren</h3>
+          <p>Grobe Preisorientierung und wichtige Zusatzkosten. Alle Angaben sind optional.</p>
+        </div>
+        <div class="grid-2">
+          <label>Preisstand / Jahr<input id="campingPriceYear" type="number" min="2000" max="2100" step="1" inputmode="numeric" placeholder="z. B. 2026" /></label>
+          <label>Ungefährer Gesamtpreis pro Nacht für uns<input id="campingPriceApproxTotal" type="number" min="0" step="0.01" inputmode="decimal" placeholder="€" /></label>
+        </div>
+        <div class="grid-2">
+          <label>Preis von pro Nacht<input id="campingPriceFrom" type="number" min="0" step="0.01" inputmode="decimal" placeholder="€" /></label>
+          <label>Preis bis pro Nacht<input id="campingPriceTo" type="number" min="0" step="0.01" inputmode="decimal" placeholder="€" /></label>
+        </div>
+        <div class="grid-2">
+          <label>Grundpreis pro Nacht<input id="campingPriceBase" type="number" min="0" step="0.01" inputmode="decimal" placeholder="€" /></label>
+          <label>Grundpreis gilt für Personen<input id="campingPriceBasePersons" type="number" min="0" step="1" inputmode="numeric" /></label>
+        </div>
+        <div class="grid-2">
+          <label>Zusätzliche Person pro Nacht<input id="campingPriceExtraPerson" type="number" min="0" step="0.01" inputmode="decimal" placeholder="€" /></label>
+          <label>Kind pro Nacht<input id="campingPriceChild" type="number" min="0" step="0.01" inputmode="decimal" placeholder="€" /></label>
+        </div>
+        <div class="grid-2">
+          <label>Kurtaxe / Tourismusabgabe pro Person und Nacht<input id="campingPriceTouristTax" type="number" min="0" step="0.01" inputmode="decimal" placeholder="€" /></label>
+          <label>Reservierungsgebühr<input id="campingPriceReservationFee" type="number" min="0" step="0.01" inputmode="decimal" placeholder="€" /></label>
+        </div>
+        <div class="grid-2">
+          <label>Sonstige Gebühr – Bezeichnung<input id="campingPriceOtherLabel" type="text" placeholder="z. B. Servicepauschale" /></label>
+          <label>Sonstige Gebühr – Betrag<input id="campingPriceOtherAmount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="€" /></label>
+        </div>
+        <label>Was ist im Grundpreis enthalten?<textarea id="campingPriceIncluded" rows="3" placeholder="z. B. 2 Personen, Stellplatz, Warmwasser …"></textarea></label>
+        <div class="detail-note"><span>Bereits vorhandene Kosten</span><p>Stromkosten und Hundekosten werden aus den jeweiligen Bereichen übernommen und nicht doppelt gespeichert.</p></div>
+        <label>Hinweise zu Preisen<textarea id="campingPriceNotes" rows="4" placeholder="z. B. Hauptsaison teurer, Duschen extra, Rabatt möglich …"></textarea></label>
       </section>
 
       <section class="edit-section">
@@ -877,6 +911,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.1-r1"></script>
+  <script src="app.js?v=0.3.2-r1"></script>
 </body>
 </html>

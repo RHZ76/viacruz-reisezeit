@@ -152,7 +152,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.1 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.2 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -206,6 +206,7 @@ function campingDetailCards(e){
   const location=e.details?.camping?.location || {};
   const leisure=e.details?.camping?.leisure || {};
   const dog=e.details?.camping?.dog || {};
+  const prices=e.details?.camping?.prices || {};
   const regions=(e.travelRegions||[]).join(', ');
   const phone=e.phone ? `<a class="contact-link" href="${escapeHtml(phoneHref(e.phone))}">${escapeHtml(e.phone)}</a>` : '';
   const email=e.email ? `<a class="contact-link" href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>` : '';
@@ -369,6 +370,28 @@ function campingDetailCards(e){
   const dogFeeText=dog.feeType==='free'?'Kostenlos':dog.feeType==='paid'?(dog.fee!=null?`${formatNumber(dog.fee)} € / Hund / Nacht`:'Kostenpflichtig'):'';
   const dogRows=dog.allowed==='unknown'||!dog.allowed?'':[detailRow('Hunde erlaubt',dog.allowed==='yes'?'Ja':'Nein'),dog.allowed==='yes'?detailRow('Maximale Anzahl Hunde',dog.maxCount!=null?String(dog.maxCount):''):'',dog.allowed==='yes'?detailRow('Hundekosten',dogFeeText):'',dog.allowed==='yes'?detailRow('Leinenpflicht',knownYesNo(dog.leash,'Ja','Nein')):'',dog.allowed==='yes'?detailRow('Eingeschränkte Bereiche',knownYesNo(dog.restricted,'Ja','Nein')):'',dog.allowed==='yes'?detailRow('Hundeauslauf / Hundewiese',knownYesNo(dog.run,'Vorhanden','Nicht vorhanden')):'',dog.allowed==='yes'?detailRow('Hundestrand',knownYesNo(dog.beach,'Vorhanden','Nicht vorhanden')):'',dog.allowed==='yes'?detailRow('Bademöglichkeit für Hunde',knownYesNo(dog.swimming,'Vorhanden','Nicht vorhanden')):'',dog.allowed==='yes'?detailRow('Hundedusche',knownYesNo(dog.shower,'Vorhanden','Nicht vorhanden')):'',dog.allowed==='yes'?detailRow('Hunde im Restaurant erlaubt',knownYesNo(dog.restaurant,'Ja','Nein')):'',dog.allowed==='yes'&&dog.notes?`<div class="detail-note"><span>Hinweise für Hunde</span><p>${escapeHtml(dog.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
 
+  const euroValue=v=>v!==null&&v!==undefined&&v!==''?`${formatNumber(v)} €`:'';
+  const priceRange=(prices.from!=null||prices.to!=null)?`${prices.from!=null?formatNumber(prices.from):'–'}–${prices.to!=null?formatNumber(prices.to):'–'} € / Nacht`:'';
+  const electricityCost=pitch.electricity==='yes'?(pitch.electricityBilling==='included'?'Strom inklusive':pitch.electricityBilling==='flat'?(pitch.electricityPrice!=null?`Strom ${formatNumber(pitch.electricityPrice)} € pauschal`:'Strom pauschal'):pitch.electricityBilling==='consumption'?(pitch.electricityKwhPrice!=null?`Strom ${formatNumber(pitch.electricityKwhPrice)} € / kWh`:'Strom nach Verbrauch'):'Strom vorhanden'):'';
+  const dogCost=dog.allowed==='yes'?(dog.feeType==='free'?'Hund kostenlos':dog.feeType==='paid'?(dog.fee!=null?`Hund ${formatNumber(dog.fee)} € / Nacht`:'Hund kostenpflichtig'):''):'';
+  const priceRows=[
+    detailRow('Preisstand / Jahr',prices.year!=null?String(prices.year):''),
+    detailRow('Preis von / bis',priceRange),
+    detailRow('Grundpreis pro Nacht',euroValue(prices.base)),
+    detailRow('Grundpreis gilt für Personen',prices.basePersons!=null?String(prices.basePersons):''),
+    detailRow('Zusätzliche Person pro Nacht',euroValue(prices.extraPerson)),
+    detailRow('Kind pro Nacht',euroValue(prices.child)),
+    detailRow('Ungefährer Gesamtpreis pro Nacht für uns',euroValue(prices.approxTotal)),
+    detailRow('Kurtaxe / Tourismusabgabe',prices.touristTax!=null?`${formatNumber(prices.touristTax)} € / Person / Nacht`:''),
+    detailRow('Reservierungsgebühr',euroValue(prices.reservationFee)),
+    detailRow(prices.otherLabel||'Sonstige Gebühr',euroValue(prices.otherAmount)),
+    detailRow('Stromkosten',electricityCost),
+    detailRow('Hundekosten',dogCost),
+    prices.included?`<div class="detail-note"><span>Im Grundpreis enthalten</span><p>${escapeHtml(prices.included).replace(/\n/g,'<br>')}</p></div>`:'',
+    prices.notes?`<div class="detail-note"><span>Hinweise zu Preisen</span><p>${escapeHtml(prices.notes).replace(/\n/g,'<br>')}</p></div>`:''
+  ].filter(Boolean).join('');
+  const priceSummary=[priceRange,prices.approxTotal!=null?`ca. ${formatNumber(prices.approxTotal)} € / Nacht`:'',prices.year!=null?`Preisstand ${prices.year}`:'',electricityCost==='Strom inklusive'?'Strom inklusive':''].filter(Boolean).slice(0,2).join(' · ') || 'Preise & Gebühren';
+
   const basicSummary=[e.town||e.region||e.country,regions].filter(Boolean).slice(0,2).join(' · ') || 'Grunddaten';
   const staySummary=[op,period,reservation].filter(Boolean).slice(0,2).join(' · ') || 'Aufenthalt';
   const pitchSummaryParts=[
@@ -395,6 +418,10 @@ function campingDetailCards(e){
     <details class="detail-accordion">
       <summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
       <div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div>
+    </details>
+    <details class="detail-accordion">
+      <summary><span><small>Preise &amp; Gebühren</small><strong>${escapeHtml(priceSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
+      <div class="accordion-body">${priceRows||'<div class="detail-empty">Noch keine Preisangaben gespeichert.</div>'}</div>
     </details>
     <details class="detail-accordion">
       <summary><span><small>Saison & Aufenthalt</small><strong>${escapeHtml(staySummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
@@ -469,6 +496,7 @@ function ensureCampingDetails(e){
   e.details.camping.location=e.details.camping.location||{};
   e.details.camping.leisure=e.details.camping.leisure||{};
   e.details.camping.dog=e.details.camping.dog||{};
+  e.details.camping.prices=e.details.camping.prices||{};
   return e.details.camping.season;
 }
 function ensureCampingLocation(e){
@@ -480,6 +508,7 @@ function ensureCampingLeisure(e){
   return e.details.camping.leisure;
 }
 function ensureCampingDog(e){ensureCampingDetails(e);return e.details.camping.dog;}
+function ensureCampingPrices(e){ensureCampingDetails(e);return e.details.camping.prices;}
 function ensureCampingFacilities(e){
   ensureCampingDetails(e);
   return e.details.camping.facilities;
@@ -634,6 +663,8 @@ function openCampingEditor(e){
   setCheckboxGroup('campingLeisureCharacter',leisure.character);setField('campingLeisureSize',leisure.size||'unknown');setField('campingLeisurePitchCount',leisure.pitchCount);
   updateLeisureConditionalFields();
   const dog=ensureCampingDog(e);setField('campingDogAllowed',dog.allowed||'unknown');setField('campingDogMaxCount',dog.maxCount);setField('campingDogFeeType',dog.feeType||'unknown');setField('campingDogFee',dog.fee);setField('campingDogLeash',dog.leash||'unknown');setField('campingDogRestricted',dog.restricted||'unknown');setField('campingDogRun',dog.run||'unknown');setField('campingDogBeach',dog.beach||'unknown');setField('campingDogSwimming',dog.swimming||'unknown');setField('campingDogShower',dog.shower||'unknown');setField('campingDogRestaurant',dog.restaurant||'unknown');setField('campingDogNotes',dog.notes);updateDogConditionalFields();
+  const prices=ensureCampingPrices(e);
+  setField('campingPriceYear',prices.year);setField('campingPriceApproxTotal',prices.approxTotal);setField('campingPriceFrom',prices.from);setField('campingPriceTo',prices.to);setField('campingPriceBase',prices.base);setField('campingPriceBasePersons',prices.basePersons);setField('campingPriceExtraPerson',prices.extraPerson);setField('campingPriceChild',prices.child);setField('campingPriceTouristTax',prices.touristTax);setField('campingPriceReservationFee',prices.reservationFee);setField('campingPriceOtherLabel',prices.otherLabel);setField('campingPriceOtherAmount',prices.otherAmount);setField('campingPriceIncluded',prices.included);setField('campingPriceNotes',prices.notes);
 
   document.getElementById('detailDialog').close();
   toggleSeasonDateFields();
@@ -749,6 +780,9 @@ document.getElementById('campingEditForm').addEventListener('submit',ev=>{
   leisure.character=getCheckboxGroup('campingLeisureCharacter');leisure.size=document.getElementById('campingLeisureSize').value;leisure.pitchCount=numericField('campingLeisurePitchCount');
   const dog=ensureCampingDog(e);dog.allowed=document.getElementById('campingDogAllowed').value;
   if(dog.allowed==='yes'){dog.maxCount=numericField('campingDogMaxCount');dog.feeType=document.getElementById('campingDogFeeType').value;dog.fee=dog.feeType==='paid'?numericField('campingDogFee'):null;dog.leash=document.getElementById('campingDogLeash').value;dog.restricted=document.getElementById('campingDogRestricted').value;dog.run=document.getElementById('campingDogRun').value;dog.beach=document.getElementById('campingDogBeach').value;dog.swimming=document.getElementById('campingDogSwimming').value;dog.shower=document.getElementById('campingDogShower').value;dog.restaurant=document.getElementById('campingDogRestaurant').value;dog.notes=document.getElementById('campingDogNotes').value.trim();}else{dog.maxCount=null;dog.feeType='unknown';dog.fee=null;dog.leash='unknown';dog.restricted='unknown';dog.run='unknown';dog.beach='unknown';dog.swimming='unknown';dog.shower='unknown';dog.restaurant='unknown';dog.notes='';}
+
+  const prices=ensureCampingPrices(e);
+  prices.year=numericField('campingPriceYear');prices.approxTotal=numericField('campingPriceApproxTotal');prices.from=numericField('campingPriceFrom');prices.to=numericField('campingPriceTo');prices.base=numericField('campingPriceBase');prices.basePersons=numericField('campingPriceBasePersons');prices.extraPerson=numericField('campingPriceExtraPerson');prices.child=numericField('campingPriceChild');prices.touristTax=numericField('campingPriceTouristTax');prices.reservationFee=numericField('campingPriceReservationFee');prices.otherLabel=document.getElementById('campingPriceOtherLabel').value.trim();prices.otherAmount=numericField('campingPriceOtherAmount');prices.included=document.getElementById('campingPriceIncluded').value.trim();prices.notes=document.getElementById('campingPriceNotes').value.trim();
 
   e.updatedAt=new Date().toISOString(); saveEntries(); document.getElementById('campingEditDialog').close(); render(); openDetail(e.id);
 });
