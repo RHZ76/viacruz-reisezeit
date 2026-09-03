@@ -152,7 +152,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.2.6 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.2.7 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -201,6 +201,7 @@ document.getElementById('settingsBtn').onclick=()=>{state.route='settings';rende
 function campingDetailCards(e){
   if(e.type!=='camping') return `<div class="info-card"><small>Technisches Fundament</small><strong>Gemeinsame ID · zentrale Standortfelder · Besuchshistorie · Medienliste · typbezogene Details</strong></div>`;
   const season=e.details?.camping?.season || {};
+  const pitch=e.details?.camping?.pitch || {};
   const regions=(e.travelRegions||[]).join(', ');
   const phone=e.phone ? `<a class="contact-link" href="${escapeHtml(phoneHref(e.phone))}">${escapeHtml(e.phone)}</a>` : '';
   const email=e.email ? `<a class="contact-link" href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>` : '';
@@ -241,8 +242,55 @@ function campingDetailCards(e){
     season.notes?`<div class="detail-note"><span>Besondere Hinweise</span><p>${escapeHtml(season.notes).replace(/\n/g,'<br>')}</p></div>`:''
   ].filter(Boolean).join('');
 
+  const surfaceLabels={grass:'Rasen',gravel:'Schotter',asphalt:'Asphalt',paving:'Pflaster',hardened:'Befestigt',natural:'Naturboden'};
+  const locationFeatureLabels={waterfront:'Direkt am Wasser','water-view':'Wasserblick',quiet:'Ruhige Lage',central:'Zentrale Lage',terraced:'Terrassiert'};
+  const pitchType=valueLabel(pitch.type,{unknown:'',parcel:'Parzelle','free-choice':'Freie Platzwahl'},'');
+  const pitchSurface=(pitch.surface||[]).map(v=>surfaceLabels[v]).filter(Boolean).join(', ');
+  const pitchLevel=valueLabel(pitch.level,{unknown:'',level:'Eben','partly-uneven':'Teilweise uneben'},'');
+  const pitchShade=valueLabel(pitch.shade,{unknown:'',sunny:'Sonnig','partly-shaded':'Teilweise schattig',shaded:'Schattig'},'');
+  const pitchFeatures=(pitch.locationFeatures||[]).map(v=>locationFeatureLabels[v]).filter(Boolean).join(', ');
+  const electricity=knownYesNo(pitch.electricity,'Vorhanden','Nicht vorhanden');
+  const electricityBilling=pitch.electricity==='yes'?valueLabel(pitch.electricityBilling,{unknown:'Preis unbekannt',included:'Inklusive',flat:'Pauschale',consumption:'Nach Verbrauch'},''):'';
+  const wifi=knownYesNo(pitch.wifi,'Vorhanden','Nicht vorhanden');
+  const wifiBilling=pitch.wifi==='yes'?valueLabel(pitch.wifiBilling,{unknown:'Preis unbekannt',included:'Inklusive',paid:'Kostenpflichtig'},''):'';
+  const access=valueLabel(pitch.access,{unknown:'',easy:'Problemlos',narrow:'Eng',steep:'Steil',difficult:'Schwierig'},'');
+  const pitchRows=[
+    detailRow('Platzart',pitchType),
+    detailRow('Fläche',pitch.area!=null?`${formatNumber(pitch.area)} m²`:''),
+    detailRow('Länge',pitch.length!=null?`${formatNumber(pitch.length)} m`:''),
+    detailRow('Breite',pitch.width!=null?`${formatNumber(pitch.width)} m`:''),
+    detailRow('Große Wohnmobile',knownYesNo(pitch.largeMotorhome,'Geeignet','Nicht geeignet')),
+    detailRow('Untergrund',pitchSurface),
+    detailRow('Ebenheit',pitchLevel),
+    detailRow('Sonne / Schatten',pitchShade),
+    detailRow('Besondere Lage',pitchFeatures),
+    detailRow('Strom direkt am Platz',electricity),
+    detailRow('Strom-Abrechnung',electricityBilling),
+    detailRow('Strompreis',pitch.electricityPrice!=null?`${formatNumber(pitch.electricityPrice)} €`:''),
+    detailRow('Strompreis pro kWh',pitch.electricityKwhPrice!=null?`${formatNumber(pitch.electricityKwhPrice)} €/kWh`:''),
+    detailRow('Frischwasser direkt am Platz',knownYesNo(pitch.freshWater,'Vorhanden','Nicht vorhanden')),
+    detailRow('Abwasser direkt am Platz',knownYesNo(pitch.wasteWater,'Vorhanden','Nicht vorhanden')),
+    detailRow('TV-Anschluss',knownYesNo(pitch.tv,'Vorhanden','Nicht vorhanden')),
+    detailRow('WLAN',wifi),
+    detailRow('WLAN-Kosten',wifiBilling),
+    detailRow('WLAN-Preis',pitch.wifiPrice!=null?`${formatNumber(pitch.wifiPrice)} €`:''),
+    detailRow('Zufahrt',access),
+    detailRow('Max. Fahrzeuglänge',pitch.maxVehicleLength!=null?`${formatNumber(pitch.maxVehicleLength)} m`:''),
+    detailRow('Max. Fahrzeughöhe',pitch.maxVehicleHeight!=null?`${formatNumber(pitch.maxVehicleHeight)} m`:''),
+    detailRow('Gewichtslimit',pitch.maxVehicleWeight!=null?`${formatNumber(pitch.maxVehicleWeight)} t`:''),
+    detailRow('Bevorzugte Parzelle',pitch.preferredNumber),
+    pitch.notes?`<div class="detail-note"><span>Hinweise zur Stellplatzwahl</span><p>${escapeHtml(pitch.notes).replace(/\n/g,'<br>')}</p></div>`:''
+  ].filter(Boolean).join('');
+
   const basicSummary=[e.town||e.region||e.country,regions].filter(Boolean).slice(0,2).join(' · ') || 'Grunddaten';
   const staySummary=[op,period,reservation].filter(Boolean).slice(0,2).join(' · ') || 'Aufenthalt';
+  const pitchSummaryParts=[
+    pitchType,
+    pitch.area!=null?`${formatNumber(pitch.area)} m²`:'',
+    pitchSurface?pitchSurface.split(', ')[0]:'',
+    pitchShade
+  ].filter(Boolean);
+  const pitchSummary=pitchSummaryParts.slice(0,4).join(' · ') || 'Stellplatz & Parzelle';
 
   return `<div class="detail-accordions">
     <details class="detail-accordion">
@@ -252,6 +300,10 @@ function campingDetailCards(e){
     <details class="detail-accordion">
       <summary><span><small>Saison & Aufenthalt</small><strong>${escapeHtml(staySummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
       <div class="accordion-body">${stayRows||'<div class="detail-empty">Noch keine Angaben zu Saison und Aufenthalt gespeichert.</div>'}</div>
+    </details>
+    <details class="detail-accordion">
+      <summary><span><small>Stellplatz &amp; Parzelle</small><strong>${escapeHtml(pitchSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
+      <div class="accordion-body">${pitchRows||'<div class="detail-empty">Noch keine Angaben zu Stellplatz und Parzelle gespeichert.</div>'}</div>
     </details>
   </div>`;
 }
@@ -297,7 +349,27 @@ function ensureCampingDetails(e){
   e.details=e.details||{};
   e.details.camping=e.details.camping||{};
   e.details.camping.season=e.details.camping.season||{};
+  e.details.camping.pitch=e.details.camping.pitch||{};
   return e.details.camping.season;
+}
+function ensureCampingPitch(e){
+  ensureCampingDetails(e);
+  return e.details.camping.pitch;
+}
+function setCheckboxGroup(id,values=[]){
+  const selected=new Set(Array.isArray(values)?values:[]);
+  document.querySelectorAll(`#${id} input[type="checkbox"]`).forEach(el=>{el.checked=selected.has(el.value);});
+}
+function getCheckboxGroup(id){
+  return [...document.querySelectorAll(`#${id} input[type="checkbox"]:checked`)].map(el=>el.value);
+}
+function numericField(id){
+  const v=document.getElementById(id)?.value;
+  return v!=='' && v!=null ? Number(v) : null;
+}
+function formatNumber(value,max=2){
+  if(value===null || value===undefined || value==='') return '';
+  return Number(value).toLocaleString('de-DE',{maximumFractionDigits:max});
 }
 function setField(id,value=''){ const el=document.getElementById(id); if(el) el.value=value??''; }
 function toggleSeasonDateFields(){
@@ -306,15 +378,56 @@ function toggleSeasonDateFields(){
   wrap.classList.toggle('is-disabled',!seasonal);
   wrap.querySelectorAll('input').forEach(i=>i.disabled=!seasonal);
 }
+function togglePitchConditionalFields(){
+  const electricity=document.getElementById('campingPitchElectricity')?.value==='yes';
+  const eWrap=document.getElementById('campingPitchElectricityDetails');
+  if(eWrap){eWrap.classList.toggle('is-disabled',!electricity);eWrap.querySelectorAll('input,select').forEach(el=>el.disabled=!electricity);}
+  const wifi=document.getElementById('campingPitchWifi')?.value==='yes';
+  const wWrap=document.getElementById('campingPitchWifiDetails');
+  if(wWrap){wWrap.classList.toggle('is-disabled',!wifi);wWrap.querySelectorAll('input,select').forEach(el=>el.disabled=!wifi);}
+}
 function openCampingEditor(e){
   const s=ensureCampingDetails(e);
+  const p=ensureCampingPitch(e);
   setField('campingEditId',e.id); setField('campingName',e.name); setField('campingCountry',e.country); setField('campingRegion',e.region);
   setField('campingTravelRegions',(e.travelRegions||[]).join(', ')); setField('campingTown',e.town); setField('campingAddress',e.address); setField('campingSourceType',sourceLabel(e)); setField('campingSourceUrl',sourceUrl(e)); setField('campingPhone',e.phone); setField('campingEmail',e.email);
   setField('campingOperationType',s.operationType||'unknown'); setField('campingOpenFrom',s.openFrom); setField('campingOpenTo',s.openTo); setField('campingSummer',s.summerCamping||'unknown'); setField('campingWinter',s.winterCamping||'unknown'); setField('campingMinStay',s.minStay); setField('campingReservation',s.reservation||'unknown'); setField('campingSpontaneous',s.spontaneousArrival||'unknown'); setField('campingArrivalFrom',s.arrivalFrom); setField('campingArrivalTo',s.arrivalTo); setField('campingDepartureFrom',s.departureFrom); setField('campingDepartureTo',s.departureTo); setField('campingSeasonNotes',s.notes);
-  document.getElementById('detailDialog').close(); toggleSeasonDateFields(); document.getElementById('campingEditDialog').showModal();
+
+  setField('campingPitchType',p.type||'unknown');
+  setField('campingPitchArea',p.area);
+  setField('campingPitchLength',p.length);
+  setField('campingPitchWidth',p.width);
+  setField('campingPitchLargeMotorhome',p.largeMotorhome||'unknown');
+  setCheckboxGroup('campingPitchSurface',p.surface);
+  setField('campingPitchLevel',p.level||'unknown');
+  setField('campingPitchShade',p.shade||'unknown');
+  setCheckboxGroup('campingPitchLocationFeatures',p.locationFeatures);
+  setField('campingPitchElectricity',p.electricity||'unknown');
+  setField('campingPitchElectricityBilling',p.electricityBilling||'unknown');
+  setField('campingPitchElectricityPrice',p.electricityPrice);
+  setField('campingPitchElectricityKwhPrice',p.electricityKwhPrice);
+  setField('campingPitchFreshWater',p.freshWater||'unknown');
+  setField('campingPitchWasteWater',p.wasteWater||'unknown');
+  setField('campingPitchTv',p.tv||'unknown');
+  setField('campingPitchWifi',p.wifi||'unknown');
+  setField('campingPitchWifiBilling',p.wifiBilling||'unknown');
+  setField('campingPitchWifiPrice',p.wifiPrice);
+  setField('campingPitchAccess',p.access||'unknown');
+  setField('campingPitchMaxLength',p.maxVehicleLength);
+  setField('campingPitchMaxHeight',p.maxVehicleHeight);
+  setField('campingPitchMaxWeight',p.maxVehicleWeight);
+  setField('campingPitchPreferredNumber',p.preferredNumber);
+  setField('campingPitchNotes',p.notes);
+
+  document.getElementById('detailDialog').close();
+  toggleSeasonDateFields();
+  togglePitchConditionalFields();
+  document.getElementById('campingEditDialog').showModal();
 }
 
 document.getElementById('campingOperationType').addEventListener('change',toggleSeasonDateFields);
+document.getElementById('campingPitchElectricity').addEventListener('change',togglePitchConditionalFields);
+document.getElementById('campingPitchWifi').addEventListener('change',togglePitchConditionalFields);
 document.getElementById('closeCampingEdit').onclick=()=>document.getElementById('campingEditDialog').close();
 document.getElementById('cancelCampingEdit').onclick=()=>document.getElementById('campingEditDialog').close();
 document.getElementById('campingEditForm').addEventListener('submit',ev=>{
@@ -324,6 +437,33 @@ document.getElementById('campingEditForm').addEventListener('submit',ev=>{
   e.name=document.getElementById('campingName').value.trim()||e.name; e.country=document.getElementById('campingCountry').value.trim(); e.region=document.getElementById('campingRegion').value.trim(); e.travelRegions=splitList(document.getElementById('campingTravelRegions').value); e.town=document.getElementById('campingTown').value.trim(); e.address=document.getElementById('campingAddress').value.trim(); e.source=''; e.sourceType=document.getElementById('campingSourceType').value; e.sourceUrl=normalizeExternalUrl(document.getElementById('campingSourceUrl').value) || document.getElementById('campingSourceUrl').value.trim(); e.phone=document.getElementById('campingPhone').value.trim(); e.email=document.getElementById('campingEmail').value.trim();
   e.geoTags=[e.country,e.region,e.town,...e.travelRegions].filter(Boolean);
   s.operationType=document.getElementById('campingOperationType').value; s.openFrom=s.operationType==='seasonal'?document.getElementById('campingOpenFrom').value:''; s.openTo=s.operationType==='seasonal'?document.getElementById('campingOpenTo').value:''; s.summerCamping=document.getElementById('campingSummer').value; s.winterCamping=document.getElementById('campingWinter').value; s.minStay=document.getElementById('campingMinStay').value?Number(document.getElementById('campingMinStay').value):null; s.reservation=document.getElementById('campingReservation').value; s.spontaneousArrival=document.getElementById('campingSpontaneous').value; s.arrivalFrom=document.getElementById('campingArrivalFrom').value; s.arrivalTo=document.getElementById('campingArrivalTo').value; s.departureFrom=document.getElementById('campingDepartureFrom').value; s.departureTo=document.getElementById('campingDepartureTo').value; s.notes=document.getElementById('campingSeasonNotes').value.trim();
+  const p=ensureCampingPitch(e);
+  p.type=document.getElementById('campingPitchType').value;
+  p.area=numericField('campingPitchArea');
+  p.length=numericField('campingPitchLength');
+  p.width=numericField('campingPitchWidth');
+  p.largeMotorhome=document.getElementById('campingPitchLargeMotorhome').value;
+  p.surface=getCheckboxGroup('campingPitchSurface');
+  p.level=document.getElementById('campingPitchLevel').value;
+  p.shade=document.getElementById('campingPitchShade').value;
+  p.locationFeatures=getCheckboxGroup('campingPitchLocationFeatures');
+  p.electricity=document.getElementById('campingPitchElectricity').value;
+  p.electricityBilling=p.electricity==='yes'?document.getElementById('campingPitchElectricityBilling').value:'unknown';
+  p.electricityPrice=p.electricity==='yes'?numericField('campingPitchElectricityPrice'):null;
+  p.electricityKwhPrice=p.electricity==='yes'?numericField('campingPitchElectricityKwhPrice'):null;
+  p.freshWater=document.getElementById('campingPitchFreshWater').value;
+  p.wasteWater=document.getElementById('campingPitchWasteWater').value;
+  p.tv=document.getElementById('campingPitchTv').value;
+  p.wifi=document.getElementById('campingPitchWifi').value;
+  p.wifiBilling=p.wifi==='yes'?document.getElementById('campingPitchWifiBilling').value:'unknown';
+  p.wifiPrice=p.wifi==='yes'?numericField('campingPitchWifiPrice'):null;
+  p.access=document.getElementById('campingPitchAccess').value;
+  p.maxVehicleLength=numericField('campingPitchMaxLength');
+  p.maxVehicleHeight=numericField('campingPitchMaxHeight');
+  p.maxVehicleWeight=numericField('campingPitchMaxWeight');
+  p.preferredNumber=document.getElementById('campingPitchPreferredNumber').value.trim();
+  p.notes=document.getElementById('campingPitchNotes').value.trim();
+
   e.updatedAt=new Date().toISOString(); saveEntries(); document.getElementById('campingEditDialog').close(); render(); openDetail(e.id);
 });
 

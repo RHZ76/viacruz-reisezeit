@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.2.6-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.2.7-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -258,6 +258,201 @@
         </label>
       </section>
 
+
+      <section class="edit-section">
+        <div class="edit-section-head">
+          <h3>Stellplatz &amp; Parzelle</h3>
+          <p>Platzart, Größe, Untergrund, Versorgung und Zufahrt.</p>
+        </div>
+
+        <label>Platzart
+          <select id="campingPitchType">
+            <option value="unknown">Unbekannt</option>
+            <option value="parcel">Parzelle</option>
+            <option value="free-choice">Freie Platzwahl</option>
+          </select>
+        </label>
+
+        <div class="field-group">
+          <div class="field-group-title">Parzellengröße</div>
+          <div class="grid-3">
+            <label>Fläche (m²)
+              <input id="campingPitchArea" type="number" min="0" step="0.1" inputmode="decimal" placeholder="optional" />
+            </label>
+            <label>Länge (m)
+              <input id="campingPitchLength" type="number" min="0" step="0.1" inputmode="decimal" placeholder="optional" />
+            </label>
+            <label>Breite (m)
+              <input id="campingPitchWidth" type="number" min="0" step="0.1" inputmode="decimal" placeholder="optional" />
+            </label>
+          </div>
+        </div>
+
+        <label>Für große Wohnmobile geeignet
+          <select id="campingPitchLargeMotorhome">
+            <option value="unknown">Unbekannt</option>
+            <option value="yes">Ja</option>
+            <option value="no">Nein</option>
+          </select>
+        </label>
+
+        <div class="field-group">
+          <div class="field-group-title">Untergrund <span class="field-help-inline">Mehrfachauswahl möglich</span></div>
+          <div class="option-grid" id="campingPitchSurface">
+            <label class="check-option"><input type="checkbox" value="grass" />Rasen</label>
+            <label class="check-option"><input type="checkbox" value="gravel" />Schotter</label>
+            <label class="check-option"><input type="checkbox" value="asphalt" />Asphalt</label>
+            <label class="check-option"><input type="checkbox" value="paving" />Pflaster</label>
+            <label class="check-option"><input type="checkbox" value="hardened" />Befestigt</label>
+            <label class="check-option"><input type="checkbox" value="natural" />Naturboden</label>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <label>Ebenheit
+            <select id="campingPitchLevel">
+              <option value="unknown">Unbekannt</option>
+              <option value="level">Eben</option>
+              <option value="partly-uneven">Teilweise uneben</option>
+            </select>
+          </label>
+          <label>Sonne / Schatten
+            <select id="campingPitchShade">
+              <option value="unknown">Unbekannt</option>
+              <option value="sunny">Sonnig</option>
+              <option value="partly-shaded">Teilweise schattig</option>
+              <option value="shaded">Schattig</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Besondere Lage <span class="field-help-inline">Mehrfachauswahl möglich</span></div>
+          <div class="option-grid" id="campingPitchLocationFeatures">
+            <label class="check-option"><input type="checkbox" value="waterfront" />Direkt am Wasser</label>
+            <label class="check-option"><input type="checkbox" value="water-view" />Wasserblick</label>
+            <label class="check-option"><input type="checkbox" value="quiet" />Ruhige Lage</label>
+            <label class="check-option"><input type="checkbox" value="central" />Zentrale Lage</label>
+            <label class="check-option"><input type="checkbox" value="terraced" />Terrassiert</label>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Versorgung direkt an der Parzelle</div>
+
+          <label>Strom
+            <select id="campingPitchElectricity">
+              <option value="unknown">Unbekannt</option>
+              <option value="yes">Vorhanden</option>
+              <option value="no">Nicht vorhanden</option>
+            </select>
+          </label>
+
+          <div id="campingPitchElectricityDetails" class="conditional-fields">
+            <div class="grid-2">
+              <label>Abrechnung Strom
+                <select id="campingPitchElectricityBilling">
+                  <option value="unknown">Preis unbekannt</option>
+                  <option value="included">Inklusive</option>
+                  <option value="flat">Pauschale</option>
+                  <option value="consumption">Nach Verbrauch</option>
+                </select>
+              </label>
+              <label>Preis (€)
+                <input id="campingPitchElectricityPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="optional" />
+              </label>
+            </div>
+            <label>Preis pro kWh (€)
+              <input id="campingPitchElectricityKwhPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="optional" />
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>Frischwasser direkt am Platz
+              <select id="campingPitchFreshWater">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Abwasser direkt am Platz
+              <select id="campingPitchWasteWater">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>TV-Anschluss
+              <select id="campingPitchTv">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>WLAN
+              <select id="campingPitchWifi">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div id="campingPitchWifiDetails" class="conditional-fields">
+            <div class="grid-2">
+              <label>WLAN-Kosten
+                <select id="campingPitchWifiBilling">
+                  <option value="unknown">Preis unbekannt</option>
+                  <option value="included">Inklusive</option>
+                  <option value="paid">Kostenpflichtig</option>
+                </select>
+              </label>
+              <label>Preis WLAN (€)
+                <input id="campingPitchWifiPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="optional" />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Zufahrt &amp; Beschränkungen</div>
+          <label>Zufahrt
+            <select id="campingPitchAccess">
+              <option value="unknown">Unbekannt</option>
+              <option value="easy">Problemlos</option>
+              <option value="narrow">Eng</option>
+              <option value="steep">Steil</option>
+              <option value="difficult">Schwierig</option>
+            </select>
+          </label>
+
+          <div class="grid-3">
+            <label>Max. Fahrzeuglänge (m)
+              <input id="campingPitchMaxLength" type="number" min="0" step="0.1" inputmode="decimal" placeholder="optional" />
+            </label>
+            <label>Max. Fahrzeughöhe (m)
+              <input id="campingPitchMaxHeight" type="number" min="0" step="0.1" inputmode="decimal" placeholder="optional" />
+            </label>
+            <label>Gewichtslimit (t)
+              <input id="campingPitchMaxWeight" type="number" min="0" step="0.1" inputmode="decimal" placeholder="optional" />
+            </label>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Bevorzugte Parzelle</div>
+          <label>Parzellen-/Stellplatznummer
+            <input id="campingPitchPreferredNumber" autocomplete="off" placeholder="z. B. 147" />
+          </label>
+          <label>Hinweise zur Stellplatzwahl
+            <textarea id="campingPitchNotes" rows="4" placeholder="z. B. Plätze 80–95 bevorzugen, Seeseite nehmen …"></textarea>
+          </label>
+        </div>
+      </section>
+
       <div class="sheet-actions sticky-sheet-actions">
         <button type="button" class="btn secondary" id="cancelCampingEdit">Abbrechen</button>
         <button type="submit" class="btn primary">Änderungen speichern</button>
@@ -265,6 +460,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.2.6-r1"></script>
+  <script src="app.js?v=0.2.7-r1"></script>
 </body>
 </html>
