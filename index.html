@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.2.7-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.2.8-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -453,6 +453,273 @@
         </div>
       </section>
 
+
+      <section class="edit-section">
+        <div class="edit-section-head">
+          <h3>Sanitär &amp; Versorgung</h3>
+          <p>Sanitäranlagen, Waschen, Entsorgung und weitere Versorgung.</p>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Sanitär</div>
+
+          <div class="grid-2">
+            <label>WC
+              <select id="campingFacilitiesWc">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Duschen
+              <select id="campingFacilitiesShowers">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div id="campingFacilitiesShowerDetails" class="conditional-fields">
+            <div class="grid-2">
+              <label>Duschen
+                <select id="campingFacilitiesShowerBilling">
+                  <option value="unknown">Preis unbekannt</option>
+                  <option value="included">Inklusive</option>
+                  <option value="paid">Kostenpflichtig</option>
+                </select>
+              </label>
+              <label>Preis pro Nutzung (€)
+                <input id="campingFacilitiesShowerPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="optional" />
+              </label>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <label>Einzelwaschkabinen
+              <select id="campingFacilitiesWashCubicles">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Familienbad
+              <select id="campingFacilitiesFamilyBath">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>Barrierefreies Sanitär
+              <select id="campingFacilitiesAccessible">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Baby-/Kinder-Sanitär
+              <select id="campingFacilitiesChildren">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>Privatbad / Mietbad
+              <select id="campingFacilitiesPrivateBath">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Sanitär beheizt
+              <select id="campingFacilitiesHeated">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Ja</option>
+                <option value="no">Nein</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Waschen &amp; Entsorgung</div>
+
+          <div class="grid-2">
+            <label>Waschmaschine
+              <select id="campingFacilitiesWasher">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Trockner
+              <select id="campingFacilitiesDryer">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <div id="campingFacilitiesWasherDetails" class="conditional-fields">
+              <label>Waschmaschine Kosten
+                <select id="campingFacilitiesWasherBilling">
+                  <option value="unknown">Preis unbekannt</option>
+                  <option value="included">Inklusive</option>
+                  <option value="paid">Kostenpflichtig</option>
+                </select>
+              </label>
+              <label>Preis Waschgang (€)
+                <input id="campingFacilitiesWasherPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="optional" />
+              </label>
+            </div>
+            <div id="campingFacilitiesDryerDetails" class="conditional-fields">
+              <label>Trockner Kosten
+                <select id="campingFacilitiesDryerBilling">
+                  <option value="unknown">Preis unbekannt</option>
+                  <option value="included">Inklusive</option>
+                  <option value="paid">Kostenpflichtig</option>
+                </select>
+              </label>
+              <label>Preis Trockengang (€)
+                <input id="campingFacilitiesDryerPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="optional" />
+              </label>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <label>Geschirrspülbereich
+              <select id="campingFacilitiesDishwashing">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Frischwasser-Entnahmestelle
+              <select id="campingFacilitiesFreshWaterPoint">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>Grauwasserentsorgung
+              <select id="campingFacilitiesGreyWater">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Chemietoiletten-Entsorgung
+              <select id="campingFacilitiesChemicalToilet">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>Bodeneinlass für Wohnmobile
+              <select id="campingFacilitiesFloorDrain">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Müllentsorgung
+              <select id="campingFacilitiesWaste">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <label>Mülltrennung
+            <select id="campingFacilitiesWasteSeparation">
+              <option value="unknown">Unbekannt</option>
+              <option value="yes">Ja</option>
+              <option value="no">Nein</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Einkauf &amp; weitere Versorgung</div>
+
+          <div class="grid-2">
+            <label>Shop / Laden
+              <select id="campingFacilitiesShop">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Brötchenservice
+              <select id="campingFacilitiesBread">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div id="campingFacilitiesBreadDetails" class="conditional-fields">
+            <label>Brötchenservice verfügbar
+              <select id="campingFacilitiesBreadSeason">
+                <option value="unknown">Unbekannt</option>
+                <option value="year-round">Ganzjährig</option>
+                <option value="seasonal">Saisonal</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>Camping-/Zubehörshop
+              <select id="campingFacilitiesCampingShop">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Gasflaschentausch / Gasversorgung
+              <select id="campingFacilitiesGas">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>E-Bike-Lademöglichkeit
+              <select id="campingFacilitiesEbike">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>E-Auto-Lademöglichkeit
+              <select id="campingFacilitiesEv">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </section>
+
       <div class="sheet-actions sticky-sheet-actions">
         <button type="button" class="btn secondary" id="cancelCampingEdit">Abbrechen</button>
         <button type="submit" class="btn primary">Änderungen speichern</button>
@@ -460,6 +727,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.2.7-r1"></script>
+  <script src="app.js?v=0.2.8-r1"></script>
 </body>
 </html>

@@ -152,7 +152,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.2.7 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.2.8 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -202,6 +202,7 @@ function campingDetailCards(e){
   if(e.type!=='camping') return `<div class="info-card"><small>Technisches Fundament</small><strong>Gemeinsame ID · zentrale Standortfelder · Besuchshistorie · Medienliste · typbezogene Details</strong></div>`;
   const season=e.details?.camping?.season || {};
   const pitch=e.details?.camping?.pitch || {};
+  const facilities=e.details?.camping?.facilities || {};
   const regions=(e.travelRegions||[]).join(', ');
   const phone=e.phone ? `<a class="contact-link" href="${escapeHtml(phoneHref(e.phone))}">${escapeHtml(e.phone)}</a>` : '';
   const email=e.email ? `<a class="contact-link" href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>` : '';
@@ -282,6 +283,43 @@ function campingDetailCards(e){
     pitch.notes?`<div class="detail-note"><span>Hinweise zur Stellplatzwahl</span><p>${escapeHtml(pitch.notes).replace(/\n/g,'<br>')}</p></div>`:''
   ].filter(Boolean).join('');
 
+  const costLabel=(state,price)=>{
+    if(state==='included') return 'Inklusive';
+    if(state==='paid') return price!=null?`Kostenpflichtig · ${formatNumber(price)} €`:'Kostenpflichtig';
+    if(state==='unknown') return 'Preis unbekannt';
+    return '';
+  };
+  const breadSeason=valueLabel(facilities.breadSeason,{unknown:'','year-round':'Ganzjährig',seasonal:'Saisonal'},'');
+  const facilityRows=[
+    detailRow('WC',knownYesNo(facilities.wc,'Vorhanden','Nicht vorhanden')),
+    detailRow('Duschen',knownYesNo(facilities.showers,'Vorhanden','Nicht vorhanden')),
+    facilities.showers==='yes'?detailRow('Duschen Kosten',costLabel(facilities.showerBilling,facilities.showerPrice)):'',
+    detailRow('Einzelwaschkabinen',knownYesNo(facilities.washCubicles,'Vorhanden','Nicht vorhanden')),
+    detailRow('Familienbad',knownYesNo(facilities.familyBath,'Vorhanden','Nicht vorhanden')),
+    detailRow('Barrierefreies Sanitär',knownYesNo(facilities.accessibleSanitary,'Vorhanden','Nicht vorhanden')),
+    detailRow('Baby-/Kinder-Sanitär',knownYesNo(facilities.childrenSanitary,'Vorhanden','Nicht vorhanden')),
+    detailRow('Privatbad / Mietbad',knownYesNo(facilities.privateBath,'Vorhanden','Nicht vorhanden')),
+    detailRow('Sanitär beheizt',knownYesNo(facilities.heatedSanitary,'Ja','Nein')),
+    detailRow('Waschmaschine',knownYesNo(facilities.washer,'Vorhanden','Nicht vorhanden')),
+    facilities.washer==='yes'?detailRow('Waschmaschine Kosten',costLabel(facilities.washerBilling,facilities.washerPrice)):'',
+    detailRow('Trockner',knownYesNo(facilities.dryer,'Vorhanden','Nicht vorhanden')),
+    facilities.dryer==='yes'?detailRow('Trockner Kosten',costLabel(facilities.dryerBilling,facilities.dryerPrice)):'',
+    detailRow('Geschirrspülbereich',knownYesNo(facilities.dishwashing,'Vorhanden','Nicht vorhanden')),
+    detailRow('Frischwasser-Entnahmestelle',knownYesNo(facilities.freshWaterPoint,'Vorhanden','Nicht vorhanden')),
+    detailRow('Grauwasserentsorgung',knownYesNo(facilities.greyWater,'Vorhanden','Nicht vorhanden')),
+    detailRow('Chemietoiletten-Entsorgung',knownYesNo(facilities.chemicalToilet,'Vorhanden','Nicht vorhanden')),
+    detailRow('Bodeneinlass für Wohnmobile',knownYesNo(facilities.floorDrain,'Vorhanden','Nicht vorhanden')),
+    detailRow('Müllentsorgung',knownYesNo(facilities.wasteDisposal,'Vorhanden','Nicht vorhanden')),
+    detailRow('Mülltrennung',knownYesNo(facilities.wasteSeparation,'Ja','Nein')),
+    detailRow('Shop / Laden',knownYesNo(facilities.shop,'Vorhanden','Nicht vorhanden')),
+    detailRow('Brötchenservice',knownYesNo(facilities.breadService,'Vorhanden','Nicht vorhanden')),
+    facilities.breadService==='yes'?detailRow('Brötchenservice verfügbar',breadSeason):'',
+    detailRow('Camping-/Zubehörshop',knownYesNo(facilities.campingShop,'Vorhanden','Nicht vorhanden')),
+    detailRow('Gasflaschentausch / Gasversorgung',knownYesNo(facilities.gasSupply,'Vorhanden','Nicht vorhanden')),
+    detailRow('E-Bike-Lademöglichkeit',knownYesNo(facilities.ebikeCharging,'Vorhanden','Nicht vorhanden')),
+    detailRow('E-Auto-Lademöglichkeit',knownYesNo(facilities.evCharging,'Vorhanden','Nicht vorhanden'))
+  ].filter(Boolean).join('');
+
   const basicSummary=[e.town||e.region||e.country,regions].filter(Boolean).slice(0,2).join(' · ') || 'Grunddaten';
   const staySummary=[op,period,reservation].filter(Boolean).slice(0,2).join(' · ') || 'Aufenthalt';
   const pitchSummaryParts=[
@@ -291,6 +329,12 @@ function campingDetailCards(e){
     pitchShade
   ].filter(Boolean);
   const pitchSummary=pitchSummaryParts.slice(0,4).join(' · ') || 'Stellplatz & Parzelle';
+  const facilitySummary=[
+    facilities.wc==='yes'?'WC':'',
+    facilities.showers==='yes'?'Duschen':'',
+    facilities.washer==='yes'?'Waschmaschine':'',
+    facilities.breadService==='yes'?'Brötchenservice':''
+  ].filter(Boolean).slice(0,3).join(' · ') || 'Sanitär & Versorgung';
 
   return `<div class="detail-accordions">
     <details class="detail-accordion">
@@ -304,6 +348,10 @@ function campingDetailCards(e){
     <details class="detail-accordion">
       <summary><span><small>Stellplatz &amp; Parzelle</small><strong>${escapeHtml(pitchSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
       <div class="accordion-body">${pitchRows||'<div class="detail-empty">Noch keine Angaben zu Stellplatz und Parzelle gespeichert.</div>'}</div>
+    </details>
+    <details class="detail-accordion">
+      <summary><span><small>Sanitär &amp; Versorgung</small><strong>${escapeHtml(facilitySummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
+      <div class="accordion-body">${facilityRows||'<div class="detail-empty">Noch keine Angaben zu Sanitär und Versorgung gespeichert.</div>'}</div>
     </details>
   </div>`;
 }
@@ -350,7 +398,12 @@ function ensureCampingDetails(e){
   e.details.camping=e.details.camping||{};
   e.details.camping.season=e.details.camping.season||{};
   e.details.camping.pitch=e.details.camping.pitch||{};
+  e.details.camping.facilities=e.details.camping.facilities||{};
   return e.details.camping.season;
+}
+function ensureCampingFacilities(e){
+  ensureCampingDetails(e);
+  return e.details.camping.facilities;
 }
 function ensureCampingPitch(e){
   ensureCampingDetails(e);
@@ -386,9 +439,23 @@ function togglePitchConditionalFields(){
   const wWrap=document.getElementById('campingPitchWifiDetails');
   if(wWrap){wWrap.classList.toggle('is-disabled',!wifi);wWrap.querySelectorAll('input,select').forEach(el=>el.disabled=!wifi);}
 }
+function toggleFacilitiesConditionalFields(){
+  const pairs=[
+    ['campingFacilitiesShowers','campingFacilitiesShowerDetails'],
+    ['campingFacilitiesWasher','campingFacilitiesWasherDetails'],
+    ['campingFacilitiesDryer','campingFacilitiesDryerDetails'],
+    ['campingFacilitiesBread','campingFacilitiesBreadDetails']
+  ];
+  pairs.forEach(([selectId,wrapId])=>{
+    const active=document.getElementById(selectId)?.value==='yes';
+    const wrap=document.getElementById(wrapId);
+    if(wrap){wrap.classList.toggle('is-disabled',!active);wrap.querySelectorAll('input,select').forEach(el=>el.disabled=!active);}
+  });
+}
 function openCampingEditor(e){
   const s=ensureCampingDetails(e);
   const p=ensureCampingPitch(e);
+  const f=ensureCampingFacilities(e);
   setField('campingEditId',e.id); setField('campingName',e.name); setField('campingCountry',e.country); setField('campingRegion',e.region);
   setField('campingTravelRegions',(e.travelRegions||[]).join(', ')); setField('campingTown',e.town); setField('campingAddress',e.address); setField('campingSourceType',sourceLabel(e)); setField('campingSourceUrl',sourceUrl(e)); setField('campingPhone',e.phone); setField('campingEmail',e.email);
   setField('campingOperationType',s.operationType||'unknown'); setField('campingOpenFrom',s.openFrom); setField('campingOpenTo',s.openTo); setField('campingSummer',s.summerCamping||'unknown'); setField('campingWinter',s.winterCamping||'unknown'); setField('campingMinStay',s.minStay); setField('campingReservation',s.reservation||'unknown'); setField('campingSpontaneous',s.spontaneousArrival||'unknown'); setField('campingArrivalFrom',s.arrivalFrom); setField('campingArrivalTo',s.arrivalTo); setField('campingDepartureFrom',s.departureFrom); setField('campingDepartureTo',s.departureTo); setField('campingSeasonNotes',s.notes);
@@ -419,15 +486,51 @@ function openCampingEditor(e){
   setField('campingPitchPreferredNumber',p.preferredNumber);
   setField('campingPitchNotes',p.notes);
 
+  setField('campingFacilitiesWc',f.wc||'unknown');
+  setField('campingFacilitiesShowers',f.showers||'unknown');
+  setField('campingFacilitiesShowerBilling',f.showerBilling||'unknown');
+  setField('campingFacilitiesShowerPrice',f.showerPrice);
+  setField('campingFacilitiesWashCubicles',f.washCubicles||'unknown');
+  setField('campingFacilitiesFamilyBath',f.familyBath||'unknown');
+  setField('campingFacilitiesAccessible',f.accessibleSanitary||'unknown');
+  setField('campingFacilitiesChildren',f.childrenSanitary||'unknown');
+  setField('campingFacilitiesPrivateBath',f.privateBath||'unknown');
+  setField('campingFacilitiesHeated',f.heatedSanitary||'unknown');
+  setField('campingFacilitiesWasher',f.washer||'unknown');
+  setField('campingFacilitiesWasherBilling',f.washerBilling||'unknown');
+  setField('campingFacilitiesWasherPrice',f.washerPrice);
+  setField('campingFacilitiesDryer',f.dryer||'unknown');
+  setField('campingFacilitiesDryerBilling',f.dryerBilling||'unknown');
+  setField('campingFacilitiesDryerPrice',f.dryerPrice);
+  setField('campingFacilitiesDishwashing',f.dishwashing||'unknown');
+  setField('campingFacilitiesFreshWaterPoint',f.freshWaterPoint||'unknown');
+  setField('campingFacilitiesGreyWater',f.greyWater||'unknown');
+  setField('campingFacilitiesChemicalToilet',f.chemicalToilet||'unknown');
+  setField('campingFacilitiesFloorDrain',f.floorDrain||'unknown');
+  setField('campingFacilitiesWaste',f.wasteDisposal||'unknown');
+  setField('campingFacilitiesWasteSeparation',f.wasteSeparation||'unknown');
+  setField('campingFacilitiesShop',f.shop||'unknown');
+  setField('campingFacilitiesBread',f.breadService||'unknown');
+  setField('campingFacilitiesBreadSeason',f.breadSeason||'unknown');
+  setField('campingFacilitiesCampingShop',f.campingShop||'unknown');
+  setField('campingFacilitiesGas',f.gasSupply||'unknown');
+  setField('campingFacilitiesEbike',f.ebikeCharging||'unknown');
+  setField('campingFacilitiesEv',f.evCharging||'unknown');
+
   document.getElementById('detailDialog').close();
   toggleSeasonDateFields();
   togglePitchConditionalFields();
+  toggleFacilitiesConditionalFields();
   document.getElementById('campingEditDialog').showModal();
 }
 
 document.getElementById('campingOperationType').addEventListener('change',toggleSeasonDateFields);
 document.getElementById('campingPitchElectricity').addEventListener('change',togglePitchConditionalFields);
 document.getElementById('campingPitchWifi').addEventListener('change',togglePitchConditionalFields);
+document.getElementById('campingFacilitiesShowers').addEventListener('change',toggleFacilitiesConditionalFields);
+document.getElementById('campingFacilitiesWasher').addEventListener('change',toggleFacilitiesConditionalFields);
+document.getElementById('campingFacilitiesDryer').addEventListener('change',toggleFacilitiesConditionalFields);
+document.getElementById('campingFacilitiesBread').addEventListener('change',toggleFacilitiesConditionalFields);
 document.getElementById('closeCampingEdit').onclick=()=>document.getElementById('campingEditDialog').close();
 document.getElementById('cancelCampingEdit').onclick=()=>document.getElementById('campingEditDialog').close();
 document.getElementById('campingEditForm').addEventListener('submit',ev=>{
@@ -463,6 +566,38 @@ document.getElementById('campingEditForm').addEventListener('submit',ev=>{
   p.maxVehicleWeight=numericField('campingPitchMaxWeight');
   p.preferredNumber=document.getElementById('campingPitchPreferredNumber').value.trim();
   p.notes=document.getElementById('campingPitchNotes').value.trim();
+
+  const f=ensureCampingFacilities(e);
+  f.wc=document.getElementById('campingFacilitiesWc').value;
+  f.showers=document.getElementById('campingFacilitiesShowers').value;
+  f.showerBilling=f.showers==='yes'?document.getElementById('campingFacilitiesShowerBilling').value:'unknown';
+  f.showerPrice=f.showers==='yes'?numericField('campingFacilitiesShowerPrice'):null;
+  f.washCubicles=document.getElementById('campingFacilitiesWashCubicles').value;
+  f.familyBath=document.getElementById('campingFacilitiesFamilyBath').value;
+  f.accessibleSanitary=document.getElementById('campingFacilitiesAccessible').value;
+  f.childrenSanitary=document.getElementById('campingFacilitiesChildren').value;
+  f.privateBath=document.getElementById('campingFacilitiesPrivateBath').value;
+  f.heatedSanitary=document.getElementById('campingFacilitiesHeated').value;
+  f.washer=document.getElementById('campingFacilitiesWasher').value;
+  f.washerBilling=f.washer==='yes'?document.getElementById('campingFacilitiesWasherBilling').value:'unknown';
+  f.washerPrice=f.washer==='yes'?numericField('campingFacilitiesWasherPrice'):null;
+  f.dryer=document.getElementById('campingFacilitiesDryer').value;
+  f.dryerBilling=f.dryer==='yes'?document.getElementById('campingFacilitiesDryerBilling').value:'unknown';
+  f.dryerPrice=f.dryer==='yes'?numericField('campingFacilitiesDryerPrice'):null;
+  f.dishwashing=document.getElementById('campingFacilitiesDishwashing').value;
+  f.freshWaterPoint=document.getElementById('campingFacilitiesFreshWaterPoint').value;
+  f.greyWater=document.getElementById('campingFacilitiesGreyWater').value;
+  f.chemicalToilet=document.getElementById('campingFacilitiesChemicalToilet').value;
+  f.floorDrain=document.getElementById('campingFacilitiesFloorDrain').value;
+  f.wasteDisposal=document.getElementById('campingFacilitiesWaste').value;
+  f.wasteSeparation=document.getElementById('campingFacilitiesWasteSeparation').value;
+  f.shop=document.getElementById('campingFacilitiesShop').value;
+  f.breadService=document.getElementById('campingFacilitiesBread').value;
+  f.breadSeason=f.breadService==='yes'?document.getElementById('campingFacilitiesBreadSeason').value:'unknown';
+  f.campingShop=document.getElementById('campingFacilitiesCampingShop').value;
+  f.gasSupply=document.getElementById('campingFacilitiesGas').value;
+  f.ebikeCharging=document.getElementById('campingFacilitiesEbike').value;
+  f.evCharging=document.getElementById('campingFacilitiesEv').value;
 
   e.updatedAt=new Date().toISOString(); saveEntries(); document.getElementById('campingEditDialog').close(); render(); openDetail(e.id);
 });
