@@ -226,3 +226,9 @@ button{cursor:pointer}
 /* v0.3.4-r2 – Titelbild auch in Sammlungs-Karten */
 .place-thumb.has-image{padding:0;overflow:hidden}
 .place-thumb.has-image img{width:100%;height:100%;display:block;object-fit:cover}
+
+
+/* v0.3.5 - Campingplatz PDF */
+.pdf-action-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;margin:14px 0;padding:14px;border:1px solid var(--line);border-radius:16px;background:#f7faf6}
+.pdf-action-copy{min-width:0}.pdf-action-copy small{display:block;color:var(--muted);font-size:11px}.pdf-action-copy strong{display:block;margin-top:3px;font-size:15px}.pdf-action-copy span{display:block;margin-top:3px;color:var(--muted);font-size:11px;line-height:1.35}.pdf-action-btn{min-width:126px}
+@media(max-width:430px){.pdf-action-card{grid-template-columns:1fr}.pdf-action-btn{width:100%}}

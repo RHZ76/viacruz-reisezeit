@@ -269,7 +269,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.4 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.5 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -606,6 +606,68 @@ function campingDetailCards(e){
   </div>`;
 }
 
+function campingPdfActionHtml(){
+  return `<div class="pdf-action-card">
+    <div class="pdf-action-copy"><small>Campingplatz als PDF</small><strong>Drucken · Speichern · Teilen</strong><span>Erstellt eine übersichtliche A4-Zusammenfassung aller gespeicherten Angaben.</span></div>
+    <button class="btn primary pdf-action-btn" id="campingPdfDetail">PDF erstellen</button>
+  </div>`;
+}
+function campingPrintSectionsHtml(e){
+  const holder=document.createElement('div');
+  holder.innerHTML=campingDetailCards(e);
+  holder.querySelectorAll('.detail-empty').forEach(node=>node.remove());
+  holder.querySelectorAll('details.detail-accordion').forEach(section=>{
+    const body=section.querySelector('.accordion-body');
+    if(!body || !body.textContent.trim()){
+      section.remove();
+      return;
+    }
+    section.setAttribute('open','');
+    const summary=section.querySelector('summary');
+    const label=summary?.querySelector('small')?.textContent?.trim() || '';
+    if(summary) summary.innerHTML=`<h2>${escapeHtml(label)}</h2>`;
+    section.querySelectorAll('.accordion-chevron').forEach(node=>node.remove());
+  });
+  return holder.innerHTML;
+}
+function campingPrintGalleryHtml(e){
+  const media=(Array.isArray(e.media)?e.media:[]).filter(m=>m.kind==='image'&&m.dataUrl&&m.id!==e.titleImageId).slice(0,4);
+  if(!media.length)return '';
+  return `<section class="print-gallery-section"><h2>Weitere Bilder</h2><div class="print-gallery">${media.map(m=>`<figure><img src="${m.dataUrl}" alt="${escapeHtml(m.description||'Campingplatz-Bild')}" />${m.description?`<figcaption>${escapeHtml(m.description)}</figcaption>`:''}</figure>`).join('')}</div></section>`;
+}
+function openCampingPrint(e){
+  if(!e || e.type!=='camping')return;
+  const printWindow=window.open('','_blank');
+  if(!printWindow){
+    alert('Die PDF-Ansicht konnte nicht geöffnet werden. Bitte Pop-ups für diese Seite erlauben.');
+    return;
+  }
+  const title=campingTitleMedia(e);
+  const hero=title?.dataUrl?`<div class="print-hero"><img src="${title.dataUrl}" alt="${escapeHtml(title.description||e.name||'Campingplatz')}" /></div>`:'';
+  const sections=campingPrintSectionsHtml(e);
+  const gallery=campingPrintGalleryHtml(e);
+  const docTitle=`${e.name||'Campingplatz'} - viacruz Reisezeit`;
+  const generated=new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+  printWindow.document.open();
+  printWindow.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(docTitle)}</title><style>
+    :root{--text:#173126;--muted:#66756e;--line:#dce5dd;--soft:#f6f9f5;--accent:#2f6a4f}
+    *{box-sizing:border-box}html,body{margin:0;padding:0;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#eef2ee}body{padding:20px}
+    .toolbar{max-width:210mm;margin:0 auto 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:white;border:1px solid var(--line);border-radius:14px;padding:12px 14px}.toolbar div{min-width:0}.toolbar strong{display:block;font-size:14px}.toolbar span{display:block;margin-top:2px;color:var(--muted);font-size:12px}.toolbar button{border:0;border-radius:11px;background:var(--accent);color:white;font-weight:800;padding:11px 15px;white-space:nowrap;cursor:pointer}
+    .print-page{width:min(210mm,100%);margin:0 auto;background:white;padding:14mm 15mm 13mm;box-shadow:0 10px 40px rgba(17,45,31,.12)}
+    .print-hero{height:62mm;margin:-14mm -15mm 10mm;overflow:hidden}.print-hero img{width:100%;height:100%;object-fit:cover;display:block}
+    .print-kicker{font-size:10px;font-weight:850;letter-spacing:.11em;text-transform:uppercase;color:var(--accent)}h1{font-size:27px;line-height:1.08;margin:3px 0 4px}.print-location{font-size:13px;color:var(--muted);margin-bottom:8mm}.print-meta{font-size:9px;color:var(--muted);text-align:right;margin-bottom:4mm}
+    .detail-accordions{display:block}.detail-accordion{display:block;border:1px solid var(--line);border-radius:10px;margin:0 0 5mm;overflow:hidden;break-inside:auto;page-break-inside:auto}.detail-accordion summary{display:block;list-style:none;padding:4mm 4.5mm 3.2mm;background:var(--soft);border-bottom:1px solid var(--line);break-after:avoid;page-break-after:avoid}.detail-accordion summary::-webkit-details-marker{display:none}.detail-accordion summary h2,.print-gallery-section h2{font-size:14px;line-height:1.2;margin:0}.accordion-body{padding:2mm 4.5mm 3mm}.detail-row{display:grid;grid-template-columns:minmax(46mm,42%) 1fr;gap:5mm;padding:2.2mm 0;border-bottom:1px solid #edf1ed;align-items:start}.detail-row:last-child{border-bottom:0}.detail-row{break-inside:avoid;page-break-inside:avoid}.detail-row span{font-size:9.4px;color:var(--muted)}.detail-row strong{font-size:9.8px;line-height:1.35;text-align:right;overflow-wrap:anywhere}.detail-row a,.inline-link,.contact-link{color:var(--accent);text-decoration:none}
+    .detail-note{padding:2.8mm 0;border-bottom:1px solid #edf1ed;break-inside:avoid;page-break-inside:avoid}.detail-note:last-child{border-bottom:0}.detail-note>span{display:block;font-size:9.4px;color:var(--muted);margin-bottom:1mm}.detail-note p{font-size:9.8px;line-height:1.45;margin:0;white-space:normal}.visit-history{display:grid;gap:2.2mm;margin-top:2mm}.visit-history-card{border:1px solid var(--line);border-radius:7px;padding:2.5mm;break-inside:avoid;page-break-inside:avoid}.visit-history-head{display:flex;justify-content:space-between;gap:5mm;font-size:9.5px}.visit-history-card small{display:block;color:var(--muted);font-size:8.8px;margin-top:1mm}.visit-history-card p{margin-top:1.5mm}
+    .print-gallery-section{border:1px solid var(--line);border-radius:10px;padding:4mm 4.5mm;margin-top:5mm;break-inside:avoid-page}.print-gallery{display:grid;grid-template-columns:1fr 1fr;gap:3mm;margin-top:3mm}.print-gallery figure{margin:0;break-inside:avoid}.print-gallery img{width:100%;height:47mm;object-fit:cover;display:block;border-radius:7px}.print-gallery figcaption{font-size:8.7px;line-height:1.3;color:var(--muted);padding-top:1.2mm}
+    .print-footer{margin-top:8mm;padding-top:3mm;border-top:1px solid var(--line);font-size:8.7px;color:var(--muted);display:flex;justify-content:space-between;gap:10mm}.brand{font-weight:800;color:#53675c}.print-empty{padding:8mm;text-align:center;color:var(--muted);font-size:10px}
+    @page{size:A4;margin:11mm 0 10mm}@media print{body{background:white;padding:0}.toolbar{display:none!important}.print-page{width:100%;margin:0;box-shadow:none;padding:8mm 15mm 3mm}.print-hero{margin:-8mm -15mm 8mm;height:58mm}.detail-accordion{break-inside:auto;page-break-inside:auto}.print-gallery-section{break-inside:avoid-page;page-break-inside:avoid}.print-footer{position:relative}.print-meta{margin-bottom:3mm}}
+    @media(max-width:640px){body{padding:8px}.toolbar{align-items:stretch;flex-direction:column}.toolbar button{width:100%}.print-page{padding:10mm 7mm}.print-hero{margin:-10mm -7mm 8mm;height:54mm}.detail-row{grid-template-columns:1fr;gap:1mm}.detail-row strong{text-align:left}.print-gallery{grid-template-columns:1fr}}
+  </style></head><body><div class="toolbar"><div><strong>Campingplatz als PDF</strong><span>Drucken, als PDF sichern oder über die Systemfunktionen teilen.</span></div><button id="printNow">Drucken / PDF speichern</button></div><main class="print-page">${hero}<div class="print-kicker">Campingplatz</div><h1>${escapeHtml(e.name||'Campingplatz')}</h1><div class="print-location">${escapeHtml(locationText(e))}</div><div class="print-meta">Erstellt am ${escapeHtml(generated)}</div>${sections||'<div class="print-empty">Keine weiteren Angaben gespeichert.</div>'}${gallery}<footer class="print-footer"><span>Deine persönliche Campingplatz-Zusammenfassung</span><span class="brand">powered by viacruz</span></footer></main><script>document.getElementById('printNow').addEventListener('click',()=>window.print());<\/script></body></html>`);
+  printWindow.document.close();
+  printWindow.focus();
+  window.setTimeout(()=>{try{printWindow.print()}catch(_){}},550);
+}
+
 function openDetail(id){
   const e=state.entries.find(x=>x.id===id); if(!e)return;
   const content=document.getElementById('detailContent');
@@ -622,6 +684,7 @@ function openDetail(id){
     infoCards.push(`<div class="info-card source-card"><small>Quelle</small><strong>${escapeHtml(sourceText)}</strong>${srcUrl?`<a class="source-link" href="${escapeHtml(srcUrl)}" target="_blank" rel="noopener noreferrer">Quelle öffnen ↗</a>`:''}</div>`);
   }
   content.innerHTML=`${e.type==='camping'?campingHeroHtml(e):''}<div class="sheet-head"><div><div class="eyebrow">${typeLabels[e.type]}</div><h2>${escapeHtml(e.name)}</h2><div class="detail-meta">${escapeHtml(locationText(e))}</div></div><button class="icon-btn close" id="closeDetail">×</button></div>
+  ${e.type==='camping'?campingPdfActionHtml():''}
   ${infoCards.length?`<div class="detail-grid">${infoCards.join('')}</div>`:''}
   ${campingDetailCards(e)}
   ${e.type==='camping'?campingGalleryHtml(e):''}
@@ -630,6 +693,7 @@ function openDetail(id){
   <div class="detail-actions single-action"><button class="btn danger" id="trashDetail">In Papierkorb</button></div>`;
   const dlg=document.getElementById('detailDialog'); dlg.showModal();
   document.getElementById('closeDetail').onclick=()=>dlg.close();
+  if(e.type==='camping'){const pdfButton=document.getElementById('campingPdfDetail');if(pdfButton)pdfButton.onclick=()=>openCampingPrint(e);}
   document.getElementById('favoriteDetail').onclick=()=>{e.favorite=!e.favorite;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
   document.getElementById('wantDetail').onclick=()=>{e.wantToVisit=!e.wantToVisit;if(e.wantToVisit)e.visited=false;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
   document.getElementById('visitedDetail').onclick=()=>{e.visited=!e.visited;if(e.visited)e.wantToVisit=false;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
