@@ -152,7 +152,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.2.9 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.0 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -204,6 +204,7 @@ function campingDetailCards(e){
   const pitch=e.details?.camping?.pitch || {};
   const facilities=e.details?.camping?.facilities || {};
   const location=e.details?.camping?.location || {};
+  const leisure=e.details?.camping?.leisure || {};
   const regions=(e.travelRegions||[]).join(', ');
   const phone=e.phone ? `<a class="contact-link" href="${escapeHtml(phoneHref(e.phone))}">${escapeHtml(e.phone)}</a>` : '';
   const email=e.email ? `<a class="contact-link" href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>` : '';
@@ -351,6 +352,19 @@ function campingDetailCards(e){
     location.notes?`<div class="detail-note"><span>Ausflugsziele / Hinweise zur Umgebung</span><p>${escapeHtml(location.notes).replace(/\n/g,'<br>')}</p></div>`:''
   ].filter(Boolean).join('');
 
+  const gastro=leisure.gastronomy||{}, bw=leisure.bathingWellness||{}, sport=leisure.sport||{};
+  const seasonText=v=>v==='year-round'?'ganzjährig':v==='seasonal'?'saisonal':'';
+  const gastroText=x=>!x||!x.status||x.status==='unknown'?'':x.status==='no'?'Nicht vorhanden':['Vorhanden',seasonText(x.season)].filter(Boolean).join(' · ');
+  const beachLabels={sand:'Sandstrand',pebble:'Kiesstrand',rock:'Felsstrand',lawn:'Liegewiese'};
+  const beachText=()=>{const b=knownYesNo(bw.beach,'Vorhanden','Nicht vorhanden');if(!b||bw.beach!=='yes')return b;const t=(bw.beachTypes||[]).map(v=>beachLabels[v]).filter(Boolean).join(', ');return [b,t].filter(Boolean).join(' · ');};
+  const characterLabels={quiet:'Ruhig',lively:'Lebhaft',family:'Familienfreundlich',nature:'Naturnah',comfort:'Komfortorientiert',rustic:'Rustikal'}, sizeLabels={small:'Klein',medium:'Mittel',large:'Groß'};
+  const leisureRows=[
+    detailRow('Restaurant',gastroText(gastro.restaurant)),detailRow('Imbiss',gastroText(gastro.snack)),detailRow('Bar',gastroText(gastro.bar)),detailRow('Café',gastroText(gastro.cafe)),detailRow('Biergarten',gastroText(gastro.beerGarden)),detailRow('Eisdiele',gastroText(gastro.iceCream)),
+    detailRow('Schwimmbad / Freibad',knownYesNo(bw.outdoorPool,'Vorhanden','Nicht vorhanden')),detailRow('Hallenbad',knownYesNo(bw.indoorPool,'Vorhanden','Nicht vorhanden')),detailRow('Sauna',knownYesNo(bw.sauna,'Vorhanden','Nicht vorhanden')),detailRow('Wellnessbereich',knownYesNo(bw.wellness,'Vorhanden','Nicht vorhanden')),detailRow('Direkte Bademöglichkeit',knownYesNo(bw.swimmingAccess,'Vorhanden','Nicht vorhanden')),detailRow('Strand',beachText()),
+    detailRow('Spielplatz',knownYesNo(sport.playground,'Vorhanden','Nicht vorhanden')),detailRow('Tischtennis',knownYesNo(sport.tableTennis,'Vorhanden','Nicht vorhanden')),detailRow('Tennis',knownYesNo(sport.tennis,'Vorhanden','Nicht vorhanden')),detailRow('Minigolf',knownYesNo(sport.miniGolf,'Vorhanden','Nicht vorhanden')),detailRow('Fitness',knownYesNo(sport.fitness,'Vorhanden','Nicht vorhanden')),detailRow('Fahrradverleih',knownYesNo(sport.bikeRental,'Vorhanden','Nicht vorhanden')),detailRow('E-Bike-Verleih',knownYesNo(sport.eBikeRental,'Vorhanden','Nicht vorhanden')),detailRow('Wassersport',knownYesNo(sport.waterSports,'Vorhanden','Nicht vorhanden')),detailRow('Animation / Unterhaltung',knownYesNo(sport.entertainment,'Vorhanden','Nicht vorhanden')),detailRow('Kinderprogramm',knownYesNo(sport.kidsProgram,'Vorhanden','Nicht vorhanden')),
+    detailRow('Charakter',(leisure.character||[]).map(v=>characterLabels[v]).filter(Boolean).join(', ')),detailRow('Größe',leisure.size&&leisure.size!=='unknown'?sizeLabels[leisure.size]:''),detailRow('Anzahl Stellplätze',leisure.pitchCount!=null?String(leisure.pitchCount):'')
+  ].filter(Boolean).join('');
+
   const basicSummary=[e.town||e.region||e.country,regions].filter(Boolean).slice(0,2).join(' · ') || 'Grunddaten';
   const staySummary=[op,period,reservation].filter(Boolean).slice(0,2).join(' · ') || 'Aufenthalt';
   const pitchSummaryParts=[
@@ -370,6 +384,7 @@ function campingDetailCards(e){
     ...(location.features||[]).map(v=>campingLocationLabels[v]).filter(Boolean),
     ld.centre?.km!=null?`Zentrum ${formatNumber(ld.centre.km)} km`:''
   ].filter(Boolean).slice(0,3).join(' · ') || 'Lage & Umgebung';
+  const leisureSummary=[gastro.restaurant?.status==='yes'?'Restaurant':'',bw.outdoorPool==='yes'?'Freibad':'',bw.indoorPool==='yes'?'Hallenbad':'',sport.playground==='yes'?'Spielplatz':'',...(leisure.character||[]).map(v=>characterLabels[v]).filter(Boolean)].filter(Boolean).slice(0,3).join(' · ') || 'Freizeit & Gastronomie';
 
   return `<div class="detail-accordions">
     <details class="detail-accordion">
@@ -391,6 +406,10 @@ function campingDetailCards(e){
     <details class="detail-accordion">
       <summary><span><small>Lage &amp; Umgebung</small><strong>${escapeHtml(locationSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
       <div class="accordion-body">${locationRows||'<div class="detail-empty">Noch keine Angaben zu Lage und Umgebung gespeichert.</div>'}</div>
+    </details>
+    <details class="detail-accordion">
+      <summary><span><small>Freizeit &amp; Gastronomie</small><strong>${escapeHtml(leisureSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
+      <div class="accordion-body">${leisureRows||'<div class="detail-empty">Noch keine Angaben zu Freizeit und Gastronomie gespeichert.</div>'}</div>
     </details>
   </div>`;
 }
@@ -439,11 +458,16 @@ function ensureCampingDetails(e){
   e.details.camping.pitch=e.details.camping.pitch||{};
   e.details.camping.facilities=e.details.camping.facilities||{};
   e.details.camping.location=e.details.camping.location||{};
+  e.details.camping.leisure=e.details.camping.leisure||{};
   return e.details.camping.season;
 }
 function ensureCampingLocation(e){
   ensureCampingDetails(e);
   return e.details.camping.location;
+}
+function ensureCampingLeisure(e){
+  ensureCampingDetails(e);
+  return e.details.camping.leisure;
 }
 function ensureCampingFacilities(e){
   ensureCampingDetails(e);
@@ -495,6 +519,16 @@ function toggleFacilitiesConditionalFields(){
     const wrap=document.getElementById(wrapId);
     if(wrap){wrap.classList.toggle('is-disabled',!active);wrap.querySelectorAll('input,select').forEach(el=>el.disabled=!active);}
   });
+}
+function updateLeisureConditionalFields(){
+  ['Restaurant','Snack','Bar','Cafe','BeerGarden','IceCream'].forEach(id=>{
+    const status=document.getElementById('campingLeisure'+id);
+    const label=document.querySelector(`[data-leisure-season="${id}"]`);
+    if(label) label.hidden=!status || status.value!=='yes';
+  });
+  const beach=document.getElementById('campingLeisureBeach');
+  const wrap=document.getElementById('campingBeachTypesWrap');
+  if(wrap) wrap.hidden=!beach || beach.value!=='yes';
 }
 function openCampingEditor(e){
   const s=ensureCampingDetails(e);
@@ -576,6 +610,16 @@ function openCampingEditor(e){
   setField('campingMobilityHiking',m.hiking||'unknown'); setField('campingMobilityCableCar',m.cableCar||'unknown');
   setField('campingMobilityFerry',m.ferry||'unknown'); setField('campingLocationNotes',l.notes);
 
+  const leisure=ensureCampingLeisure(e), gastro=leisure.gastronomy||{};
+  const gastroIds={restaurant:'Restaurant',snack:'Snack',bar:'Bar',cafe:'Cafe',beerGarden:'BeerGarden',iceCream:'IceCream'};
+  Object.entries(gastroIds).forEach(([key,id])=>{setField('campingLeisure'+id,gastro[key]?.status||'unknown');setField('campingLeisure'+id+'Season',gastro[key]?.season||'unknown');});
+  const bw=leisure.bathingWellness||{};
+  setField('campingLeisureOutdoorPool',bw.outdoorPool||'unknown');setField('campingLeisureIndoorPool',bw.indoorPool||'unknown');setField('campingLeisureSauna',bw.sauna||'unknown');setField('campingLeisureWellness',bw.wellness||'unknown');setField('campingLeisureSwimmingAccess',bw.swimmingAccess||'unknown');setField('campingLeisureBeach',bw.beach||'unknown');setCheckboxGroup('campingBeachTypes',bw.beachTypes);
+  const sport=leisure.sport||{}, sportIds={playground:'Playground',tableTennis:'TableTennis',tennis:'Tennis',miniGolf:'MiniGolf',fitness:'Fitness',bikeRental:'BikeRental',eBikeRental:'EBikeRental',waterSports:'WaterSports',entertainment:'Entertainment',kidsProgram:'KidsProgram'};
+  Object.entries(sportIds).forEach(([key,id])=>setField('campingLeisure'+id,sport[key]||'unknown'));
+  setCheckboxGroup('campingLeisureCharacter',leisure.character);setField('campingLeisureSize',leisure.size||'unknown');setField('campingLeisurePitchCount',leisure.pitchCount);
+  updateLeisureConditionalFields();
+
   document.getElementById('detailDialog').close();
   toggleSeasonDateFields();
   togglePitchConditionalFields();
@@ -592,6 +636,8 @@ document.getElementById('campingFacilitiesDryer').addEventListener('change',togg
 document.getElementById('campingFacilitiesBread').addEventListener('change',toggleFacilitiesConditionalFields);
 document.getElementById('closeCampingEdit').onclick=()=>document.getElementById('campingEditDialog').close();
 document.getElementById('cancelCampingEdit').onclick=()=>document.getElementById('campingEditDialog').close();
+['Restaurant','Snack','Bar','Cafe','BeerGarden','IceCream'].forEach(id=>document.getElementById('campingLeisure'+id)?.addEventListener('change',updateLeisureConditionalFields));
+document.getElementById('campingLeisureBeach')?.addEventListener('change',updateLeisureConditionalFields);
 document.getElementById('campingEditForm').addEventListener('submit',ev=>{
   ev.preventDefault();
   const e=state.entries.find(x=>x.id===document.getElementById('campingEditId').value); if(!e)return;
@@ -678,6 +724,14 @@ document.getElementById('campingEditForm').addEventListener('submit',ev=>{
     ferry:document.getElementById('campingMobilityFerry').value
   };
   l.notes=document.getElementById('campingLocationNotes').value.trim();
+
+  const leisure=ensureCampingLeisure(e), gastroIds={restaurant:'Restaurant',snack:'Snack',bar:'Bar',cafe:'Cafe',beerGarden:'BeerGarden',iceCream:'IceCream'};
+  leisure.gastronomy={}; Object.entries(gastroIds).forEach(([key,id])=>{const status=document.getElementById('campingLeisure'+id).value;leisure.gastronomy[key]={status,season:status==='yes'?document.getElementById('campingLeisure'+id+'Season').value:'unknown'};});
+  const beach=document.getElementById('campingLeisureBeach').value;
+  leisure.bathingWellness={outdoorPool:document.getElementById('campingLeisureOutdoorPool').value,indoorPool:document.getElementById('campingLeisureIndoorPool').value,sauna:document.getElementById('campingLeisureSauna').value,wellness:document.getElementById('campingLeisureWellness').value,swimmingAccess:document.getElementById('campingLeisureSwimmingAccess').value,beach,beachTypes:beach==='yes'?getCheckboxGroup('campingBeachTypes'):[]};
+  const sportIds={playground:'Playground',tableTennis:'TableTennis',tennis:'Tennis',miniGolf:'MiniGolf',fitness:'Fitness',bikeRental:'BikeRental',eBikeRental:'EBikeRental',waterSports:'WaterSports',entertainment:'Entertainment',kidsProgram:'KidsProgram'};
+  leisure.sport={};Object.entries(sportIds).forEach(([key,id])=>leisure.sport[key]=document.getElementById('campingLeisure'+id).value);
+  leisure.character=getCheckboxGroup('campingLeisureCharacter');leisure.size=document.getElementById('campingLeisureSize').value;leisure.pitchCount=numericField('campingLeisurePitchCount');
 
   e.updatedAt=new Date().toISOString(); saveEntries(); document.getElementById('campingEditDialog').close(); render(); openDetail(e.id);
 });

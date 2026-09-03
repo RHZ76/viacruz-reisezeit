@@ -155,3 +155,6 @@ button{cursor:pointer}
   .distance-grid{grid-template-columns:minmax(100px,1.1fr) minmax(64px,.65fr) minmax(96px,.9fr);gap:6px}
   .distance-grid input,.distance-grid select{padding-left:9px;padding-right:9px}
 }
+
+/* v0.3.0 – Freizeit & Gastronomie */
+.conditional-fields[hidden],label[hidden]{display:none!important}

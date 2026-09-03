@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.2.9-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.0-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -790,6 +790,64 @@
         </label>
       </section>
 
+
+      <section class="edit-section">
+        <div class="edit-section-head"><h3>Freizeit &amp; Gastronomie</h3><p>Gastronomie, Baden, Wellness, Freizeitangebote sowie Charakter und Größe.</p></div>
+
+        <div class="field-group"><div class="field-group-title">Gastronomie</div><div class="grid-2">
+          <label>Restaurant<select id="campingLeisureRestaurant"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label data-leisure-season="Restaurant">Restaurant – Betrieb<select id="campingLeisureRestaurantSeason"><option value="unknown">Unbekannt</option><option value="year-round">Ganzjährig</option><option value="seasonal">Saisonal</option></select></label>
+          <label>Imbiss<select id="campingLeisureSnack"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label data-leisure-season="Snack">Imbiss – Betrieb<select id="campingLeisureSnackSeason"><option value="unknown">Unbekannt</option><option value="year-round">Ganzjährig</option><option value="seasonal">Saisonal</option></select></label>
+          <label>Bar<select id="campingLeisureBar"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label data-leisure-season="Bar">Bar – Betrieb<select id="campingLeisureBarSeason"><option value="unknown">Unbekannt</option><option value="year-round">Ganzjährig</option><option value="seasonal">Saisonal</option></select></label>
+          <label>Café<select id="campingLeisureCafe"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label data-leisure-season="Cafe">Café – Betrieb<select id="campingLeisureCafeSeason"><option value="unknown">Unbekannt</option><option value="year-round">Ganzjährig</option><option value="seasonal">Saisonal</option></select></label>
+          <label>Biergarten<select id="campingLeisureBeerGarden"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label data-leisure-season="BeerGarden">Biergarten – Betrieb<select id="campingLeisureBeerGardenSeason"><option value="unknown">Unbekannt</option><option value="year-round">Ganzjährig</option><option value="seasonal">Saisonal</option></select></label>
+          <label>Eisdiele<select id="campingLeisureIceCream"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label data-leisure-season="IceCream">Eisdiele – Betrieb<select id="campingLeisureIceCreamSeason"><option value="unknown">Unbekannt</option><option value="year-round">Ganzjährig</option><option value="seasonal">Saisonal</option></select></label>
+        </div></div>
+
+        <div class="field-group"><div class="field-group-title">Baden &amp; Wellness</div><div class="grid-2">
+          <label>Schwimmbad / Freibad<select id="campingLeisureOutdoorPool"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label>Hallenbad<select id="campingLeisureIndoorPool"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label>Sauna<select id="campingLeisureSauna"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label>Wellnessbereich<select id="campingLeisureWellness"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label>Direkte Bademöglichkeit<select id="campingLeisureSwimmingAccess"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label>Strand<select id="campingLeisureBeach"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+        </div>
+        <div class="conditional-fields" id="campingBeachTypesWrap"><div class="field-group-title">Strandart <span class="field-help-inline">Mehrfachauswahl möglich</span></div>
+          <div class="option-grid" id="campingBeachTypes">
+            <label class="check-option"><input type="checkbox" value="sand">Sandstrand</label><label class="check-option"><input type="checkbox" value="pebble">Kiesstrand</label>
+            <label class="check-option"><input type="checkbox" value="rock">Felsstrand</label><label class="check-option"><input type="checkbox" value="lawn">Liegewiese</label>
+          </div></div></div>
+
+        <div class="field-group"><div class="field-group-title">Sport &amp; Freizeit</div><div class="grid-2">
+          <label>Spielplatz<select id="campingLeisurePlayground"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label>Tischtennis<select id="campingLeisureTableTennis"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label>Tennis<select id="campingLeisureTennis"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label>Minigolf<select id="campingLeisureMiniGolf"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label>Fitness<select id="campingLeisureFitness"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label>Fahrradverleih<select id="campingLeisureBikeRental"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label>E-Bike-Verleih<select id="campingLeisureEBikeRental"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label>Wassersport<select id="campingLeisureWaterSports"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label>Animation / Unterhaltung<select id="campingLeisureEntertainment"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <label>Kinderprogramm<select id="campingLeisureKidsProgram"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+        </div></div>
+
+        <div class="field-group"><div class="field-group-title">Charakter <span class="field-help-inline">Mehrfachauswahl möglich</span></div>
+          <div class="option-grid" id="campingLeisureCharacter">
+            <label class="check-option"><input type="checkbox" value="quiet">Ruhig</label><label class="check-option"><input type="checkbox" value="lively">Lebhaft</label>
+            <label class="check-option"><input type="checkbox" value="family">Familienfreundlich</label><label class="check-option"><input type="checkbox" value="nature">Naturnah</label>
+            <label class="check-option"><input type="checkbox" value="comfort">Komfortorientiert</label><label class="check-option"><input type="checkbox" value="rustic">Rustikal</label>
+          </div></div>
+        <div class="grid-2">
+          <label>Größe des Campingplatzes<select id="campingLeisureSize"><option value="unknown">Unbekannt</option><option value="small">Klein</option><option value="medium">Mittel</option><option value="large">Groß</option></select></label>
+          <label>Anzahl Stellplätze <span class="field-help-inline">optional</span><input id="campingLeisurePitchCount" type="number" min="0" step="1" inputmode="numeric"></label>
+        </div>
+      </section>
+
       <div class="sheet-actions sticky-sheet-actions">
         <button type="button" class="btn secondary" id="cancelCampingEdit">Abbrechen</button>
         <button type="submit" class="btn primary">Änderungen speichern</button>
@@ -797,6 +855,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.2.9-r1"></script>
+  <script src="app.js?v=0.3.0-r1"></script>
 </body>
 </html>
