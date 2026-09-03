@@ -152,7 +152,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.2.8 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.2.9 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -203,6 +203,7 @@ function campingDetailCards(e){
   const season=e.details?.camping?.season || {};
   const pitch=e.details?.camping?.pitch || {};
   const facilities=e.details?.camping?.facilities || {};
+  const location=e.details?.camping?.location || {};
   const regions=(e.travelRegions||[]).join(', ');
   const phone=e.phone ? `<a class="contact-link" href="${escapeHtml(phoneHref(e.phone))}">${escapeHtml(e.phone)}</a>` : '';
   const email=e.email ? `<a class="contact-link" href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>` : '';
@@ -320,6 +321,36 @@ function campingDetailCards(e){
     detailRow('E-Auto-Lademöglichkeit',knownYesNo(facilities.evCharging,'Vorhanden','Nicht vorhanden'))
   ].filter(Boolean).join('');
 
+  const campingLocationLabels={sea:'Meer',lake:'See',river:'Fluss',mountains:'Berge',forest:'Wald',rural:'Ländlich',city:'Stadt','city-edge':'Stadtrand','beach-nearby':'Strandnähe',waterfront:'Direkt am Wasser','water-nearby':'Wasser in der Nähe','town-centre':'Direkt am Ortszentrum',remote:'Abgelegen'};
+  const locationFeatures=(location.features||[]).map(v=>campingLocationLabels[v]).filter(Boolean).join(', ');
+  const ld=location.distances||{};
+  const distanceText=(item)=>{
+    if(!item) return '';
+    const parts=[];
+    if(item.km!=null) parts.push(`${formatNumber(item.km)} km`);
+    if(item.walkable==='yes') parts.push('fußläufig');
+    else if(item.walkable==='no') parts.push('nicht fußläufig');
+    return parts.join(' · ');
+  };
+  const lm=location.mobility||{};
+  const locationRows=[
+    detailRow('Lage',locationFeatures),
+    detailRow('Ortszentrum',distanceText(ld.centre)),
+    detailRow('Supermarkt',distanceText(ld.supermarket)),
+    detailRow('Restaurant',distanceText(ld.restaurant)),
+    detailRow('Bäckerei',distanceText(ld.bakery)),
+    detailRow('Strand / See',distanceText(ld.water)),
+    detailRow('Sehenswürdigkeiten',distanceText(ld.sights)),
+    detailRow('ÖPNV',knownYesNo(lm.publicTransport,'Vorhanden','Nicht vorhanden')),
+    detailRow('Bushaltestelle',knownYesNo(lm.bus,'Vorhanden','Nicht vorhanden')),
+    detailRow('Bahnhof',knownYesNo(lm.train,'Vorhanden','Nicht vorhanden')),
+    detailRow('Radwege',knownYesNo(lm.cycle,'Vorhanden','Nicht vorhanden')),
+    detailRow('Wanderwege',knownYesNo(lm.hiking,'Vorhanden','Nicht vorhanden')),
+    detailRow('Seilbahn',knownYesNo(lm.cableCar,'Vorhanden','Nicht vorhanden')),
+    detailRow('Fähranleger / Hafen',knownYesNo(lm.ferry,'Vorhanden','Nicht vorhanden')),
+    location.notes?`<div class="detail-note"><span>Ausflugsziele / Hinweise zur Umgebung</span><p>${escapeHtml(location.notes).replace(/\n/g,'<br>')}</p></div>`:''
+  ].filter(Boolean).join('');
+
   const basicSummary=[e.town||e.region||e.country,regions].filter(Boolean).slice(0,2).join(' · ') || 'Grunddaten';
   const staySummary=[op,period,reservation].filter(Boolean).slice(0,2).join(' · ') || 'Aufenthalt';
   const pitchSummaryParts=[
@@ -335,6 +366,10 @@ function campingDetailCards(e){
     facilities.washer==='yes'?'Waschmaschine':'',
     facilities.breadService==='yes'?'Brötchenservice':''
   ].filter(Boolean).slice(0,3).join(' · ') || 'Sanitär & Versorgung';
+  const locationSummary=[
+    ...(location.features||[]).map(v=>campingLocationLabels[v]).filter(Boolean),
+    ld.centre?.km!=null?`Zentrum ${formatNumber(ld.centre.km)} km`:''
+  ].filter(Boolean).slice(0,3).join(' · ') || 'Lage & Umgebung';
 
   return `<div class="detail-accordions">
     <details class="detail-accordion">
@@ -352,6 +387,10 @@ function campingDetailCards(e){
     <details class="detail-accordion">
       <summary><span><small>Sanitär &amp; Versorgung</small><strong>${escapeHtml(facilitySummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
       <div class="accordion-body">${facilityRows||'<div class="detail-empty">Noch keine Angaben zu Sanitär und Versorgung gespeichert.</div>'}</div>
+    </details>
+    <details class="detail-accordion">
+      <summary><span><small>Lage &amp; Umgebung</small><strong>${escapeHtml(locationSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
+      <div class="accordion-body">${locationRows||'<div class="detail-empty">Noch keine Angaben zu Lage und Umgebung gespeichert.</div>'}</div>
     </details>
   </div>`;
 }
@@ -399,7 +438,12 @@ function ensureCampingDetails(e){
   e.details.camping.season=e.details.camping.season||{};
   e.details.camping.pitch=e.details.camping.pitch||{};
   e.details.camping.facilities=e.details.camping.facilities||{};
+  e.details.camping.location=e.details.camping.location||{};
   return e.details.camping.season;
+}
+function ensureCampingLocation(e){
+  ensureCampingDetails(e);
+  return e.details.camping.location;
 }
 function ensureCampingFacilities(e){
   ensureCampingDetails(e);
@@ -456,6 +500,7 @@ function openCampingEditor(e){
   const s=ensureCampingDetails(e);
   const p=ensureCampingPitch(e);
   const f=ensureCampingFacilities(e);
+  const l=ensureCampingLocation(e);
   setField('campingEditId',e.id); setField('campingName',e.name); setField('campingCountry',e.country); setField('campingRegion',e.region);
   setField('campingTravelRegions',(e.travelRegions||[]).join(', ')); setField('campingTown',e.town); setField('campingAddress',e.address); setField('campingSourceType',sourceLabel(e)); setField('campingSourceUrl',sourceUrl(e)); setField('campingPhone',e.phone); setField('campingEmail',e.email);
   setField('campingOperationType',s.operationType||'unknown'); setField('campingOpenFrom',s.openFrom); setField('campingOpenTo',s.openTo); setField('campingSummer',s.summerCamping||'unknown'); setField('campingWinter',s.winterCamping||'unknown'); setField('campingMinStay',s.minStay); setField('campingReservation',s.reservation||'unknown'); setField('campingSpontaneous',s.spontaneousArrival||'unknown'); setField('campingArrivalFrom',s.arrivalFrom); setField('campingArrivalTo',s.arrivalTo); setField('campingDepartureFrom',s.departureFrom); setField('campingDepartureTo',s.departureTo); setField('campingSeasonNotes',s.notes);
@@ -516,6 +561,20 @@ function openCampingEditor(e){
   setField('campingFacilitiesGas',f.gasSupply||'unknown');
   setField('campingFacilitiesEbike',f.ebikeCharging||'unknown');
   setField('campingFacilitiesEv',f.evCharging||'unknown');
+
+  setCheckboxGroup('campingLocationFeatures',l.features);
+  const d=l.distances||{};
+  setField('campingDistanceCentre',d.centre?.km); setField('campingWalkCentre',d.centre?.walkable||'unknown');
+  setField('campingDistanceSupermarket',d.supermarket?.km); setField('campingWalkSupermarket',d.supermarket?.walkable||'unknown');
+  setField('campingDistanceRestaurant',d.restaurant?.km); setField('campingWalkRestaurant',d.restaurant?.walkable||'unknown');
+  setField('campingDistanceBakery',d.bakery?.km); setField('campingWalkBakery',d.bakery?.walkable||'unknown');
+  setField('campingDistanceWater',d.water?.km); setField('campingWalkWater',d.water?.walkable||'unknown');
+  setField('campingDistanceSights',d.sights?.km); setField('campingWalkSights',d.sights?.walkable||'unknown');
+  const m=l.mobility||{};
+  setField('campingMobilityPublicTransport',m.publicTransport||'unknown'); setField('campingMobilityBus',m.bus||'unknown');
+  setField('campingMobilityTrain',m.train||'unknown'); setField('campingMobilityCycle',m.cycle||'unknown');
+  setField('campingMobilityHiking',m.hiking||'unknown'); setField('campingMobilityCableCar',m.cableCar||'unknown');
+  setField('campingMobilityFerry',m.ferry||'unknown'); setField('campingLocationNotes',l.notes);
 
   document.getElementById('detailDialog').close();
   toggleSeasonDateFields();
@@ -598,6 +657,27 @@ document.getElementById('campingEditForm').addEventListener('submit',ev=>{
   f.gasSupply=document.getElementById('campingFacilitiesGas').value;
   f.ebikeCharging=document.getElementById('campingFacilitiesEbike').value;
   f.evCharging=document.getElementById('campingFacilitiesEv').value;
+
+  const l=ensureCampingLocation(e);
+  l.features=getCheckboxGroup('campingLocationFeatures');
+  l.distances={
+    centre:{km:numericField('campingDistanceCentre'),walkable:document.getElementById('campingWalkCentre').value},
+    supermarket:{km:numericField('campingDistanceSupermarket'),walkable:document.getElementById('campingWalkSupermarket').value},
+    restaurant:{km:numericField('campingDistanceRestaurant'),walkable:document.getElementById('campingWalkRestaurant').value},
+    bakery:{km:numericField('campingDistanceBakery'),walkable:document.getElementById('campingWalkBakery').value},
+    water:{km:numericField('campingDistanceWater'),walkable:document.getElementById('campingWalkWater').value},
+    sights:{km:numericField('campingDistanceSights'),walkable:document.getElementById('campingWalkSights').value}
+  };
+  l.mobility={
+    publicTransport:document.getElementById('campingMobilityPublicTransport').value,
+    bus:document.getElementById('campingMobilityBus').value,
+    train:document.getElementById('campingMobilityTrain').value,
+    cycle:document.getElementById('campingMobilityCycle').value,
+    hiking:document.getElementById('campingMobilityHiking').value,
+    cableCar:document.getElementById('campingMobilityCableCar').value,
+    ferry:document.getElementById('campingMobilityFerry').value
+  };
+  l.notes=document.getElementById('campingLocationNotes').value.trim();
 
   e.updatedAt=new Date().toISOString(); saveEntries(); document.getElementById('campingEditDialog').close(); render(); openDetail(e.id);
 });

@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.2.8-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.2.9-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -102,8 +102,7 @@
     <form method="dialog" id="campingEditForm" class="sheet-card edit-sheet-card">
       <div class="sheet-head sticky-sheet-head">
         <div>
-          <div class="eyebrow">Campingplatz bearbeiten</div>
-          <h2>Grunddaten & Saison</h2>
+          <h2>Campingplatz bearbeiten</h2>
         </div>
         <button type="button" class="icon-btn close" id="closeCampingEdit" aria-label="Schließen">×</button>
       </div>
@@ -720,6 +719,77 @@
         </div>
       </section>
 
+
+      <section class="edit-section">
+        <div class="edit-section-head">
+          <h3>Lage &amp; Umgebung</h3>
+          <p>Lage, Entfernungen, Erreichbarkeit und Ausflugsziele.</p>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Lage des Campingplatzes <span class="field-help-inline">Mehrfachauswahl möglich</span></div>
+          <div class="option-grid" id="campingLocationFeatures">
+            <label class="check-option"><input type="checkbox" value="sea" />Meer</label>
+            <label class="check-option"><input type="checkbox" value="lake" />See</label>
+            <label class="check-option"><input type="checkbox" value="river" />Fluss</label>
+            <label class="check-option"><input type="checkbox" value="mountains" />Berge</label>
+            <label class="check-option"><input type="checkbox" value="forest" />Wald</label>
+            <label class="check-option"><input type="checkbox" value="rural" />Ländlich</label>
+            <label class="check-option"><input type="checkbox" value="city" />Stadt</label>
+            <label class="check-option"><input type="checkbox" value="city-edge" />Stadtrand</label>
+            <label class="check-option"><input type="checkbox" value="beach-nearby" />Strandnähe</label>
+            <label class="check-option"><input type="checkbox" value="waterfront" />Direkt am Wasser</label>
+            <label class="check-option"><input type="checkbox" value="water-nearby" />Wasser in der Nähe</label>
+            <label class="check-option"><input type="checkbox" value="town-centre" />Direkt am Ortszentrum</label>
+            <label class="check-option"><input type="checkbox" value="remote" />Abgelegen</label>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Entfernungen &amp; Fußläufigkeit</div>
+          <div class="distance-grid">
+            <div class="distance-head">Ziel</div><div class="distance-head">km</div><div class="distance-head">Fußläufig</div>
+            <div class="distance-label">Ortszentrum</div><input id="campingDistanceCentre" type="number" min="0" step="0.1" inputmode="decimal" aria-label="Entfernung Ortszentrum in km" /><select id="campingWalkCentre" aria-label="Ortszentrum fußläufig"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select>
+            <div class="distance-label">Supermarkt</div><input id="campingDistanceSupermarket" type="number" min="0" step="0.1" inputmode="decimal" aria-label="Entfernung Supermarkt in km" /><select id="campingWalkSupermarket" aria-label="Supermarkt fußläufig"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select>
+            <div class="distance-label">Restaurant</div><input id="campingDistanceRestaurant" type="number" min="0" step="0.1" inputmode="decimal" aria-label="Entfernung Restaurant in km" /><select id="campingWalkRestaurant" aria-label="Restaurant fußläufig"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select>
+            <div class="distance-label">Bäckerei</div><input id="campingDistanceBakery" type="number" min="0" step="0.1" inputmode="decimal" aria-label="Entfernung Bäckerei in km" /><select id="campingWalkBakery" aria-label="Bäckerei fußläufig"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select>
+            <div class="distance-label">Strand / See</div><input id="campingDistanceWater" type="number" min="0" step="0.1" inputmode="decimal" aria-label="Entfernung Strand oder See in km" /><select id="campingWalkWater" aria-label="Strand oder See fußläufig"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select>
+            <div class="distance-label">Sehenswürdigkeiten</div><input id="campingDistanceSights" type="number" min="0" step="0.1" inputmode="decimal" aria-label="Entfernung Sehenswürdigkeiten in km" /><select id="campingWalkSights" aria-label="Sehenswürdigkeiten fußläufig"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Mobilität &amp; Umgebung</div>
+          <div class="grid-2">
+            <label>ÖPNV
+              <select id="campingMobilityPublicTransport"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select>
+            </label>
+            <label>Bushaltestelle
+              <select id="campingMobilityBus"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select>
+            </label>
+            <label>Bahnhof
+              <select id="campingMobilityTrain"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select>
+            </label>
+            <label>Radwege
+              <select id="campingMobilityCycle"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select>
+            </label>
+            <label>Wanderwege
+              <select id="campingMobilityHiking"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select>
+            </label>
+            <label>Seilbahn
+              <select id="campingMobilityCableCar"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select>
+            </label>
+            <label>Fähranleger / Hafen
+              <select id="campingMobilityFerry"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select>
+            </label>
+          </div>
+        </div>
+
+        <label>Ausflugsziele / Hinweise zur Umgebung
+          <textarea id="campingLocationNotes" rows="4" placeholder="z. B. Altstadt, Therme, schöne Radtour, Ausflugsschiff …"></textarea>
+        </label>
+      </section>
+
       <div class="sheet-actions sticky-sheet-actions">
         <button type="button" class="btn secondary" id="cancelCampingEdit">Abbrechen</button>
         <button type="submit" class="btn primary">Änderungen speichern</button>
@@ -727,6 +797,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.2.8-r1"></script>
+  <script src="app.js?v=0.2.9-r1"></script>
 </body>
 </html>

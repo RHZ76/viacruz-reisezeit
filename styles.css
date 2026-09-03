@@ -145,3 +145,13 @@ button{cursor:pointer}
 @media (max-width:430px){
   .option-grid{grid-template-columns:1fr}
 }
+
+/* v0.2.9 – Campingplatz: Lage & Umgebung */
+.distance-grid{display:grid;grid-template-columns:minmax(120px,1.25fr) minmax(72px,.65fr) minmax(105px,.9fr);gap:8px;align-items:center}
+.distance-head{font-size:11px;font-weight:800;color:var(--muted);padding:0 2px}
+.distance-label{font-size:13px;font-weight:750;color:var(--text)}
+.distance-grid input,.distance-grid select{width:100%;min-width:0}
+@media (max-width:430px){
+  .distance-grid{grid-template-columns:minmax(100px,1.1fr) minmax(64px,.65fr) minmax(96px,.9fr);gap:6px}
+  .distance-grid input,.distance-grid select{padding-left:9px;padding-right:9px}
+}
