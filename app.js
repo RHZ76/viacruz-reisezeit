@@ -765,6 +765,7 @@ function collectStellplatzSeasonPrices(){
 
 function stellplatzDetailCards(e){
   if(e.type!=='stellplatz') return '';
+  const euroValue=v=>v!==null&&v!==undefined&&v!==''?`${formatNumber(v)} €`:'';
   const regions=(e.travelRegions||[]).join(', ');
   const phone=e.phone ? `<a class="contact-link" href="${escapeHtml(phoneHref(e.phone))}">${escapeHtml(e.phone)}</a>` : '';
   const email=e.email ? `<a class="contact-link" href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>` : '';
