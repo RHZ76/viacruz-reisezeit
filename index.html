@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.7-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.8-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -999,6 +999,104 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.7-r1"></script>
+
+
+  <dialog id="stellplatzEditDialog" class="sheet edit-sheet-dialog">
+    <form method="dialog" id="stellplatzEditForm" class="sheet-card edit-sheet-card">
+      <div class="sheet-head sticky-sheet-head">
+        <div>
+          <h2>Stellplatz bearbeiten</h2>
+        </div>
+        <button type="button" class="icon-btn close" id="closeStellplatzEdit" aria-label="Schließen">×</button>
+      </div>
+
+      <input type="hidden" id="stellplatzEditId" />
+
+      <section class="edit-section">
+        <div class="edit-section-head">
+          <h3>Grunddaten</h3>
+          <p>Allgemeine Angaben zum Stellplatz.</p>
+        </div>
+
+        <label>Art des Eintrags
+          <select id="stellplatzEntryType" required>
+            <option value="camping">Campingplatz</option>
+            <option value="stellplatz">Stellplatz</option>
+            <option value="hotel">Hotel</option>
+            <option value="ferien">Ferienwohnung/Ferienhaus</option>
+            <option value="besonders">Besondere Unterkunft</option>
+            <option value="reiseziel">Reiseziel/Ausflugsziel</option>
+          </select>
+          <span class="field-help">Bei einem Wechsel bleiben gemeinsame und kompatible Angaben erhalten. Nicht passende Detailangaben werden nach Bestätigung entfernt.</span>
+        </label>
+
+        <label>Name
+          <input id="stellplatzName" required autocomplete="off" />
+        </label>
+
+        <div class="grid-2">
+          <label>Land
+            <input id="stellplatzCountry" autocomplete="country-name" placeholder="z. B. Österreich" />
+          </label>
+          <label>Region/Bundesland
+            <input id="stellplatzRegion" autocomplete="off" placeholder="z. B. Tirol" />
+          </label>
+        </div>
+
+        <label>Gebiet/Reiseregion
+          <input id="stellplatzTravelRegions" autocomplete="off" placeholder="z. B. Zillertal, Tirol" />
+          <span class="field-help">Mehrere Zuordnungen durch Komma trennen.</span>
+        </label>
+
+        <div class="grid-2">
+          <label>Ort
+            <input id="stellplatzTown" autocomplete="address-level2" />
+          </label>
+          <label>Adresse
+            <input id="stellplatzAddress" autocomplete="street-address" />
+          </label>
+        </div>
+
+        <div class="grid-2">
+          <label>Quelle
+            <select id="stellplatzSourceType">
+              <option value="">Nicht angegeben</option>
+              <option value="Instagram">Instagram</option>
+              <option value="Google">Google</option>
+              <option value="Facebook">Facebook</option>
+              <option value="YouTube">YouTube</option>
+              <option value="Campingportal">Campingportal</option>
+              <option value="Empfehlung">Empfehlung</option>
+              <option value="Zeitschrift">Zeitschrift</option>
+              <option value="Sonstige">Sonstige</option>
+            </select>
+          </label>
+          <label>Link zur Quelle
+            <input id="stellplatzSourceUrl" type="text" inputmode="url" autocomplete="url" autocapitalize="none" spellcheck="false" placeholder="www.beispiel.de oder https:// …" />
+          </label>
+        </div>
+
+        <label>Website des Stellplatzes
+          <input id="stellplatzWebsite" type="text" inputmode="url" autocomplete="url" autocapitalize="none" spellcheck="false" placeholder="www.stellplatz-beispiel.de" />
+        </label>
+
+        <div class="grid-2">
+          <label>Telefon
+            <input id="stellplatzPhone" type="text" inputmode="tel" autocomplete="tel" placeholder="+49 …" />
+          </label>
+          <label>E-Mail
+            <input id="stellplatzEmail" type="email" autocomplete="email" />
+          </label>
+        </div>
+      </section>
+
+      <div class="sheet-actions sticky-sheet-actions">
+        <button type="button" class="btn secondary" id="cancelStellplatzEdit">Abbrechen</button>
+        <button type="submit" class="btn primary">Änderungen speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js?v=0.3.8-r1"></script>
 </body>
 </html>

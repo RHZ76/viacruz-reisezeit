@@ -285,7 +285,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.7 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.8 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -722,6 +722,42 @@ function campingDetailCards(e){
   </div>`;
 }
 
+
+function stellplatzDetailCards(e){
+  if(e.type!=='stellplatz') return '';
+  const regions=(e.travelRegions||[]).join(', ');
+  const phone=e.phone ? `<a class="contact-link" href="${escapeHtml(phoneHref(e.phone))}">${escapeHtml(e.phone)}</a>` : '';
+  const email=e.email ? `<a class="contact-link" href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>` : '';
+  const srcLabel=sourceLabel(e);
+  const srcUrl=sourceUrl(e);
+  const source=srcLabel || srcUrl ? `${escapeHtml(srcLabel||'Internet')}${srcUrl?` <a class="inline-link" href="${escapeHtml(srcUrl)}" target="_blank" rel="noopener noreferrer">öffnen ↗</a>`:''}` : '';
+  const websiteUrl=normalizeExternalUrl(e.website);
+  const website=e.website ? (websiteUrl?`<a class="inline-link" href="${escapeHtml(websiteUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(e.website)} ↗</a>`:escapeHtml(e.website)) : '';
+  const basicRows=[
+    detailRow('Land',e.country),
+    detailRow('Region/Bundesland',e.region),
+    detailRow('Gebiet/Reiseregion',regions),
+    detailRow('Ort',e.town),
+    detailRow('Adresse',e.address),
+    detailRow('Telefon',phone,true),
+    detailRow('E-Mail',email,true),
+    detailRow('Website',website,true),
+    detailRow('Quelle',source,true)
+  ].filter(Boolean).join('');
+  const basicSummary=[e.town||e.region||e.country,regions].filter(Boolean).slice(0,2).join(' · ') || 'Grunddaten';
+  return `<div class="detail-accordions">
+    <details class="detail-accordion">
+      <summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
+      <div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div>
+    </details>
+  </div>`;
+}
+function entryTypeDetailCards(e){
+  if(e.type==='camping') return campingDetailCards(e);
+  if(e.type==='stellplatz') return stellplatzDetailCards(e);
+  return `<div class="info-card"><small>Technisches Fundament</small><strong>Gemeinsame ID · zentrale Standortfelder · Besuchshistorie · Medienliste · typbezogene Details</strong></div>`;
+}
+
 function campingPdfActionHtml(){
   return `<div class="pdf-action-card">
     <div class="pdf-action-copy"><small>Campingplatz als PDF</small><strong>Drucken · Speichern · Teilen</strong><span>Erstellt eine übersichtliche A4-Zusammenfassung aller gespeicherten Angaben.</span></div>
@@ -809,10 +845,10 @@ function openDetail(id){
   content.innerHTML=`${e.type==='camping'?campingHeroHtml(e):''}<div class="sheet-head"><div><div class="eyebrow">${typeLabels[e.type]}</div><h2>${escapeHtml(e.name)}</h2><div class="detail-meta">${escapeHtml(locationText(e))}</div></div><button class="icon-btn close" id="closeDetail">×</button></div>
   ${e.type==='camping'?campingPdfActionHtml():''}
   ${infoCards.length?`<div class="detail-grid">${infoCards.join('')}</div>`:''}
-  ${campingDetailCards(e)}
+  ${entryTypeDetailCards(e)}
   ${e.type==='camping'?campingGalleryHtml(e):''}
   <div class="detail-actions status-actions"><button class="btn secondary" id="favoriteDetail">${e.favorite?'★ Favorit entfernen':'☆ Als Favorit'}</button><button class="btn secondary" id="wantDetail">${e.wantToVisit?'Wunsch entfernen':'♡ Möchte ich besuchen'}</button></div>
-  <div class="detail-actions"><button class="btn secondary" id="visitedDetail">${e.visited?'Besucht ✓':'Als besucht markieren'}</button><button class="btn secondary" id="editBasic">${e.type==='camping'?'Campingplatz bearbeiten':'Grunddaten bearbeiten'}</button></div>
+  <div class="detail-actions"><button class="btn secondary" id="visitedDetail">${e.visited?'Besucht ✓':'Als besucht markieren'}</button><button class="btn secondary" id="editBasic">${e.type==='camping'?'Campingplatz bearbeiten':e.type==='stellplatz'?'Stellplatz bearbeiten':'Grunddaten bearbeiten'}</button></div>
   <div class="detail-actions single-action"><button class="btn danger" id="trashDetail">In Papierkorb</button></div>`;
   const dlg=document.getElementById('detailDialog'); dlg.showModal();
   document.getElementById('closeDetail').onclick=()=>dlg.close();
@@ -821,13 +857,65 @@ function openDetail(id){
   document.getElementById('wantDetail').onclick=()=>{e.wantToVisit=!e.wantToVisit;if(e.wantToVisit)e.visited=false;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
   document.getElementById('visitedDetail').onclick=()=>{e.visited=!e.visited;if(e.visited)e.wantToVisit=false;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
   document.getElementById('trashDetail').onclick=()=>{if(confirm('Diesen Eintrag in den Papierkorb verschieben?')){e.deleted=true;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();}};
-  document.getElementById('editBasic').onclick=()=>e.type==='camping'?openCampingEditor(e):editBasic(e);
+  document.getElementById('editBasic').onclick=()=>e.type==='camping'?openCampingEditor(e):e.type==='stellplatz'?openStellplatzEditor(e):editBasic(e);
   content.querySelectorAll('.gallery-item img').forEach(img=>img.onclick=()=>{const win=window.open();if(win){win.document.write(`<img src="${img.src}" style="max-width:100%;height:auto;display:block;margin:auto">`);win.document.close();}});
 }
 function editBasic(e){
   document.getElementById('detailDialog').close();
   openEntryDialog(null,e);
 }
+
+
+function openStellplatzEditor(e){
+  setField('stellplatzEditId',e.id);
+  setField('stellplatzEntryType',e.type);
+  setField('stellplatzName',e.name);
+  setField('stellplatzCountry',e.country);
+  setField('stellplatzRegion',e.region);
+  setField('stellplatzTravelRegions',(e.travelRegions||[]).join(', '));
+  setField('stellplatzTown',e.town);
+  setField('stellplatzAddress',e.address);
+  setField('stellplatzSourceType',sourceLabel(e));
+  setField('stellplatzSourceUrl',sourceUrl(e));
+  setField('stellplatzWebsite',e.website);
+  setField('stellplatzPhone',e.phone);
+  setField('stellplatzEmail',e.email);
+  document.getElementById('detailDialog').close();
+  document.getElementById('stellplatzEditDialog').showModal();
+}
+function closeStellplatzEditor(){
+  const dlg=document.getElementById('stellplatzEditDialog');
+  if(dlg?.open) dlg.close();
+}
+document.getElementById('closeStellplatzEdit').onclick=closeStellplatzEditor;
+document.getElementById('cancelStellplatzEdit').onclick=closeStellplatzEditor;
+document.getElementById('stellplatzEditForm').addEventListener('submit',ev=>{
+  ev.preventDefault();
+  const e=state.entries.find(x=>x.id===document.getElementById('stellplatzEditId').value); if(!e)return;
+  const requestedType=document.getElementById('stellplatzEntryType').value;
+  if(!convertEntryType(e,requestedType)){
+    document.getElementById('stellplatzEntryType').value=e.type;
+    return;
+  }
+  e.name=document.getElementById('stellplatzName').value.trim()||e.name;
+  e.country=document.getElementById('stellplatzCountry').value.trim();
+  e.region=document.getElementById('stellplatzRegion').value.trim();
+  e.travelRegions=splitList(document.getElementById('stellplatzTravelRegions').value);
+  e.town=document.getElementById('stellplatzTown').value.trim();
+  e.address=document.getElementById('stellplatzAddress').value.trim();
+  e.source='';
+  e.sourceType=document.getElementById('stellplatzSourceType').value;
+  e.sourceUrl=normalizeExternalUrl(document.getElementById('stellplatzSourceUrl').value) || document.getElementById('stellplatzSourceUrl').value.trim();
+  e.website=normalizeExternalUrl(document.getElementById('stellplatzWebsite').value) || document.getElementById('stellplatzWebsite').value.trim();
+  e.phone=document.getElementById('stellplatzPhone').value.trim();
+  e.email=document.getElementById('stellplatzEmail').value.trim();
+  e.geoTags=[e.country,e.region,e.town,...e.travelRegions].filter(Boolean);
+  e.updatedAt=new Date().toISOString();
+  saveEntries();
+  closeStellplatzEditor();
+  render();
+  openDetail(e.id);
+});
 
 function ensureCampingDetails(e){
   e.details=e.details||{};
