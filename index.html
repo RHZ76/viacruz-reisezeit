@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.8-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.9-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -1090,6 +1090,79 @@
         </div>
       </section>
 
+      <section class="edit-section">
+        <div class="edit-section-head">
+          <h3>Preise & Gebühren</h3>
+          <p>Stellplatzpreis und optionale Gebühren. Zusatzkosten wie Strom, Dusche oder Hund werden später in ihren jeweiligen Bereichen gepflegt.</p>
+        </div>
+
+        <div class="grid-2">
+          <label>Preisstand / Jahr
+            <input id="stellplatzPriceYear" type="number" inputmode="numeric" min="2000" max="2100" placeholder="z. B. 2026" />
+          </label>
+          <label>Stellplatzgebühr
+            <select id="stellplatzFeeStatus">
+              <option value="unknown">Unbekannt</option>
+              <option value="free">Kostenlos</option>
+              <option value="paid">Kostenpflichtig</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="stellplatzPaidFields" class="conditional-fields">
+          <div class="grid-2">
+            <label>Abrechnung
+              <select id="stellplatzFeeBilling">
+                <option value="unknown">Unbekannt</option>
+                <option value="night">pro Nacht</option>
+                <option value="24h">pro 24 Stunden</option>
+                <option value="hour">pro Stunde</option>
+                <option value="day">Tagespauschale</option>
+              </select>
+            </label>
+            <label>Preis (€)
+              <input id="stellplatzFeeAmount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="z. B. 15,00" />
+            </label>
+          </div>
+        </div>
+
+        <div class="subsection-head"><h4>Saisonpreise</h4><p>Optional, wenn sich der Stellplatzpreis je nach Saison unterscheidet.</p></div>
+        <div id="stellplatzSeasonPrices" class="visit-editor-list"></div>
+        <button type="button" class="btn secondary" id="addStellplatzSeasonPrice">Saisonpreis hinzufügen</button>
+
+        <div class="grid-2">
+          <label>Kurtaxe / Tourismusabgabe (€)
+            <input id="stellplatzTouristTax" type="number" inputmode="decimal" min="0" step="0.01" />
+          </label>
+          <label>Abrechnung Kurtaxe
+            <select id="stellplatzTouristTaxBilling">
+              <option value="unknown">Unbekannt</option>
+              <option value="personNight">pro Person / Nacht</option>
+              <option value="personStay">pro Person / Aufenthalt</option>
+              <option value="flat">pauschal</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="grid-2">
+          <label>Reservierungsgebühr (€)
+            <input id="stellplatzReservationFee" type="number" inputmode="decimal" min="0" step="0.01" />
+          </label>
+          <label>Sonstige Gebühr – Betrag (€)
+            <input id="stellplatzOtherAmount" type="number" inputmode="decimal" min="0" step="0.01" />
+          </label>
+        </div>
+        <label>Sonstige Gebühr – Bezeichnung
+          <input id="stellplatzOtherLabel" autocomplete="off" placeholder="z. B. Servicepauschale" />
+        </label>
+        <label>Was ist im Stellplatzpreis enthalten?
+          <textarea id="stellplatzPriceIncluded" rows="3" placeholder="z. B. Ver- und Entsorgung, WLAN …"></textarea>
+        </label>
+        <label>Hinweise zu Preisen
+          <textarea id="stellplatzPriceNotes" rows="3"></textarea>
+        </label>
+      </section>
+
       <div class="sheet-actions sticky-sheet-actions">
         <button type="button" class="btn secondary" id="cancelStellplatzEdit">Abbrechen</button>
         <button type="submit" class="btn primary">Änderungen speichern</button>
@@ -1097,6 +1170,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.8-r1"></script>
+  <script src="app.js?v=0.3.9-r1"></script>
 </body>
 </html>

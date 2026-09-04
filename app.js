@@ -27,6 +27,7 @@ const state = {
 function uid(){ return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
 let campingMediaDraft=[];
 let campingTitleImageDraft=null;
+let stellplatzSeasonPriceDraft=[];
 
 function cloneMediaList(media){
   return Array.isArray(media)?media.map(m=>({...m})):[];
@@ -285,7 +286,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.8 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.9 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -345,7 +346,7 @@ function compatibleCampingToStellplatz(camping){
     },
     location:c.location?structuredClone(c.location):{},
     dog:c.dog?structuredClone(c.dog):{},
-    prices:c.prices?structuredClone(c.prices):{}
+    prices:c.prices?{year:c.prices.year??null,feeStatus:c.prices.base!=null?'paid':'unknown',billing:c.prices.base!=null?'night':'unknown',amount:c.prices.base??null,seasonPrices:[],touristTax:c.prices.touristTax??null,touristTaxBilling:c.prices.touristTax!=null?'personNight':'unknown',reservationFee:c.prices.reservationFee??null,otherLabel:c.prices.otherLabel||'',otherAmount:c.prices.otherAmount??null,included:c.prices.included||'',notes:c.prices.notes||''}:{}
   };
 }
 function compatibleStellplatzToCamping(stellplatz){
@@ -356,7 +357,7 @@ function compatibleStellplatzToCamping(stellplatz){
     facilities:{...structuredClone(f)},
     location:s.location?structuredClone(s.location):{},
     dog:s.dog?structuredClone(s.dog):{},
-    prices:s.prices?structuredClone(s.prices):{},
+    prices:s.prices?{year:s.prices.year??null,base:(s.prices.feeStatus==='paid'&&s.prices.billing==='night')?s.prices.amount??null:null,touristTax:s.prices.touristTaxBilling==='personNight'?s.prices.touristTax??null:null,reservationFee:s.prices.reservationFee??null,otherLabel:s.prices.otherLabel||'',otherAmount:s.prices.otherAmount??null,included:s.prices.included||'',notes:s.prices.notes||''}:{},
     leisure:{},personal:{}
   };
 }
@@ -723,33 +724,66 @@ function campingDetailCards(e){
 }
 
 
+function ensureStellplatzDetails(e){
+  e.details=e.details||{};
+  e.details.stellplatz=e.details.stellplatz||{};
+  e.details.stellplatz.prices=e.details.stellplatz.prices||{};
+  return e.details.stellplatz;
+}
+function ensureStellplatzPrices(e){return ensureStellplatzDetails(e).prices;}
+function stellplatzFeeBillingLabel(v){return ({night:'pro Nacht','24h':'pro 24 Stunden',hour:'pro Stunde',day:'Tagespauschale'})[v]||'';}
+function touristTaxBillingLabel(v){return ({personNight:'pro Person / Nacht',personStay:'pro Person / Aufenthalt',flat:'pauschal'})[v]||'';}
+function seasonPriceLabel(row){
+  const name=(row?.name||'Saisonpreis').trim();
+  const dates=[row?.from,row?.to].filter(Boolean).join(' – ');
+  const amount=row?.amount!=null?`${formatNumber(row.amount)} €`:'';
+  const billing=stellplatzFeeBillingLabel(row?.billing);
+  return [name,dates,[amount,billing].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
+}
+function updateStellplatzPaidFields(){
+  const box=document.getElementById('stellplatzPaidFields');
+  if(box) box.hidden=document.getElementById('stellplatzFeeStatus')?.value!=='paid';
+}
+function renderStellplatzSeasonPrices(){
+  const host=document.getElementById('stellplatzSeasonPrices'); if(!host)return;
+  if(!stellplatzSeasonPriceDraft.length){host.innerHTML='<div class="detail-empty">Keine Saisonpreise angelegt.</div>';return;}
+  host.innerHTML=stellplatzSeasonPriceDraft.map((r,i)=>`<div class="visit-editor-card" data-season-index="${i}">
+    <div class="visit-editor-head"><strong>Saisonpreis ${i+1}</strong><button type="button" class="btn danger compact remove-season-price" data-index="${i}">Entfernen</button></div>
+    <label>Bezeichnung<input class="season-name" value="${escapeHtml(r.name||'')}" placeholder="z. B. Hauptsaison" /></label>
+    <div class="grid-2"><label>Von<input class="season-from" type="date" value="${escapeHtml(r.from||'')}" /></label><label>Bis<input class="season-to" type="date" value="${escapeHtml(r.to||'')}" /></label></div>
+    <div class="grid-2"><label>Preis (€)<input class="season-amount" type="number" inputmode="decimal" min="0" step="0.01" value="${r.amount??''}" /></label><label>Abrechnung<select class="season-billing"><option value="unknown">Unbekannt</option><option value="night" ${r.billing==='night'?'selected':''}>pro Nacht</option><option value="24h" ${r.billing==='24h'?'selected':''}>pro 24 Stunden</option><option value="hour" ${r.billing==='hour'?'selected':''}>pro Stunde</option><option value="day" ${r.billing==='day'?'selected':''}>Tagespauschale</option></select></label></div>
+  </div>`).join('');
+  host.querySelectorAll('.remove-season-price').forEach(btn=>btn.onclick=()=>{stellplatzSeasonPriceDraft.splice(Number(btn.dataset.index),1);renderStellplatzSeasonPrices();});
+}
+function collectStellplatzSeasonPrices(){
+  const host=document.getElementById('stellplatzSeasonPrices'); if(!host)return [];
+  return [...host.querySelectorAll('.visit-editor-card')].map(card=>{
+    const n=card.querySelector('.season-amount')?.value;
+    return {id:stellplatzSeasonPriceDraft[Number(card.dataset.seasonIndex)]?.id||uid(),name:card.querySelector('.season-name')?.value.trim()||'',from:card.querySelector('.season-from')?.value||'',to:card.querySelector('.season-to')?.value||'',amount:n===''?null:Number(n),billing:card.querySelector('.season-billing')?.value||'unknown'};
+  }).filter(r=>r.name||r.from||r.to||r.amount!=null||r.billing!=='unknown');
+}
+
 function stellplatzDetailCards(e){
   if(e.type!=='stellplatz') return '';
   const regions=(e.travelRegions||[]).join(', ');
   const phone=e.phone ? `<a class="contact-link" href="${escapeHtml(phoneHref(e.phone))}">${escapeHtml(e.phone)}</a>` : '';
   const email=e.email ? `<a class="contact-link" href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>` : '';
-  const srcLabel=sourceLabel(e);
-  const srcUrl=sourceUrl(e);
+  const srcLabel=sourceLabel(e), srcUrl=sourceUrl(e);
   const source=srcLabel || srcUrl ? `${escapeHtml(srcLabel||'Internet')}${srcUrl?` <a class="inline-link" href="${escapeHtml(srcUrl)}" target="_blank" rel="noopener noreferrer">öffnen ↗</a>`:''}` : '';
   const websiteUrl=normalizeExternalUrl(e.website);
   const website=e.website ? (websiteUrl?`<a class="inline-link" href="${escapeHtml(websiteUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(e.website)} ↗</a>`:escapeHtml(e.website)) : '';
-  const basicRows=[
-    detailRow('Land',e.country),
-    detailRow('Region/Bundesland',e.region),
-    detailRow('Gebiet/Reiseregion',regions),
-    detailRow('Ort',e.town),
-    detailRow('Adresse',e.address),
-    detailRow('Telefon',phone,true),
-    detailRow('E-Mail',email,true),
-    detailRow('Website',website,true),
-    detailRow('Quelle',source,true)
-  ].filter(Boolean).join('');
+  const basicRows=[detailRow('Land',e.country),detailRow('Region/Bundesland',e.region),detailRow('Gebiet/Reiseregion',regions),detailRow('Ort',e.town),detailRow('Adresse',e.address),detailRow('Telefon',phone,true),detailRow('E-Mail',email,true),detailRow('Website',website,true),detailRow('Quelle',source,true)].filter(Boolean).join('');
   const basicSummary=[e.town||e.region||e.country,regions].filter(Boolean).slice(0,2).join(' · ') || 'Grunddaten';
+  const p=e.details?.stellplatz?.prices||{};
+  const feeStatus=p.feeStatus==='free'?'Kostenlos':p.feeStatus==='paid'?'Kostenpflichtig':'';
+  const mainFee=p.feeStatus==='paid'&&p.amount!=null?`${formatNumber(p.amount)} €${stellplatzFeeBillingLabel(p.billing)?` ${stellplatzFeeBillingLabel(p.billing)}`:''}`:feeStatus;
+  const seasonRows=(p.seasonPrices||[]).map((r,i)=>detailRow(r.name||`Saisonpreis ${i+1}`,seasonPriceLabel({...r,name:''}))).filter(Boolean).join('');
+  const tax=p.touristTax!=null?`${formatNumber(p.touristTax)} €${touristTaxBillingLabel(p.touristTaxBilling)?` ${touristTaxBillingLabel(p.touristTaxBilling)}`:''}`:'';
+  const priceRows=[detailRow('Preisstand / Jahr',p.year!=null?String(p.year):''),detailRow('Stellplatzgebühr',feeStatus),detailRow('Preis',p.feeStatus==='paid'?mainFee:''),seasonRows,detailRow('Kurtaxe / Tourismusabgabe',tax),detailRow('Reservierungsgebühr',euroValue(p.reservationFee)),detailRow(p.otherLabel||'Sonstige Gebühr',euroValue(p.otherAmount)),p.included?`<div class="detail-note"><span>Im Stellplatzpreis enthalten</span><p>${escapeHtml(p.included).replace(/\n/g,'<br>')}</p></div>`:'',p.notes?`<div class="detail-note"><span>Hinweise zu Preisen</span><p>${escapeHtml(p.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
+  const priceSummary=[mainFee,p.year!=null?`Preisstand ${p.year}`:''].filter(Boolean).join(' · ')||'Preise & Gebühren';
   return `<div class="detail-accordions">
-    <details class="detail-accordion">
-      <summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary>
-      <div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div>
-    </details>
+    <details class="detail-accordion"><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>
+    <details class="detail-accordion"><summary><span><small>Preise & Gebühren</small><strong>${escapeHtml(priceSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${priceRows||'<div class="detail-empty">Noch keine Preise oder Gebühren gespeichert.</div>'}</div></details>
   </div>`;
 }
 function entryTypeDetailCards(e){
@@ -880,6 +914,10 @@ function openStellplatzEditor(e){
   setField('stellplatzWebsite',e.website);
   setField('stellplatzPhone',e.phone);
   setField('stellplatzEmail',e.email);
+  const prices=ensureStellplatzPrices(e);
+  setField('stellplatzPriceYear',prices.year);setField('stellplatzFeeStatus',prices.feeStatus||'unknown');setField('stellplatzFeeBilling',prices.billing||'unknown');setField('stellplatzFeeAmount',prices.amount);setField('stellplatzTouristTax',prices.touristTax);setField('stellplatzTouristTaxBilling',prices.touristTaxBilling||'unknown');setField('stellplatzReservationFee',prices.reservationFee);setField('stellplatzOtherLabel',prices.otherLabel);setField('stellplatzOtherAmount',prices.otherAmount);setField('stellplatzPriceIncluded',prices.included);setField('stellplatzPriceNotes',prices.notes);
+  stellplatzSeasonPriceDraft=Array.isArray(prices.seasonPrices)?structuredClone(prices.seasonPrices):[];
+  renderStellplatzSeasonPrices();updateStellplatzPaidFields();
   document.getElementById('detailDialog').close();
   document.getElementById('stellplatzEditDialog').showModal();
 }
@@ -889,6 +927,8 @@ function closeStellplatzEditor(){
 }
 document.getElementById('closeStellplatzEdit').onclick=closeStellplatzEditor;
 document.getElementById('cancelStellplatzEdit').onclick=closeStellplatzEditor;
+document.getElementById('stellplatzFeeStatus').onchange=updateStellplatzPaidFields;
+document.getElementById('addStellplatzSeasonPrice').onclick=()=>{stellplatzSeasonPriceDraft=collectStellplatzSeasonPrices();stellplatzSeasonPriceDraft.push({id:uid(),name:'',from:'',to:'',amount:null,billing:'unknown'});renderStellplatzSeasonPrices();};
 document.getElementById('stellplatzEditForm').addEventListener('submit',ev=>{
   ev.preventDefault();
   const e=state.entries.find(x=>x.id===document.getElementById('stellplatzEditId').value); if(!e)return;
@@ -910,6 +950,8 @@ document.getElementById('stellplatzEditForm').addEventListener('submit',ev=>{
   e.phone=document.getElementById('stellplatzPhone').value.trim();
   e.email=document.getElementById('stellplatzEmail').value.trim();
   e.geoTags=[e.country,e.region,e.town,...e.travelRegions].filter(Boolean);
+  const prices=ensureStellplatzPrices(e);
+  prices.year=numericField('stellplatzPriceYear');prices.feeStatus=document.getElementById('stellplatzFeeStatus').value;prices.billing=prices.feeStatus==='paid'?document.getElementById('stellplatzFeeBilling').value:'unknown';prices.amount=prices.feeStatus==='paid'?numericField('stellplatzFeeAmount'):null;prices.seasonPrices=collectStellplatzSeasonPrices();prices.touristTax=numericField('stellplatzTouristTax');prices.touristTaxBilling=document.getElementById('stellplatzTouristTaxBilling').value;prices.reservationFee=numericField('stellplatzReservationFee');prices.otherLabel=document.getElementById('stellplatzOtherLabel').value.trim();prices.otherAmount=numericField('stellplatzOtherAmount');prices.included=document.getElementById('stellplatzPriceIncluded').value.trim();prices.notes=document.getElementById('stellplatzPriceNotes').value.trim();
   e.updatedAt=new Date().toISOString();
   saveEntries();
   closeStellplatzEditor();

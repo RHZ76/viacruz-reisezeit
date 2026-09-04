@@ -240,3 +240,4 @@ button{cursor:pointer}
 .section-collapse-chevron{font-size:22px;color:#7f8d85;transition:transform .18s ease;flex:0 0 auto}
 .section-collapse-head[aria-expanded="true"] .section-collapse-chevron{transform:rotate(180deg)}
 .recent-content[hidden]{display:none}
+.subsection-head{margin-top:4px}.subsection-head h4{margin:0;font-size:15px}.subsection-head p{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.4}
