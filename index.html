@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.13-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.13-r2" />
 </head>
 <body>
   <div class="app-shell">
@@ -1391,17 +1391,15 @@
           </div>
         </div>
 
-        <div class="grid-2">
-          <label>Maximale Aufenthaltsdauer
+        <label>Maximale Aufenthaltsdauer
+          <div class="stay-duration-grid">
             <input id="stellplatzMaxStayValue" type="number" inputmode="decimal" min="0" step="0.5" placeholder="optional" />
-          </label>
-          <label>Einheit
-            <select id="stellplatzMaxStayUnit">
+            <select id="stellplatzMaxStayUnit" aria-label="Zeiteinheit der maximalen Aufenthaltsdauer">
               <option value="days">Tage</option>
               <option value="hours">Stunden</option>
             </select>
-          </label>
-        </div>
+          </div>
+        </label>
 
         <div class="grid-2">
           <label>Reservierung
@@ -1434,6 +1432,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.13-r1"></script>
+  <script src="app.js?v=0.3.13-r2"></script>
 </body>
 </html>
