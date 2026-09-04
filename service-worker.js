@@ -1,9 +1,9 @@
-const CACHE = 'viacruz-reisezeit-v0.3.15-r1';
+const CACHE = 'viacruz-reisezeit-v0.3.15-r2';
 const FILES = [
   './',
   './index.html',
-  './styles.css?v=0.3.13-r2',
-  './app.js?v=0.3.13-r2',
+  './styles.css?v=0.3.15-r2',
+  './app.js?v=0.3.15-r2',
   './manifest.webmanifest',
   './assets/icon-192.png',
   './assets/icon-512.png'

@@ -1269,8 +1269,21 @@ function toggleStellplatzFacilitiesConditionalFields(){
     const wrap=document.getElementById(wrapId);
     if(wrap){wrap.classList.toggle('is-disabled',!active);wrap.querySelectorAll('input,select').forEach(el=>el.disabled=!active);}
   });
+  const costPairs=[
+    ['stellplatzFacilitiesShowers','stellplatzFacilitiesShowerBilling','stellplatzFacilitiesShowerPriceWrap','stellplatzFacilitiesShowerPrice'],
+    ['stellplatzFacilitiesWasher','stellplatzFacilitiesWasherBilling','stellplatzFacilitiesWasherPriceWrap','stellplatzFacilitiesWasherPrice'],
+    ['stellplatzFacilitiesDryer','stellplatzFacilitiesDryerBilling','stellplatzFacilitiesDryerPriceWrap','stellplatzFacilitiesDryerPrice']
+  ];
+  costPairs.forEach(([availabilityId,billingId,priceWrapId,priceId])=>{
+    const available=document.getElementById(availabilityId)?.value==='yes';
+    const paid=available&&document.getElementById(billingId)?.value==='paid';
+    const priceWrap=document.getElementById(priceWrapId);
+    const price=document.getElementById(priceId);
+    if(priceWrap) priceWrap.hidden=!paid;
+    if(price) price.disabled=!paid;
+  });
 }
-['stellplatzFacilitiesShowers','stellplatzFacilitiesWasher','stellplatzFacilitiesDryer','stellplatzFacilitiesBread'].forEach(id=>document.getElementById(id)?.addEventListener('change',toggleStellplatzFacilitiesConditionalFields));
+['stellplatzFacilitiesShowers','stellplatzFacilitiesWasher','stellplatzFacilitiesDryer','stellplatzFacilitiesBread','stellplatzFacilitiesShowerBilling','stellplatzFacilitiesWasherBilling','stellplatzFacilitiesDryerBilling'].forEach(id=>document.getElementById(id)?.addEventListener('change',toggleStellplatzFacilitiesConditionalFields));
 document.getElementById('closeStellplatzEdit').onclick=closeStellplatzEditor;
 document.getElementById('cancelStellplatzEdit').onclick=closeStellplatzEditor;
 document.getElementById('stellplatzFeeStatus').onchange=()=>{updateStellplatzPaidFields();updateStellplatzUsageConditionalFields();};
@@ -1349,7 +1362,7 @@ document.getElementById('stellplatzEditForm').addEventListener('submit',ev=>{
   f.wc=document.getElementById('stellplatzFacilitiesWc').value;
   f.showers=document.getElementById('stellplatzFacilitiesShowers').value;
   f.showerBilling=f.showers==='yes'?document.getElementById('stellplatzFacilitiesShowerBilling').value:'unknown';
-  f.showerPrice=f.showers==='yes'?numericField('stellplatzFacilitiesShowerPrice'):null;
+  f.showerPrice=f.showers==='yes'&&f.showerBilling==='paid'?numericField('stellplatzFacilitiesShowerPrice'):null;
   f.washCubicles=document.getElementById('stellplatzFacilitiesWashCubicles').value;
   f.familyBath=document.getElementById('stellplatzFacilitiesFamilyBath').value;
   f.accessibleSanitary=document.getElementById('stellplatzFacilitiesAccessible').value;
@@ -1358,10 +1371,10 @@ document.getElementById('stellplatzEditForm').addEventListener('submit',ev=>{
   f.heatedSanitary=document.getElementById('stellplatzFacilitiesHeated').value;
   f.washer=document.getElementById('stellplatzFacilitiesWasher').value;
   f.washerBilling=f.washer==='yes'?document.getElementById('stellplatzFacilitiesWasherBilling').value:'unknown';
-  f.washerPrice=f.washer==='yes'?numericField('stellplatzFacilitiesWasherPrice'):null;
+  f.washerPrice=f.washer==='yes'&&f.washerBilling==='paid'?numericField('stellplatzFacilitiesWasherPrice'):null;
   f.dryer=document.getElementById('stellplatzFacilitiesDryer').value;
   f.dryerBilling=f.dryer==='yes'?document.getElementById('stellplatzFacilitiesDryerBilling').value:'unknown';
-  f.dryerPrice=f.dryer==='yes'?numericField('stellplatzFacilitiesDryerPrice'):null;
+  f.dryerPrice=f.dryer==='yes'&&f.dryerBilling==='paid'?numericField('stellplatzFacilitiesDryerPrice'):null;
   f.dishwashing=document.getElementById('stellplatzFacilitiesDishwashing').value;
   f.freshWaterPoint=document.getElementById('stellplatzFacilitiesFreshWaterPoint').value;
   f.greyWater=document.getElementById('stellplatzFacilitiesGreyWater').value;
