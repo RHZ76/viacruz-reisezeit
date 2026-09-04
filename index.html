@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.13-r2" />
+  <link rel="stylesheet" href="styles.css?v=0.3.14-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -1425,6 +1425,212 @@
         </label>
       </section>
 
+
+      <section class="edit-section">
+        <div class="edit-section-head">
+          <h3>Stellplatz &amp; Parzelle</h3>
+          <p>Platzart, Größe, Untergrund, Versorgung und Zufahrt.</p>
+        </div>
+
+        <label>Aufteilung der Stellflächen
+          <select id="stellplatzPitchType">
+            <option value="unknown">Unbekannt</option>
+            <option value="parcel">Parzellierte Stellplätze</option>
+            <option value="free-choice">Freie Platzwahl</option>
+          </select>
+        </label>
+
+        <div class="field-group">
+          <div class="field-group-title">Zugelassene Fahrzeugarten <span class="field-help-inline">Mehrfachauswahl möglich</span></div>
+          <div class="option-grid" id="stellplatzPitchVehicleTypes">
+            <label class="check-option"><input type="checkbox" value="motorhome" />Wohnmobil</label>
+            <label class="check-option"><input type="checkbox" value="caravan" />Wohnwagen / Gespann</label>
+            <label class="check-option"><input type="checkbox" value="campervan" />Campervan</label>
+            <label class="check-option"><input type="checkbox" value="panel-van" />Kastenwagen</label>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Stellplatzgröße</div>
+          <div class="grid-3">
+            <label>Fläche (m²)
+              <input id="stellplatzPitchArea" type="number" min="0" step="0.1" inputmode="decimal" placeholder="optional" />
+            </label>
+            <label>Länge (m)
+              <input id="stellplatzPitchLength" type="number" min="0" step="0.1" inputmode="decimal" placeholder="optional" />
+            </label>
+            <label>Breite (m)
+              <input id="stellplatzPitchWidth" type="number" min="0" step="0.1" inputmode="decimal" placeholder="optional" />
+            </label>
+          </div>
+        </div>
+
+        <label>Für große Wohnmobile geeignet
+          <select id="stellplatzPitchLargeMotorhome">
+            <option value="unknown">Unbekannt</option>
+            <option value="yes">Ja</option>
+            <option value="no">Nein</option>
+          </select>
+        </label>
+
+        <div class="field-group">
+          <div class="field-group-title">Untergrund <span class="field-help-inline">Mehrfachauswahl möglich</span></div>
+          <div class="option-grid" id="stellplatzPitchSurface">
+            <label class="check-option"><input type="checkbox" value="grass" />Rasen</label>
+            <label class="check-option"><input type="checkbox" value="gravel" />Schotter</label>
+            <label class="check-option"><input type="checkbox" value="asphalt" />Asphalt</label>
+            <label class="check-option"><input type="checkbox" value="paving" />Pflaster</label>
+            <label class="check-option"><input type="checkbox" value="hardened" />Befestigt</label>
+            <label class="check-option"><input type="checkbox" value="natural" />Naturboden</label>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <label>Ebenheit
+            <select id="stellplatzPitchLevel">
+              <option value="unknown">Unbekannt</option>
+              <option value="level">Eben</option>
+              <option value="partly-uneven">Teilweise uneben</option>
+            </select>
+          </label>
+          <label>Sonne / Schatten
+            <select id="stellplatzPitchShade">
+              <option value="unknown">Unbekannt</option>
+              <option value="sunny">Sonnig</option>
+              <option value="partly-shaded">Teilweise schattig</option>
+              <option value="shaded">Schattig</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Besondere Lage <span class="field-help-inline">Mehrfachauswahl möglich</span></div>
+          <div class="option-grid" id="stellplatzPitchLocationFeatures">
+            <label class="check-option"><input type="checkbox" value="waterfront" />Direkt am Wasser</label>
+            <label class="check-option"><input type="checkbox" value="water-view" />Wasserblick</label>
+            <label class="check-option"><input type="checkbox" value="quiet" />Ruhige Lage</label>
+            <label class="check-option"><input type="checkbox" value="central" />Zentrale Lage</label>
+            <label class="check-option"><input type="checkbox" value="terraced" />Terrassiert</label>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Versorgung direkt am Stellplatz</div>
+
+          <label>Strom
+            <select id="stellplatzPitchElectricity">
+              <option value="unknown">Unbekannt</option>
+              <option value="yes">Vorhanden</option>
+              <option value="no">Nicht vorhanden</option>
+            </select>
+          </label>
+
+          <div id="stellplatzPitchElectricityDetails" class="conditional-fields">
+            <div class="grid-2">
+              <label>Abrechnung Strom
+                <select id="stellplatzPitchElectricityBilling">
+                  <option value="unknown">Preis unbekannt</option>
+                  <option value="included">Inklusive</option>
+                  <option value="flat">Pauschale</option>
+                  <option value="consumption">Nach Verbrauch</option>
+                </select>
+              </label>
+              <label>Preis (€)
+                <input id="stellplatzPitchElectricityPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="optional" />
+              </label>
+            </div>
+            <label>Preis pro kWh (€)
+              <input id="stellplatzPitchElectricityKwhPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="optional" />
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>Frischwasser direkt am Platz
+              <select id="stellplatzPitchFreshWater">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Abwasser direkt am Platz
+              <select id="stellplatzPitchWasteWater">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>TV-Anschluss
+              <select id="stellplatzPitchTv">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>WLAN
+              <select id="stellplatzPitchWifi">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div id="stellplatzPitchWifiDetails" class="conditional-fields">
+            <div class="grid-2">
+              <label>WLAN-Kosten
+                <select id="stellplatzPitchWifiBilling">
+                  <option value="unknown">Preis unbekannt</option>
+                  <option value="included">Inklusive</option>
+                  <option value="paid">Kostenpflichtig</option>
+                </select>
+              </label>
+              <label>Preis WLAN (€)
+                <input id="stellplatzPitchWifiPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="optional" />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Zufahrt &amp; Beschränkungen</div>
+          <label>Zufahrt
+            <select id="stellplatzPitchAccess">
+              <option value="unknown">Unbekannt</option>
+              <option value="easy">Problemlos</option>
+              <option value="narrow">Eng</option>
+              <option value="steep">Steil</option>
+              <option value="difficult">Schwierig</option>
+            </select>
+          </label>
+
+          <div class="grid-3">
+            <label>Max. Fahrzeuglänge (m)
+              <input id="stellplatzPitchMaxLength" type="number" min="0" step="0.1" inputmode="decimal" placeholder="optional" />
+            </label>
+            <label>Max. Fahrzeughöhe (m)
+              <input id="stellplatzPitchMaxHeight" type="number" min="0" step="0.1" inputmode="decimal" placeholder="optional" />
+            </label>
+            <label>Gewichtslimit (t)
+              <input id="stellplatzPitchMaxWeight" type="number" min="0" step="0.1" inputmode="decimal" placeholder="optional" />
+            </label>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Bevorzugter Stellplatz</div>
+          <label>Stellplatz-/Parzellennummer
+            <input id="stellplatzPitchPreferredNumber" autocomplete="off" placeholder="z. B. 147" />
+          </label>
+          <label>Hinweise zur Stellplatzwahl
+            <textarea id="stellplatzPitchNotes" rows="4" placeholder="z. B. Plätze 80–95 bevorzugen, Seeseite nehmen …"></textarea>
+          </label>
+        </div>
+      </section>
+
+
       <div class="sheet-actions sticky-sheet-actions">
         <button type="button" class="btn secondary" id="cancelStellplatzEdit">Abbrechen</button>
         <button type="submit" class="btn primary">Änderungen speichern</button>
@@ -1432,6 +1638,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.13-r2"></script>
+  <script src="app.js?v=0.3.14-r1"></script>
 </body>
 </html>
