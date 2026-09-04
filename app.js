@@ -27,6 +27,8 @@ const state = {
 function uid(){ return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
 let campingMediaDraft=[];
 let campingTitleImageDraft=null;
+let stellplatzMediaDraft=[];
+let stellplatzTitleImageDraft=null;
 let stellplatzSeasonPriceDraft=[];
 
 function cloneMediaList(media){
@@ -124,6 +126,84 @@ async function addCampingMediaFiles(files){
     const input=document.getElementById('campingMediaInput'); if(input)input.value='';
   }
 }
+function renderStellplatzMediaEditor(){
+  const wrap=document.getElementById('stellplatzMediaEditor'); if(!wrap)return;
+  if(!stellplatzMediaDraft.length){
+    wrap.innerHTML='<div class="media-empty">Noch keine Bilder gespeichert.</div>';
+    return;
+  }
+  wrap.innerHTML=stellplatzMediaDraft.map(m=>{
+    const isTitle=m.id===stellplatzTitleImageDraft;
+    return `<div class="media-edit-card" data-media-id="${escapeHtml(m.id)}">
+      <div class="media-edit-image-wrap">
+        <img src="${m.dataUrl}" alt="${escapeHtml(m.description||'Gespeichertes Bild')}" />
+        ${isTitle?'<span class="media-title-badge">Titelbild</span>':''}
+      </div>
+      <input class="media-description" type="text" value="${escapeHtml(m.description||'')}" placeholder="Kurze Beschreibung, optional" />
+      <div class="media-card-actions">
+        <button type="button" class="btn secondary media-set-title">${isTitle?'Titelbild':'Als Titelbild'}</button>
+        <button type="button" class="btn danger media-delete">Löschen</button>
+      </div>
+    </div>`;
+  }).join('');
+  wrap.querySelectorAll('.media-description').forEach(input=>{
+    input.addEventListener('input',()=>{
+      const card=input.closest('.media-edit-card');
+      const m=stellplatzMediaDraft.find(x=>x.id===card?.dataset.mediaId);
+      if(m)m.description=input.value;
+    });
+  });
+  wrap.querySelectorAll('.media-set-title').forEach(btn=>{
+    btn.onclick=()=>{
+      const id=btn.closest('.media-edit-card')?.dataset.mediaId;
+      stellplatzTitleImageDraft=id||null;
+      renderStellplatzMediaEditor();
+    };
+  });
+  wrap.querySelectorAll('.media-delete').forEach(btn=>{
+    btn.onclick=()=>{
+      const id=btn.closest('.media-edit-card')?.dataset.mediaId;
+      stellplatzMediaDraft=stellplatzMediaDraft.filter(m=>m.id!==id);
+      if(stellplatzTitleImageDraft===id)stellplatzTitleImageDraft=null;
+      renderStellplatzMediaEditor();
+    };
+  });
+}
+async function addStellplatzMediaFiles(files){
+  const selected=[...files].filter(f=>f.type.startsWith('image/'));
+  if(!selected.length)return;
+  const button=document.getElementById('addStellplatzMedia');
+  if(button){button.disabled=true;button.textContent='Bilder werden vorbereitet …';}
+  try{
+    for(const file of selected){
+      const dataUrl=await imageFileToDataUrl(file);
+      const item={id:uid(),kind:'image',name:file.name||'Bild',description:'',dataUrl,createdAt:new Date().toISOString()};
+      stellplatzMediaDraft.push(item);
+      if(!stellplatzTitleImageDraft)stellplatzTitleImageDraft=item.id;
+    }
+    renderStellplatzMediaEditor();
+  }catch(err){
+    alert('Mindestens ein Bild konnte nicht verarbeitet werden.');
+  }finally{
+    if(button){button.disabled=false;button.textContent='+ Bilder auswählen';}
+    const input=document.getElementById('stellplatzMediaInput'); if(input)input.value='';
+  }
+}
+function stellplatzHeroHtml(e){
+  const title=imageById(e,e.titleImageId);
+  if(title?.dataUrl){
+    return `<div class="detail-title-image"><img src="${title.dataUrl}" alt="${escapeHtml(title.description||e.name||'Stellplatz')}" /></div>`;
+  }
+  return `<div class="detail-title-image detail-title-placeholder"><span>▣</span><strong>Stellplatz</strong></div>`;
+}
+function stellplatzGalleryHtml(e){
+  const media=Array.isArray(e.media)?e.media.filter(m=>m.kind==='image'&&m.dataUrl):[];
+  if(!media.length)return '';
+  return `<section class="detail-gallery-section"><div class="detail-gallery-head"><small>Bilder</small><strong>${media.length} ${media.length===1?'Bild':'Bilder'}</strong></div>
+    <div class="detail-gallery">${media.map(m=>`<figure class="gallery-item ${m.id===e.titleImageId?'is-title':''}"><img src="${m.dataUrl}" alt="${escapeHtml(m.description||'Gespeichertes Bild')}" />${m.id===e.titleImageId?'<span>Titelbild</span>':''}${m.description?`<figcaption>${escapeHtml(m.description)}</figcaption>`:''}</figure>`).join('')}</div>
+  </section>`;
+}
+
 function campingHeroHtml(e){
   const title=campingTitleMedia(e);
   if(title?.dataUrl){
@@ -286,7 +366,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.10 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.11 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -919,11 +999,11 @@ function openDetail(id){
     const sourceText=srcLabel || 'Internet';
     infoCards.push(`<div class="info-card source-card"><small>Quelle</small><strong>${escapeHtml(sourceText)}</strong>${srcUrl?`<a class="source-link" href="${escapeHtml(srcUrl)}" target="_blank" rel="noopener noreferrer">Quelle öffnen ↗</a>`:''}</div>`);
   }
-  content.innerHTML=`${e.type==='camping'?campingHeroHtml(e):''}<div class="sheet-head"><div><div class="eyebrow">${typeLabels[e.type]}</div><h2>${escapeHtml(e.name)}</h2><div class="detail-meta">${escapeHtml(locationText(e))}</div></div><button class="icon-btn close" id="closeDetail">×</button></div>
+  content.innerHTML=`${e.type==='camping'?campingHeroHtml(e):e.type==='stellplatz'?stellplatzHeroHtml(e):''}<div class="sheet-head"><div><div class="eyebrow">${typeLabels[e.type]}</div><h2>${escapeHtml(e.name)}</h2><div class="detail-meta">${escapeHtml(locationText(e))}</div></div><button class="icon-btn close" id="closeDetail">×</button></div>
   ${e.type==='camping'?campingPdfActionHtml():''}
   ${infoCards.length?`<div class="detail-grid">${infoCards.join('')}</div>`:''}
   ${entryTypeDetailCards(e)}
-  ${e.type==='camping'?campingGalleryHtml(e):''}
+  ${e.type==='camping'?campingGalleryHtml(e):e.type==='stellplatz'?stellplatzGalleryHtml(e):''}
   <div class="detail-actions status-actions"><button class="btn secondary" id="favoriteDetail">${e.favorite?'★ Favorit entfernen':'☆ Als Favorit'}</button><button class="btn secondary" id="wantDetail">${e.wantToVisit?'Wunsch entfernen':'♡ Möchte ich besuchen'}</button></div>
   <div class="detail-actions"><button class="btn secondary" id="visitedDetail">${e.visited?'Besucht ✓':'Als besucht markieren'}</button><button class="btn secondary" id="editBasic">${e.type==='camping'?'Campingplatz bearbeiten':e.type==='stellplatz'?'Stellplatz bearbeiten':'Grunddaten bearbeiten'}</button></div>
   <div class="detail-actions single-action"><button class="btn danger" id="trashDetail">In Papierkorb</button></div>`;
@@ -967,6 +1047,7 @@ function openStellplatzEditor(e){
   setField('stellplatzPersonalWhy',e.why||'');
   setField('stellplatzRatingOverall',personal.ratings?.overall);setField('stellplatzRatingLocation',personal.ratings?.location);setField('stellplatzRatingQuiet',personal.ratings?.quiet);setField('stellplatzRatingCleanliness',personal.ratings?.cleanliness);setField('stellplatzRatingSanitary',personal.ratings?.sanitary);setField('stellplatzRatingValue',personal.ratings?.value);
   setField('stellplatzPersonalReturn',personal.returnIntent||'unknown');setField('stellplatzPersonalNotes',e.notes||'');renderStellplatzVisitEditor(e.visits||[]);
+  stellplatzMediaDraft=cloneMediaList(e.media);stellplatzTitleImageDraft=e.titleImageId||null;renderStellplatzMediaEditor();
   document.getElementById('detailDialog').close();
   document.getElementById('stellplatzEditDialog').showModal();
 }
@@ -979,6 +1060,8 @@ document.getElementById('cancelStellplatzEdit').onclick=closeStellplatzEditor;
 document.getElementById('stellplatzFeeStatus').onchange=updateStellplatzPaidFields;
 document.getElementById('addStellplatzSeasonPrice').onclick=()=>{stellplatzSeasonPriceDraft=collectStellplatzSeasonPrices();stellplatzSeasonPriceDraft.push({id:uid(),name:'',from:'',to:'',amount:null,billing:'unknown'});renderStellplatzSeasonPrices();};
 document.getElementById('addStellplatzVisit').onclick=addStellplatzVisitEditor;
+document.getElementById('addStellplatzMedia').onclick=()=>document.getElementById('stellplatzMediaInput').click();
+document.getElementById('stellplatzMediaInput').onchange=ev=>addStellplatzMediaFiles(ev.target.files);
 document.getElementById('stellplatzEditForm').addEventListener('submit',ev=>{
   ev.preventDefault();
   const e=state.entries.find(x=>x.id===document.getElementById('stellplatzEditId').value); if(!e)return;
@@ -999,6 +1082,8 @@ document.getElementById('stellplatzEditForm').addEventListener('submit',ev=>{
   e.website=normalizeExternalUrl(document.getElementById('stellplatzWebsite').value) || document.getElementById('stellplatzWebsite').value.trim();
   e.phone=document.getElementById('stellplatzPhone').value.trim();
   e.email=document.getElementById('stellplatzEmail').value.trim();
+  e.media=cloneMediaList(stellplatzMediaDraft);
+  e.titleImageId=stellplatzTitleImageDraft;
   e.geoTags=[e.country,e.region,e.town,...e.travelRegions].filter(Boolean);
   const prices=ensureStellplatzPrices(e);
   prices.year=numericField('stellplatzPriceYear');prices.feeStatus=document.getElementById('stellplatzFeeStatus').value;prices.billing=prices.feeStatus==='paid'?document.getElementById('stellplatzFeeBilling').value:'unknown';prices.amount=prices.feeStatus==='paid'?numericField('stellplatzFeeAmount'):null;prices.seasonPrices=collectStellplatzSeasonPrices();prices.touristTax=numericField('stellplatzTouristTax');prices.touristTaxBilling=document.getElementById('stellplatzTouristTaxBilling').value;prices.reservationFee=numericField('stellplatzReservationFee');prices.otherLabel=document.getElementById('stellplatzOtherLabel').value.trim();prices.otherAmount=numericField('stellplatzOtherAmount');prices.included=document.getElementById('stellplatzPriceIncluded').value.trim();prices.notes=document.getElementById('stellplatzPriceNotes').value.trim();

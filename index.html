@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.10-r2" />
+  <link rel="stylesheet" href="styles.css?v=0.3.11-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -1221,6 +1221,18 @@
         </label>
       </section>
 
+      <section class="edit-section">
+        <div class="edit-section-head">
+          <h3>Titelbild & Bilder</h3>
+          <p>Eigene Fotos und Screenshots lokal speichern. Ein Bild kann als Titelbild festgelegt werden.</p>
+        </div>
+
+        <input id="stellplatzMediaInput" type="file" accept="image/*" multiple hidden />
+        <button type="button" class="btn secondary media-add-btn" id="addStellplatzMedia">+ Bilder auswählen</button>
+        <span class="field-help">Bilder werden für die App verkleinert und zusammen mit der Datensicherung gespeichert.</span>
+        <div id="stellplatzMediaEditor" class="media-editor-grid"></div>
+      </section>
+
       <div class="sheet-actions sticky-sheet-actions">
         <button type="button" class="btn secondary" id="cancelStellplatzEdit">Abbrechen</button>
         <button type="submit" class="btn primary">Änderungen speichern</button>
@@ -1228,6 +1240,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.10-r2"></script>
+  <script src="app.js?v=0.3.11-r1"></script>
 </body>
 </html>
