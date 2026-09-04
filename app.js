@@ -286,7 +286,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.9 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.10 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -346,7 +346,8 @@ function compatibleCampingToStellplatz(camping){
     },
     location:c.location?structuredClone(c.location):{},
     dog:c.dog?structuredClone(c.dog):{},
-    prices:c.prices?{year:c.prices.year??null,feeStatus:c.prices.base!=null?'paid':'unknown',billing:c.prices.base!=null?'night':'unknown',amount:c.prices.base??null,seasonPrices:[],touristTax:c.prices.touristTax??null,touristTaxBilling:c.prices.touristTax!=null?'personNight':'unknown',reservationFee:c.prices.reservationFee??null,otherLabel:c.prices.otherLabel||'',otherAmount:c.prices.otherAmount??null,included:c.prices.included||'',notes:c.prices.notes||''}:{}
+    prices:c.prices?{year:c.prices.year??null,feeStatus:c.prices.base!=null?'paid':'unknown',billing:c.prices.base!=null?'night':'unknown',amount:c.prices.base??null,seasonPrices:[],touristTax:c.prices.touristTax??null,touristTaxBilling:c.prices.touristTax!=null?'personNight':'unknown',reservationFee:c.prices.reservationFee??null,otherLabel:c.prices.otherLabel||'',otherAmount:c.prices.otherAmount??null,included:c.prices.included||'',notes:c.prices.notes||''}:{},
+    personal:c.personal?structuredClone(c.personal):{}
   };
 }
 function compatibleStellplatzToCamping(stellplatz){
@@ -358,7 +359,7 @@ function compatibleStellplatzToCamping(stellplatz){
     location:s.location?structuredClone(s.location):{},
     dog:s.dog?structuredClone(s.dog):{},
     prices:s.prices?{year:s.prices.year??null,base:(s.prices.feeStatus==='paid'&&s.prices.billing==='night')?s.prices.amount??null:null,touristTax:s.prices.touristTaxBilling==='personNight'?s.prices.touristTax??null:null,reservationFee:s.prices.reservationFee??null,otherLabel:s.prices.otherLabel||'',otherAmount:s.prices.otherAmount??null,included:s.prices.included||'',notes:s.prices.notes||''}:{},
-    leisure:{},personal:{}
+    leisure:{},personal:s.personal?structuredClone(s.personal):{}
   };
 }
 function convertEntryType(e,newType,skipConfirm=false){
@@ -728,9 +729,11 @@ function ensureStellplatzDetails(e){
   e.details=e.details||{};
   e.details.stellplatz=e.details.stellplatz||{};
   e.details.stellplatz.prices=e.details.stellplatz.prices||{};
+  e.details.stellplatz.personal=e.details.stellplatz.personal||{};
   return e.details.stellplatz;
 }
 function ensureStellplatzPrices(e){return ensureStellplatzDetails(e).prices;}
+function ensureStellplatzPersonal(e){return ensureStellplatzDetails(e).personal;}
 function stellplatzFeeBillingLabel(v){return ({night:'pro Nacht','24h':'pro 24 Stunden',hour:'pro Stunde',day:'Tagespauschale'})[v]||'';}
 function touristTaxBillingLabel(v){return ({personNight:'pro Person / Nacht',personStay:'pro Person / Aufenthalt',flat:'pauschal'})[v]||'';}
 function seasonPriceLabel(row){
@@ -763,6 +766,33 @@ function collectStellplatzSeasonPrices(){
   }).filter(r=>r.name||r.from||r.to||r.amount!=null||r.billing!=='unknown');
 }
 
+function renderStellplatzVisitEditor(visits=[]){
+  const list=document.getElementById('stellplatzVisitList'); if(!list)return;
+  const normalized=Array.isArray(visits)?visits:[];
+  list.innerHTML=normalized.length?normalized.map(v=>`
+    <div class="visit-editor-card" data-visit-id="${escapeHtml(v.id||uid())}">
+      <div class="visit-card-head"><strong>Aufenthalt</strong><button type="button" class="visit-remove" aria-label="Besuch entfernen">Entfernen</button></div>
+      <div class="grid-2">
+        <label>Anreise<input class="visit-arrival" type="date" value="${escapeHtml(v.arrival||'')}" /></label>
+        <label>Abreise<input class="visit-departure" type="date" value="${escapeHtml(v.departure||'')}" /></label>
+      </div>
+      <label>Stellplatz / Parzellennummer<input class="visit-pitch" type="text" value="${escapeHtml(v.pitch||'')}" placeholder="z. B. 12" /></label>
+      <label>Persönliche Besuchsnotiz<textarea class="visit-note" rows="3" placeholder="Was war bei diesem Aufenthalt besonders?">${escapeHtml(v.note||'')}</textarea></label>
+    </div>`).join(''):'<div class="visit-editor-empty">Noch kein Aufenthalt gespeichert.</div>';
+  list.querySelectorAll('.visit-remove').forEach(btn=>btn.onclick=()=>{btn.closest('.visit-editor-card')?.remove();if(!list.querySelector('.visit-editor-card'))list.innerHTML='<div class="visit-editor-empty">Noch kein Aufenthalt gespeichert.</div>';});
+}
+function collectStellplatzVisits(){
+  return [...document.querySelectorAll('#stellplatzVisitList .visit-editor-card')].map(card=>({
+    id:card.dataset.visitId||uid(),arrival:card.querySelector('.visit-arrival')?.value||'',departure:card.querySelector('.visit-departure')?.value||'',pitch:card.querySelector('.visit-pitch')?.value.trim()||'',note:card.querySelector('.visit-note')?.value.trim()||'',createdAt:new Date().toISOString()
+  })).filter(v=>v.arrival||v.departure||v.pitch||v.note);
+}
+function addStellplatzVisitEditor(){
+  const current=collectStellplatzVisits();
+  current.push({id:uid(),arrival:'',departure:'',pitch:'',note:'',createdAt:new Date().toISOString()});
+  renderStellplatzVisitEditor(current);
+  document.querySelector('#stellplatzVisitList .visit-editor-card:last-child')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
 function stellplatzDetailCards(e){
   if(e.type!=='stellplatz') return '';
   const euroValue=v=>v!==null&&v!==undefined&&v!==''?`${formatNumber(v)} €`:'';
@@ -782,9 +812,21 @@ function stellplatzDetailCards(e){
   const tax=p.touristTax!=null?`${formatNumber(p.touristTax)} €${touristTaxBillingLabel(p.touristTaxBilling)?` ${touristTaxBillingLabel(p.touristTaxBilling)}`:''}`:'';
   const priceRows=[detailRow('Preisstand / Jahr',p.year!=null?String(p.year):''),detailRow('Stellplatzgebühr',feeStatus),detailRow('Preis',p.feeStatus==='paid'?mainFee:''),seasonRows,detailRow('Kurtaxe / Tourismusabgabe',tax),detailRow('Reservierungsgebühr',euroValue(p.reservationFee)),detailRow(p.otherLabel||'Sonstige Gebühr',euroValue(p.otherAmount)),p.included?`<div class="detail-note"><span>Im Stellplatzpreis enthalten</span><p>${escapeHtml(p.included).replace(/\n/g,'<br>')}</p></div>`:'',p.notes?`<div class="detail-note"><span>Hinweise zu Preisen</span><p>${escapeHtml(p.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
   const priceSummary=[mainFee,p.year!=null?`Preisstand ${p.year}`:''].filter(Boolean).join(' · ')||'Preise & Gebühren';
+  const personal=e.details?.stellplatz?.personal||{};
+  const statusText=e.visited?'Besucht':e.wantToVisit?'Möchte ich besuchen':'';
+  const favoriteText=e.favorite?'★ Favorit':'';
+  const returnText=valueLabel(personal.returnIntent,{unknown:'',yes:'Ja',maybe:'Vielleicht',no:'Nein'},'');
+  const ratingLabels=[['Gesamt',personal.ratings?.overall],['Lage',personal.ratings?.location],['Ruhe',personal.ratings?.quiet],['Sauberkeit',personal.ratings?.cleanliness],['Sanitär',personal.ratings?.sanitary],['Preis-Leistung',personal.ratings?.value]];
+  const ratingRows=ratingLabels.map(([label,val])=>detailRow(label,val!=null?`${formatNumber(val,1)} / 5`:'' )).filter(Boolean).join('');
+  const visits=Array.isArray(e.visits)?e.visits:[];
+  const visitRows=visits.length?`<div class="visit-history">${visits.map((v,index)=>{const nights=visitNights(v.arrival,v.departure);const dateText=(v.arrival||v.departure)?`${formatDate(v.arrival)||'–'} bis ${formatDate(v.departure)||'–'}`:'Datum nicht angegeben';const meta=[nights!=null?`${nights} ${nights===1?'Nacht':'Nächte'}`:'',v.pitch?`Platz ${v.pitch}`:''].filter(Boolean).join(' · ');return `<div class="visit-history-card"><div class="visit-history-head"><strong>Aufenthalt ${index+1}</strong><span>${escapeHtml(dateText)}</span></div>${meta?`<small>${escapeHtml(meta)}</small>`:''}${v.note?`<p>${escapeHtml(v.note).replace(/\n/g,'<br>')}</p>`:''}</div>`;}).join('')}</div>`:'';
+  const personalRows=[detailRow('Status',[statusText,favoriteText].filter(Boolean).join(' · ')),e.why?`<div class="detail-note"><span>Warum gespeichert?</span><p>${escapeHtml(e.why).replace(/\n/g,'<br>')}</p></div>`:'',ratingRows,detailRow('Würde ich wiederkommen?',returnText),visits.length?`<div class="detail-note"><span>Besuchshistorie</span>${visitRows}</div>`:'',e.notes?`<div class="detail-note"><span>Persönliche Notizen</span><p>${escapeHtml(e.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
+  const ratingAverage=personalRatingAverage(personal);
+  const personalSummary=[statusText,favoriteText,ratingAverage!=null?`${formatNumber(ratingAverage,1)} / 5`:'',visits.length?`${visits.length} ${visits.length===1?'Besuch':'Besuche'}`:''].filter(Boolean).slice(0,3).join(' · ')||'Persönlich';
   return `<div class="detail-accordions">
     <details class="detail-accordion"><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>
     <details class="detail-accordion"><summary><span><small>Preise & Gebühren</small><strong>${escapeHtml(priceSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${priceRows||'<div class="detail-empty">Noch keine Preise oder Gebühren gespeichert.</div>'}</div></details>
+    <details class="detail-accordion"><summary><span><small>Persönlich</small><strong>${escapeHtml(personalSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${personalRows||'<div class="detail-empty">Noch keine persönlichen Angaben gespeichert.</div>'}</div></details>
   </div>`;
 }
 function entryTypeDetailCards(e){
@@ -919,6 +961,12 @@ function openStellplatzEditor(e){
   setField('stellplatzPriceYear',prices.year);setField('stellplatzFeeStatus',prices.feeStatus||'unknown');setField('stellplatzFeeBilling',prices.billing||'unknown');setField('stellplatzFeeAmount',prices.amount);setField('stellplatzTouristTax',prices.touristTax);setField('stellplatzTouristTaxBilling',prices.touristTaxBilling||'unknown');setField('stellplatzReservationFee',prices.reservationFee);setField('stellplatzOtherLabel',prices.otherLabel);setField('stellplatzOtherAmount',prices.otherAmount);setField('stellplatzPriceIncluded',prices.included);setField('stellplatzPriceNotes',prices.notes);
   stellplatzSeasonPriceDraft=Array.isArray(prices.seasonPrices)?structuredClone(prices.seasonPrices):[];
   renderStellplatzSeasonPrices();updateStellplatzPaidFields();
+  const personal=ensureStellplatzPersonal(e);
+  setField('stellplatzPersonalStatus',e.visited?'visited':e.wantToVisit?'want':'none');
+  const favoriteEl=document.getElementById('stellplatzPersonalFavorite'); if(favoriteEl) favoriteEl.checked=!!e.favorite;
+  setField('stellplatzPersonalWhy',e.why||'');
+  setField('stellplatzRatingOverall',personal.ratings?.overall);setField('stellplatzRatingLocation',personal.ratings?.location);setField('stellplatzRatingQuiet',personal.ratings?.quiet);setField('stellplatzRatingCleanliness',personal.ratings?.cleanliness);setField('stellplatzRatingSanitary',personal.ratings?.sanitary);setField('stellplatzRatingValue',personal.ratings?.value);
+  setField('stellplatzPersonalReturn',personal.returnIntent||'unknown');setField('stellplatzPersonalNotes',e.notes||'');renderStellplatzVisitEditor(e.visits||[]);
   document.getElementById('detailDialog').close();
   document.getElementById('stellplatzEditDialog').showModal();
 }
@@ -930,6 +978,7 @@ document.getElementById('closeStellplatzEdit').onclick=closeStellplatzEditor;
 document.getElementById('cancelStellplatzEdit').onclick=closeStellplatzEditor;
 document.getElementById('stellplatzFeeStatus').onchange=updateStellplatzPaidFields;
 document.getElementById('addStellplatzSeasonPrice').onclick=()=>{stellplatzSeasonPriceDraft=collectStellplatzSeasonPrices();stellplatzSeasonPriceDraft.push({id:uid(),name:'',from:'',to:'',amount:null,billing:'unknown'});renderStellplatzSeasonPrices();};
+document.getElementById('addStellplatzVisit').onclick=addStellplatzVisitEditor;
 document.getElementById('stellplatzEditForm').addEventListener('submit',ev=>{
   ev.preventDefault();
   const e=state.entries.find(x=>x.id===document.getElementById('stellplatzEditId').value); if(!e)return;
@@ -953,6 +1002,10 @@ document.getElementById('stellplatzEditForm').addEventListener('submit',ev=>{
   e.geoTags=[e.country,e.region,e.town,...e.travelRegions].filter(Boolean);
   const prices=ensureStellplatzPrices(e);
   prices.year=numericField('stellplatzPriceYear');prices.feeStatus=document.getElementById('stellplatzFeeStatus').value;prices.billing=prices.feeStatus==='paid'?document.getElementById('stellplatzFeeBilling').value:'unknown';prices.amount=prices.feeStatus==='paid'?numericField('stellplatzFeeAmount'):null;prices.seasonPrices=collectStellplatzSeasonPrices();prices.touristTax=numericField('stellplatzTouristTax');prices.touristTaxBilling=document.getElementById('stellplatzTouristTaxBilling').value;prices.reservationFee=numericField('stellplatzReservationFee');prices.otherLabel=document.getElementById('stellplatzOtherLabel').value.trim();prices.otherAmount=numericField('stellplatzOtherAmount');prices.included=document.getElementById('stellplatzPriceIncluded').value.trim();prices.notes=document.getElementById('stellplatzPriceNotes').value.trim();
+  const personal=ensureStellplatzPersonal(e);
+  const personalStatus=document.getElementById('stellplatzPersonalStatus').value;e.visited=personalStatus==='visited';e.wantToVisit=personalStatus==='want';e.favorite=!!document.getElementById('stellplatzPersonalFavorite').checked;e.why=document.getElementById('stellplatzPersonalWhy').value.trim();
+  personal.ratings={overall:ratingValue('stellplatzRatingOverall'),location:ratingValue('stellplatzRatingLocation'),quiet:ratingValue('stellplatzRatingQuiet'),cleanliness:ratingValue('stellplatzRatingCleanliness'),sanitary:ratingValue('stellplatzRatingSanitary'),value:ratingValue('stellplatzRatingValue')};
+  personal.returnIntent=document.getElementById('stellplatzPersonalReturn').value;e.visits=collectStellplatzVisits();e.notes=document.getElementById('stellplatzPersonalNotes').value.trim();
   e.updatedAt=new Date().toISOString();
   saveEntries();
   closeStellplatzEditor();

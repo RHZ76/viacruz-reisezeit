@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.9-r2" />
+  <link rel="stylesheet" href="styles.css?v=0.3.10-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -1163,6 +1163,64 @@
         </label>
       </section>
 
+
+      <section class="edit-section">
+        <div class="edit-section-head">
+          <h3>Persönlich</h3>
+          <p>Dein eigener Status, deine Einschätzung und deine bisherigen Aufenthalte.</p>
+        </div>
+
+        <div class="grid-2">
+          <label>Status
+            <select id="stellplatzPersonalStatus">
+              <option value="none">Nicht festgelegt</option>
+              <option value="want">Möchte ich besuchen</option>
+              <option value="visited">Besucht</option>
+            </select>
+          </label>
+          <label class="personal-favorite-label">Favorit
+            <span class="favorite-toggle"><input id="stellplatzPersonalFavorite" type="checkbox" /> Als Favorit markieren</span>
+          </label>
+        </div>
+
+        <label>Warum gespeichert?
+          <textarea id="stellplatzPersonalWhy" rows="3" placeholder="z. B. Guter Stellplatz für die Durchreise, schöne Lage …"></textarea>
+        </label>
+
+        <div class="field-group">
+          <div class="field-group-title">Eigene Bewertung <span class="field-help-inline">1 = schwach · 5 = sehr gut</span></div>
+          <div class="rating-grid">
+            <label>Gesamt<select id="stellplatzRatingOverall"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+            <label>Lage<select id="stellplatzRatingLocation"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+            <label>Ruhe<select id="stellplatzRatingQuiet"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+            <label>Sauberkeit<select id="stellplatzRatingCleanliness"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+            <label>Sanitär<select id="stellplatzRatingSanitary"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+            <label>Preis-Leistung<select id="stellplatzRatingValue"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+          </div>
+        </div>
+
+        <label>Würde ich wiederkommen?
+          <select id="stellplatzPersonalReturn">
+            <option value="unknown">Noch nicht beurteilt</option>
+            <option value="yes">Ja</option>
+            <option value="maybe">Vielleicht</option>
+            <option value="no">Nein</option>
+          </select>
+        </label>
+
+        <div class="visit-editor">
+          <div class="visit-editor-head">
+            <div><strong>Besuchshistorie</strong><span>Mehrere Aufenthalte bleiben getrennt erhalten.</span></div>
+            <button type="button" class="btn secondary compact-btn" id="addStellplatzVisit">Besuch hinzufügen</button>
+          </div>
+          <div id="stellplatzVisitList" class="visit-editor-list"></div>
+        </div>
+
+        <label>Persönliche Notizen
+          <textarea id="stellplatzPersonalNotes" rows="4" placeholder="Allgemeine persönliche Notizen zu diesem Stellplatz …"></textarea>
+        </label>
+      </section>
+
       <div class="sheet-actions sticky-sheet-actions">
         <button type="button" class="btn secondary" id="cancelStellplatzEdit">Abbrechen</button>
         <button type="submit" class="btn primary">Änderungen speichern</button>
@@ -1170,6 +1228,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.9-r2"></script>
+  <script src="app.js?v=0.3.10-r1"></script>
 </body>
 </html>
