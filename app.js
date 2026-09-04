@@ -285,7 +285,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.6 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.7 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -318,24 +318,114 @@ function renderSpecial(kind){
   wireViewEvents();
 }
 
-function openEntryDialog(pretype){
+let entryDialogMode='create';
+let entryDialogEditId=null;
+
+function hasMeaningfulDetails(value){
+  if(value===null || value===undefined || value==='') return false;
+  if(Array.isArray(value)) return value.some(hasMeaningfulDetails);
+  if(typeof value==='object') return Object.values(value).some(hasMeaningfulDetails);
+  if(typeof value==='string') return !['unknown','none'].includes(value);
+  if(typeof value==='boolean') return value;
+  return true;
+}
+function compatibleCampingToStellplatz(camping){
+  const c=camping||{}, p=c.pitch||{}, f=c.facilities||{};
+  return {
+    season:c.season?structuredClone(c.season):{},
+    pitch:{
+      area:p.area??null,length:p.length??null,width:p.width??null,largeMotorhome:p.largeMotorhome||'unknown',surface:[...(p.surface||[])],level:p.level||'unknown',
+      electricity:p.electricity||'unknown',electricityBilling:p.electricityBilling||'unknown',electricityPrice:p.electricityPrice??null,electricityKwhPrice:p.electricityKwhPrice??null,
+      freshWater:p.freshWater||'unknown',wasteWater:p.wasteWater||'unknown',wifi:p.wifi||'unknown',wifiBilling:p.wifiBilling||'unknown',wifiPrice:p.wifiPrice??null,
+      access:p.access||'unknown',maxVehicleLength:p.maxVehicleLength??null,maxVehicleHeight:p.maxVehicleHeight??null,maxVehicleWeight:p.maxVehicleWeight??null
+    },
+    facilities:{
+      wc:f.wc||'unknown',showers:f.showers||'unknown',washer:f.washer||'unknown',dryer:f.dryer||'unknown',freshWater:f.freshWaterPoint||'unknown',greyWater:f.greyWater||'unknown',
+      chemicalToilet:f.chemicalToilet||'unknown',floorInlet:f.floorDrain||'unknown',garbage:f.wasteDisposal||'unknown',wasteSeparation:f.wasteSeparation||'unknown'
+    },
+    location:c.location?structuredClone(c.location):{},
+    dog:c.dog?structuredClone(c.dog):{},
+    prices:c.prices?structuredClone(c.prices):{}
+  };
+}
+function compatibleStellplatzToCamping(stellplatz){
+  const s=stellplatz||{}, p=s.pitch||{}, f=s.facilities||{};
+  return {
+    season:s.season?structuredClone(s.season):{},
+    pitch:{...structuredClone(p)},
+    facilities:{...structuredClone(f)},
+    location:s.location?structuredClone(s.location):{},
+    dog:s.dog?structuredClone(s.dog):{},
+    prices:s.prices?structuredClone(s.prices):{},
+    leisure:{},personal:{}
+  };
+}
+function convertEntryType(e,newType,skipConfirm=false){
+  const oldType=e.type;
+  if(!newType || newType===oldType) return true;
+  const oldDetails=e.details||{};
+  const hasOldSpecific=hasMeaningfulDetails(oldDetails[oldType]);
+  if(hasOldSpecific && !skipConfirm){
+    const ok=confirm(`Art wirklich von „${typeLabels[oldType]}“ zu „${typeLabels[newType]}“ ändern?\n\nGemeinsame und kompatible Angaben bleiben erhalten. Nicht passende Detailangaben werden entfernt.`);
+    if(!ok) return false;
+  }
+  let nextDetails={};
+  if(oldType==='camping' && newType==='stellplatz') nextDetails.stellplatz=compatibleCampingToStellplatz(oldDetails.camping);
+  else if(oldType==='stellplatz' && newType==='camping') nextDetails.camping=compatibleStellplatzToCamping(oldDetails.stellplatz);
+  e.type=newType;
+  e.details=nextDetails;
+  return true;
+}
+
+function openEntryDialog(pretype,editEntry){
   const dlg=document.getElementById('entryDialog');
   document.getElementById('entryForm').reset();
-  if(pretype) document.getElementById('entryType').value=pretype;
+  entryDialogMode=editEntry?'edit':'create';
+  entryDialogEditId=editEntry?.id||null;
+  document.getElementById('entryDialogTitle').textContent=editEntry?'Grunddaten bearbeiten':'Neuen Ort speichern';
+  document.getElementById('entrySubmitBtn').textContent=editEntry?'Änderungen speichern':'Speichern';
+  if(editEntry){
+    document.getElementById('entryType').value=editEntry.type;
+    document.getElementById('entryName').value=editEntry.name||'';
+    document.getElementById('entryCountry').value=editEntry.country||'';
+    document.getElementById('entryRegion').value=editEntry.region||'';
+    document.getElementById('entrySourceType').value=editEntry.sourceType||'';
+    document.getElementById('entrySourceUrl').value=sourceUrl(editEntry)||'';
+  }else if(pretype) document.getElementById('entryType').value=pretype;
   dlg.showModal();
   setTimeout(()=>document.getElementById('entryName').focus(),80);
 }
-
-document.getElementById('cancelEntry').onclick=()=>document.getElementById('entryDialog').close();
+function closeEntryDialog(){
+  const dlg=document.getElementById('entryDialog');
+  if(dlg.open) dlg.close();
+  entryDialogMode='create';
+  entryDialogEditId=null;
+}
+document.getElementById('closeEntry').onclick=closeEntryDialog;
+document.getElementById('cancelEntry').onclick=closeEntryDialog;
 document.getElementById('entryForm').addEventListener('submit', e=>{
   e.preventDefault();
+  const newType=document.getElementById('entryType').value;
+  if(entryDialogMode==='edit'){
+    const entry=state.entries.find(x=>x.id===entryDialogEditId); if(!entry)return;
+    if(!convertEntryType(entry,newType)) return;
+    entry.name=entryName.value.trim()||entry.name;
+    entry.country=entryCountry.value.trim();
+    entry.region=entryRegion.value.trim();
+    entry.source='';
+    entry.sourceType=entrySourceType.value;
+    entry.sourceUrl=normalizeExternalUrl(entrySourceUrl.value) || entrySourceUrl.value.trim();
+    entry.geoTags=[entry.country,entry.region,entry.town,...(entry.travelRegions||[])].filter(Boolean);
+    entry.updatedAt=new Date().toISOString();
+    saveEntries(); closeEntryDialog(); render(); openDetail(entry.id); return;
+  }
   const entry={
-    id:uid(), type:entryType.value, name:entryName.value.trim(), country:entryCountry.value.trim(), region:entryRegion.value.trim(), source:'', sourceType:entrySourceType.value, sourceUrl:normalizeExternalUrl(entrySourceUrl.value) || entrySourceUrl.value.trim(),
+    id:uid(), type:newType, name:entryName.value.trim(), country:entryCountry.value.trim(), region:entryRegion.value.trim(), source:'', sourceType:entrySourceType.value, sourceUrl:normalizeExternalUrl(entrySourceUrl.value) || entrySourceUrl.value.trim(),
     geoTags:[entryCountry.value.trim(),entryRegion.value.trim()].filter(Boolean), tags:[], favorite:false, wantToVisit:false, visited:false, deleted:false,
     createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), location:null, accessPoint:null, visits:[], media:[], details:{}
   };
   if(!entry.name) return;
-  state.entries.push(entry); saveEntries(); document.getElementById('entryDialog').close(); render(); openDetail(entry.id);
+  state.entries.push(entry); saveEntries(); closeEntryDialog(); render(); openDetail(entry.id);
 });
 
 document.querySelectorAll('.nav-item').forEach(b=>b.onclick=()=>{state.route=b.dataset.route;state.query='';render();});
@@ -735,11 +825,8 @@ function openDetail(id){
   content.querySelectorAll('.gallery-item img').forEach(img=>img.onclick=()=>{const win=window.open();if(win){win.document.write(`<img src="${img.src}" style="max-width:100%;height:auto;display:block;margin:auto">`);win.document.close();}});
 }
 function editBasic(e){
-  const name=prompt('Name',e.name); if(name===null)return;
-  const country=prompt('Land',e.country||''); if(country===null)return;
-  const region=prompt('Region/Gebiet',e.region||''); if(region===null)return;
-  e.name=name.trim()||e.name; e.country=country.trim(); e.region=region.trim(); e.geoTags=[e.country,e.region].filter(Boolean); e.updatedAt=new Date().toISOString(); saveEntries();
-  document.getElementById('detailDialog').close(); render(); openDetail(e.id);
+  document.getElementById('detailDialog').close();
+  openEntryDialog(null,e);
 }
 
 function ensureCampingDetails(e){
@@ -884,7 +971,7 @@ function openCampingEditor(e){
   const f=ensureCampingFacilities(e);
   const l=ensureCampingLocation(e);
   const personal=ensureCampingPersonal(e);
-  setField('campingEditId',e.id); setField('campingName',e.name); setField('campingCountry',e.country); setField('campingRegion',e.region);
+  setField('campingEditId',e.id); setField('campingEntryType',e.type); setField('campingName',e.name); setField('campingCountry',e.country); setField('campingRegion',e.region);
   setField('campingTravelRegions',(e.travelRegions||[]).join(', ')); setField('campingTown',e.town); setField('campingAddress',e.address); setField('campingSourceType',sourceLabel(e)); setField('campingSourceUrl',sourceUrl(e)); setField('campingWebsite',e.website); setField('campingPhone',e.phone); setField('campingEmail',e.email);
   campingMediaDraft=cloneMediaList(e.media); campingTitleImageDraft=e.titleImageId||null; renderCampingMediaEditor();
   setField('campingOperationType',s.operationType||'unknown'); setField('campingOpenFrom',s.openFrom); setField('campingOpenTo',s.openTo); setField('campingSummer',s.summerCamping||'unknown'); setField('campingWinter',s.winterCamping||'unknown'); setField('campingMinStay',s.minStay); setField('campingReservation',s.reservation||'unknown'); setField('campingSpontaneous',s.spontaneousArrival||'unknown'); setField('campingArrivalFrom',s.arrivalFrom); setField('campingArrivalTo',s.arrivalTo); setField('campingDepartureFrom',s.departureFrom); setField('campingDepartureTo',s.departureTo); setField('campingSeasonNotes',s.notes);
@@ -1009,6 +1096,11 @@ document.getElementById('campingLeisureBeach')?.addEventListener('change',update
 document.getElementById('campingEditForm').addEventListener('submit',ev=>{
   ev.preventDefault();
   const e=state.entries.find(x=>x.id===document.getElementById('campingEditId').value); if(!e)return;
+  const requestedType=document.getElementById('campingEntryType').value;
+  if(requestedType!==e.type && hasMeaningfulDetails((e.details||{})[e.type])){
+    const ok=confirm(`Art wirklich von „${typeLabels[e.type]}“ zu „${typeLabels[requestedType]}“ ändern?\n\nGemeinsame und kompatible Angaben bleiben erhalten. Nicht passende Detailangaben werden entfernt.`);
+    if(!ok){ document.getElementById('campingEntryType').value=e.type; return; }
+  }
   const s=ensureCampingDetails(e);
   e.name=document.getElementById('campingName').value.trim()||e.name; e.country=document.getElementById('campingCountry').value.trim(); e.region=document.getElementById('campingRegion').value.trim(); e.travelRegions=splitList(document.getElementById('campingTravelRegions').value); e.town=document.getElementById('campingTown').value.trim(); e.address=document.getElementById('campingAddress').value.trim(); e.source=''; e.sourceType=document.getElementById('campingSourceType').value; e.sourceUrl=normalizeExternalUrl(document.getElementById('campingSourceUrl').value) || document.getElementById('campingSourceUrl').value.trim(); e.website=normalizeExternalUrl(document.getElementById('campingWebsite').value) || document.getElementById('campingWebsite').value.trim(); e.media=cloneMediaList(campingMediaDraft); e.titleImageId=campingTitleImageDraft; e.phone=document.getElementById('campingPhone').value.trim(); e.email=document.getElementById('campingEmail').value.trim();
   e.geoTags=[e.country,e.region,e.town,...e.travelRegions].filter(Boolean);
@@ -1124,6 +1216,7 @@ document.getElementById('campingEditForm').addEventListener('submit',ev=>{
   const prices=ensureCampingPrices(e);
   prices.year=numericField('campingPriceYear');prices.approxTotal=numericField('campingPriceApproxTotal');prices.from=numericField('campingPriceFrom');prices.to=numericField('campingPriceTo');prices.base=numericField('campingPriceBase');prices.basePersons=numericField('campingPriceBasePersons');prices.extraPerson=numericField('campingPriceExtraPerson');prices.child=numericField('campingPriceChild');prices.touristTax=numericField('campingPriceTouristTax');prices.reservationFee=numericField('campingPriceReservationFee');prices.otherLabel=document.getElementById('campingPriceOtherLabel').value.trim();prices.otherAmount=numericField('campingPriceOtherAmount');prices.included=document.getElementById('campingPriceIncluded').value.trim();prices.notes=document.getElementById('campingPriceNotes').value.trim();
 
+  convertEntryType(e,requestedType,true);
   e.updatedAt=new Date().toISOString(); saveEntries(); document.getElementById('campingEditDialog').close(); render(); openDetail(e.id);
 });
 
