@@ -1,6 +1,16 @@
 const STORE_KEY = 'viacruz-reisezeit-data-v1';
 const SETTINGS_KEY = 'viacruz-reisezeit-settings-v1';
 
+function loadSettings(){
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; }
+  catch { return {}; }
+}
+function updateSetting(key,value){
+  const settings=loadSettings();
+  settings[key]=value;
+  localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));
+}
+
 const typeLabels = {
   camping: 'Campingplatz', stellplatz: 'Stellplatz', hotel: 'Hotel',
   ferien: 'Ferienwohnung/Ferienhaus', besonders: 'Besondere Unterkunft', reiseziel: 'Reiseziel/Ausflugsziel'
@@ -180,6 +190,7 @@ function render(){
 
 function homeView(){
   const recent = state.entries.filter(e=>!e.deleted).sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,4);
+  const recentOpen=loadSettings().homeRecentOpen !== false;
   return `
     <section class="hero">
       <div class="hero-card">
@@ -203,16 +214,21 @@ function homeView(){
     <section class="section">
       <div class="section-head"><div><h2>Schnellzugriff</h2><p>Ohne Umwege zu deinen wichtigsten Ansichten</p></div></div>
       <div class="quick-grid">
-        <button class="quick-btn" data-action="new">＋ Neuer Eintrag<span>In wenigen Angaben speichern</span></button>
         <button class="quick-btn" data-special="favorite">★ Favoriten<span>${count(e=>e.favorite)} Einträge</span></button>
         <button class="quick-btn" data-special="want">♡ Möchte ich besuchen<span>${count(e=>e.wantToVisit)} Einträge</span></button>
+        <button class="quick-btn" data-special="visited">✓ Besucht<span>${count(e=>e.visited)} Einträge</span></button>
         <button class="quick-btn" data-route-go="search">⌕ Suche<span>Liste und Filter</span></button>
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-head"><div><h2>Zuletzt hinzugefügt</h2><p>Einträge, die du später weiter ergänzen kannst</p></div></div>
-      ${recent.length ? `<div class="place-list">${recent.map(placeCard).join('')}</div>` : `<div class="empty">Noch keine Orte gespeichert. Mit „Neuer Eintrag“ legst du den ersten an.</div>`}
+    <section class="section recent-section">
+      <button class="section-collapse-head" type="button" data-action="toggle-recent" aria-expanded="${recentOpen?'true':'false'}">
+        <span><strong>Zuletzt hinzugefügt</strong><small>Einträge, die du später weiter ergänzen kannst</small></span>
+        <span class="section-collapse-chevron" aria-hidden="true">⌄</span>
+      </button>
+      <div class="recent-content" ${recentOpen?'':'hidden'}>
+        ${recent.length ? `<div class="place-list">${recent.map(placeCard).join('')}</div>` : `<div class="empty">Noch keine Orte gespeichert. Mit „Neuer Eintrag“ legst du den ersten an.</div>`}
+      </div>
     </section>
     <div class="footer-brand">powered by viacruz</div>`;
 }
@@ -249,7 +265,7 @@ function holidayView(){
 
 function searchView(){
   const items = state.entries.filter(e=>!e.deleted && matchesQuery(e,state.query));
-  return `<section><div class="section-head"><div><div class="eyebrow">Alle Einträge</div><h2>Suche</h2><p>Die freie Suche berücksichtigt Name, Land, Region, Quelle und eigene Tags.</p></div><button class="btn primary" data-action="new">+ Neu</button></div>
+  return `<section><div class="section-head"><div><div class="eyebrow">Alle Einträge</div><h2>Suche</h2><p>Die freie Suche berücksichtigt Name, Land, Region, Quelle und eigene Tags.</p></div></div>
   <div class="toolbar"><input class="searchbox route-search" value="${escapeHtml(state.query)}" placeholder="z. B. Südtirol, Gardasee, Wochenende …"><button class="btn secondary" data-action="clear-search">Löschen</button></div>
   ${items.length?`<div class="place-list">${items.map(placeCard).join('')}</div>`:`<div class="empty">${state.query?'Keine Treffer für diese Suche.':'Noch keine Orte gespeichert.'}</div>`}
   <div class="footer-brand">powered by viacruz</div></section>`;
@@ -269,7 +285,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.5 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.6 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -282,13 +298,23 @@ function wireViewEvents(){
   document.querySelectorAll('[data-holiday]').forEach(b=>b.onclick=()=>{state.holidayFilter=b.dataset.holiday;render();});
   document.querySelectorAll('[data-special="favorite"]').forEach(b=>b.onclick=()=>{state.route='search';state.query='';renderSpecial('favorite')});
   document.querySelectorAll('[data-special="want"]').forEach(b=>b.onclick=()=>{state.route='search';state.query='';renderSpecial('want')});
+  document.querySelectorAll('[data-special="visited"]').forEach(b=>b.onclick=()=>{state.route='search';state.query='';renderSpecial('visited')});
+  document.querySelectorAll('[data-action="toggle-recent"]').forEach(b=>b.onclick=()=>{
+    const content=b.closest('.recent-section')?.querySelector('.recent-content');
+    if(!content)return;
+    const willOpen=content.hasAttribute('hidden');
+    content.toggleAttribute('hidden',!willOpen);
+    b.setAttribute('aria-expanded',String(willOpen));
+    updateSetting('homeRecentOpen',willOpen);
+  });
   document.querySelectorAll('[data-action="backup"]').forEach(b=>b.onclick=createBackup);
   document.querySelectorAll('[data-action="restore"]').forEach(b=>b.onclick=restoreBackup);
 }
 function renderSpecial(kind){
   const app=document.getElementById('app');
-  const items=state.entries.filter(e=>!e.deleted && (kind==='favorite'?e.favorite:e.wantToVisit));
-  app.innerHTML=`<section><div class="section-head"><div><div class="eyebrow">Schnellzugriff</div><h2>${kind==='favorite'?'Favoriten':'Möchte ich besuchen'}</h2></div><button class="btn secondary" data-route-go="home">Zurück</button></div>${items.length?`<div class="place-list">${items.map(placeCard).join('')}</div>`:`<div class="empty">Noch keine Einträge in dieser Auswahl.</div>`}</section>`;
+  const items=state.entries.filter(e=>!e.deleted && (kind==='favorite'?e.favorite:kind==='visited'?e.visited:e.wantToVisit));
+  const title=kind==='favorite'?'Favoriten':kind==='visited'?'Besucht':'Möchte ich besuchen';
+  app.innerHTML=`<section><div class="section-head"><div><div class="eyebrow">Schnellzugriff</div><h2>${title}</h2></div><button class="btn secondary" data-route-go="home">Zurück</button></div>${items.length?`<div class="place-list">${items.map(placeCard).join('')}</div>`:`<div class="empty">Noch keine Einträge in dieser Auswahl.</div>`}</section>`;
   wireViewEvents();
 }
 

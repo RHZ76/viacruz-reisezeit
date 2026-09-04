@@ -232,3 +232,11 @@ button{cursor:pointer}
 .pdf-action-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;margin:14px 0;padding:14px;border:1px solid var(--line);border-radius:16px;background:#f7faf6}
 .pdf-action-copy{min-width:0}.pdf-action-copy small{display:block;color:var(--muted);font-size:11px}.pdf-action-copy strong{display:block;margin-top:3px;font-size:15px}.pdf-action-copy span{display:block;margin-top:3px;color:var(--muted);font-size:11px;line-height:1.35}.pdf-action-btn{min-width:126px}
 @media(max-width:430px){.pdf-action-card{grid-template-columns:1fr}.pdf-action-btn{width:100%}}
+
+/* v0.3.6 – Startseite: einklappbare letzte Einträge */
+.section-collapse-head{width:100%;border:0;background:transparent;color:var(--text);padding:0 0 10px;display:flex;align-items:center;justify-content:space-between;gap:14px;text-align:left}
+.section-collapse-head strong{display:block;font-size:20px;line-height:1.2}
+.section-collapse-head small{display:block;margin-top:3px;color:var(--muted);font-size:13px;font-weight:400}
+.section-collapse-chevron{font-size:22px;color:#7f8d85;transition:transform .18s ease;flex:0 0 auto}
+.section-collapse-head[aria-expanded="true"] .section-collapse-chevron{transform:rotate(180deg)}
+.recent-content[hidden]{display:none}
