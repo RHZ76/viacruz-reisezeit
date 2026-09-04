@@ -1015,7 +1015,30 @@ function openDetail(id){
   document.getElementById('visitedDetail').onclick=()=>{e.visited=!e.visited;if(e.visited)e.wantToVisit=false;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
   document.getElementById('trashDetail').onclick=()=>{if(confirm('Diesen Eintrag in den Papierkorb verschieben?')){e.deleted=true;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();}};
   document.getElementById('editBasic').onclick=()=>e.type==='camping'?openCampingEditor(e):e.type==='stellplatz'?openStellplatzEditor(e):editBasic(e);
-  content.querySelectorAll('.gallery-item img').forEach(img=>img.onclick=()=>{const win=window.open();if(win){win.document.write(`<img src="${img.src}" style="max-width:100%;height:auto;display:block;margin:auto">`);win.document.close();}});
+  content.querySelectorAll('.gallery-item img').forEach(img=>img.onclick=()=>openImageViewer(img.src,img.alt||'Gespeichertes Bild'));
+}
+
+function openImageViewer(src,alt='Gespeichertes Bild'){
+  const existing=document.getElementById('imageViewerOverlay');
+  if(existing)existing.remove();
+  const overlay=document.createElement('div');
+  overlay.id='imageViewerOverlay';
+  overlay.className='image-viewer-overlay';
+  overlay.setAttribute('role','dialog');
+  overlay.setAttribute('aria-modal','true');
+  overlay.setAttribute('aria-label','Bildansicht');
+  overlay.innerHTML=`<div class="image-viewer-toolbar"><button type="button" class="image-viewer-back" id="imageViewerBack">← Zurück</button><button type="button" class="image-viewer-close" id="imageViewerClose" aria-label="Bildansicht schließen">×</button></div><div class="image-viewer-stage"><img src="${src}" alt="${escapeHtml(alt)}" /></div>`;
+  const closeViewer=()=>{
+    document.removeEventListener('keydown',onKeyDown);
+    overlay.remove();
+  };
+  const onKeyDown=(ev)=>{if(ev.key==='Escape')closeViewer();};
+  overlay.addEventListener('click',ev=>{if(ev.target===overlay||ev.target.classList.contains('image-viewer-stage'))closeViewer();});
+  overlay.querySelector('#imageViewerBack').onclick=closeViewer;
+  overlay.querySelector('#imageViewerClose').onclick=closeViewer;
+  document.addEventListener('keydown',onKeyDown);
+  document.body.appendChild(overlay);
+  overlay.querySelector('#imageViewerBack').focus();
 }
 function editBasic(e){
   document.getElementById('detailDialog').close();
