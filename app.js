@@ -1073,7 +1073,9 @@ function ratingValue(id){
 }
 function personalRatingAverage(personal){
   const r=personal?.ratings||{};
-  const values=[r.overall,r.location,r.quiet,r.cleanliness,r.sanitary,r.value].filter(v=>Number.isFinite(Number(v))).map(Number);
+  const values=[r.overall,r.location,r.quiet,r.cleanliness,r.sanitary,r.value]
+    .filter(v=>v!==null && v!==undefined && v!=='' && Number.isFinite(Number(v)))
+    .map(Number);
   if(!values.length)return null;
   return values.reduce((a,b)=>a+b,0)/values.length;
 }
