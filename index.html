@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.14-r3" />
+  <link rel="stylesheet" href="styles.css?v=0.3.15-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -1631,6 +1631,272 @@
       </section>
 
 
+      <section class="edit-section">
+        <div class="edit-section-head">
+          <h3>Sanitär &amp; Versorgung</h3>
+          <p>Sanitäranlagen, Waschen, Entsorgung und weitere Versorgung.</p>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Sanitär</div>
+
+          <div class="grid-2">
+            <label>WC
+              <select id="stellplatzFacilitiesWc">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Duschen
+              <select id="stellplatzFacilitiesShowers">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div id="stellplatzFacilitiesShowerDetails" class="conditional-fields">
+            <div class="grid-2">
+              <label>Duschen
+                <select id="stellplatzFacilitiesShowerBilling">
+                  <option value="unknown">Preis unbekannt</option>
+                  <option value="included">Inklusive</option>
+                  <option value="paid">Kostenpflichtig</option>
+                </select>
+              </label>
+              <label>Preis pro Nutzung (€)
+                <input id="stellplatzFacilitiesShowerPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="optional" />
+              </label>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <label>Einzelwaschkabinen
+              <select id="stellplatzFacilitiesWashCubicles">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Familienbad
+              <select id="stellplatzFacilitiesFamilyBath">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>Barrierefreies Sanitär
+              <select id="stellplatzFacilitiesAccessible">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Baby-/Kinder-Sanitär
+              <select id="stellplatzFacilitiesChildren">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>Privatbad / Mietbad
+              <select id="stellplatzFacilitiesPrivateBath">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Sanitär beheizt
+              <select id="stellplatzFacilitiesHeated">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Ja</option>
+                <option value="no">Nein</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Waschen &amp; Entsorgung</div>
+
+          <div class="grid-2">
+            <label>Waschmaschine
+              <select id="stellplatzFacilitiesWasher">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Trockner
+              <select id="stellplatzFacilitiesDryer">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <div id="stellplatzFacilitiesWasherDetails" class="conditional-fields">
+              <label>Waschmaschine Kosten
+                <select id="stellplatzFacilitiesWasherBilling">
+                  <option value="unknown">Preis unbekannt</option>
+                  <option value="included">Inklusive</option>
+                  <option value="paid">Kostenpflichtig</option>
+                </select>
+              </label>
+              <label>Preis Waschgang (€)
+                <input id="stellplatzFacilitiesWasherPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="optional" />
+              </label>
+            </div>
+            <div id="stellplatzFacilitiesDryerDetails" class="conditional-fields">
+              <label>Trockner Kosten
+                <select id="stellplatzFacilitiesDryerBilling">
+                  <option value="unknown">Preis unbekannt</option>
+                  <option value="included">Inklusive</option>
+                  <option value="paid">Kostenpflichtig</option>
+                </select>
+              </label>
+              <label>Preis Trockengang (€)
+                <input id="stellplatzFacilitiesDryerPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="optional" />
+              </label>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <label>Geschirrspülbereich
+              <select id="stellplatzFacilitiesDishwashing">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Frischwasser-Entnahmestelle
+              <select id="stellplatzFacilitiesFreshWaterPoint">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>Grauwasserentsorgung
+              <select id="stellplatzFacilitiesGreyWater">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Chemietoiletten-Entsorgung
+              <select id="stellplatzFacilitiesChemicalToilet">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>Bodeneinlass für Wohnmobile
+              <select id="stellplatzFacilitiesFloorDrain">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Müllentsorgung
+              <select id="stellplatzFacilitiesWaste">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <label>Mülltrennung
+            <select id="stellplatzFacilitiesWasteSeparation">
+              <option value="unknown">Unbekannt</option>
+              <option value="yes">Ja</option>
+              <option value="no">Nein</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Einkauf &amp; weitere Versorgung</div>
+
+          <div class="grid-2">
+            <label>Shop / Laden
+              <select id="stellplatzFacilitiesShop">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Brötchenservice
+              <select id="stellplatzFacilitiesBread">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div id="stellplatzFacilitiesBreadDetails" class="conditional-fields">
+            <label>Brötchenservice verfügbar
+              <select id="stellplatzFacilitiesBreadSeason">
+                <option value="unknown">Unbekannt</option>
+                <option value="year-round">Ganzjährig</option>
+                <option value="seasonal">Saisonal</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>Camping-/Zubehörshop
+              <select id="stellplatzFacilitiesCampingShop">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>Gasflaschentausch / Gasversorgung
+              <select id="stellplatzFacilitiesGas">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>E-Bike-Lademöglichkeit
+              <select id="stellplatzFacilitiesEbike">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+            <label>E-Auto-Lademöglichkeit
+              <select id="stellplatzFacilitiesEv">
+                <option value="unknown">Unbekannt</option>
+                <option value="yes">Vorhanden</option>
+                <option value="no">Nicht vorhanden</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </section>
+
       <div class="sheet-actions sticky-sheet-actions">
         <button type="button" class="btn secondary" id="cancelStellplatzEdit">Abbrechen</button>
         <button type="submit" class="btn primary">Änderungen speichern</button>
@@ -1638,6 +1904,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.14-r3"></script>
+  <script src="app.js?v=0.3.15-r1"></script>
 </body>
 </html>
