@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.15-r2" />
+  <link rel="stylesheet" href="styles.css?v=0.3.16-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -1897,6 +1897,27 @@
         </div>
       </section>
 
+      <section class="edit-section">
+        <div class="edit-section-head"><h3>Lage &amp; Umgebung</h3><p>Lage, Entfernungen, Erreichbarkeit, Autobahnanbindung und Ausflugsziele.</p></div>
+        <div class="field-group"><div class="field-group-title">Lage des Stellplatzes <span class="field-help-inline">Mehrfachauswahl möglich</span></div><div class="option-grid" id="stellplatzLocationFeatures">
+          <label class="check-option"><input type="checkbox" value="sea" />Meer</label><label class="check-option"><input type="checkbox" value="lake" />See</label><label class="check-option"><input type="checkbox" value="river" />Fluss</label><label class="check-option"><input type="checkbox" value="mountains" />Berge</label><label class="check-option"><input type="checkbox" value="forest" />Wald</label><label class="check-option"><input type="checkbox" value="rural" />Ländlich</label><label class="check-option"><input type="checkbox" value="city" />Stadt</label><label class="check-option"><input type="checkbox" value="city-edge" />Stadtrand</label><label class="check-option"><input type="checkbox" value="beach-nearby" />Strandnähe</label><label class="check-option"><input type="checkbox" value="waterfront" />Direkt am Wasser</label><label class="check-option"><input type="checkbox" value="water-nearby" />Wasser in der Nähe</label><label class="check-option"><input type="checkbox" value="town-centre" />Direkt am Ortszentrum</label><label class="check-option"><input type="checkbox" value="remote" />Abgelegen</label>
+        </div></div>
+        <div class="field-group"><div class="field-group-title">Entfernungen &amp; Fußläufigkeit</div><div class="distance-grid">
+          <div class="distance-head">Ziel</div><div class="distance-head">km</div><div class="distance-head">Fußläufig</div>
+          <div class="distance-label">Ortszentrum</div><input id="stellplatzDistanceCentre" type="number" min="0" step="0.1" inputmode="decimal" /><select id="stellplatzWalkCentre"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select>
+          <div class="distance-label">Supermarkt</div><input id="stellplatzDistanceSupermarket" type="number" min="0" step="0.1" inputmode="decimal" /><select id="stellplatzWalkSupermarket"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select>
+          <div class="distance-label">Restaurant</div><input id="stellplatzDistanceRestaurant" type="number" min="0" step="0.1" inputmode="decimal" /><select id="stellplatzWalkRestaurant"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select>
+          <div class="distance-label">Bäckerei</div><input id="stellplatzDistanceBakery" type="number" min="0" step="0.1" inputmode="decimal" /><select id="stellplatzWalkBakery"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select>
+          <div class="distance-label">Strand / See</div><input id="stellplatzDistanceWater" type="number" min="0" step="0.1" inputmode="decimal" /><select id="stellplatzWalkWater"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select>
+          <div class="distance-label">Sehenswürdigkeiten</div><input id="stellplatzDistanceSights" type="number" min="0" step="0.1" inputmode="decimal" /><select id="stellplatzWalkSights"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select>
+        </div></div>
+        <div class="field-group"><div class="field-group-title">Autobahnanbindung</div><div class="grid-2"><label>Entfernung zur Autobahn (km)<input id="stellplatzMotorwayDistance" type="number" min="0" step="0.1" inputmode="decimal" placeholder="z. B. 4,5" /></label><label>Autobahn / Anschlussstelle<input id="stellplatzMotorwayJunction" type="text" placeholder="z. B. A9 – Anschlussstelle Weißenfels" /></label></div></div>
+        <div class="field-group"><div class="field-group-title">Mobilität &amp; Umgebung</div><div class="grid-2">
+          <label>ÖPNV<select id="stellplatzMobilityPublicTransport"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label><label>Bushaltestelle<select id="stellplatzMobilityBus"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label><label>Bahnhof<select id="stellplatzMobilityTrain"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label><label>Radwege<select id="stellplatzMobilityCycle"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label><label>Wanderwege<select id="stellplatzMobilityHiking"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label><label>Seilbahn<select id="stellplatzMobilityCableCar"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label><label>Fähranleger / Hafen<select id="stellplatzMobilityFerry"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+        </div></div>
+        <label>Ausflugsziele / Hinweise zur Umgebung<textarea id="stellplatzLocationNotes" rows="4" placeholder="z. B. Altstadt, Therme, schöne Radtour, Ausflugsschiff …"></textarea></label>
+      </section>
+
       <div class="sheet-actions sticky-sheet-actions">
         <button type="button" class="btn secondary" id="cancelStellplatzEdit">Abbrechen</button>
         <button type="submit" class="btn primary">Änderungen speichern</button>
@@ -1904,6 +1925,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.15-r2"></script>
+  <script src="app.js?v=0.3.16-r1"></script>
 </body>
 </html>
