@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.12-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.13-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -1347,6 +1347,86 @@
         </div>
       </section>
 
+      <section class="edit-section">
+        <div class="edit-section-head">
+          <h3>Saison &amp; Aufenthalt</h3>
+          <p>Öffnungszeiten, Anreise, Aufenthaltsdauer und Reservierung.</p>
+        </div>
+
+        <label>Betriebsart
+          <select id="stellplatzOperationType">
+            <option value="unknown">Unbekannt</option>
+            <option value="year-round">Ganzjährig</option>
+            <option value="seasonal">Saisonal</option>
+          </select>
+        </label>
+
+        <div id="stellplatzSeasonDates" class="conditional-fields">
+          <div class="grid-2">
+            <label>Geöffnet von
+              <input id="stellplatzOpenFrom" type="date" />
+            </label>
+            <label>Geöffnet bis
+              <input id="stellplatzOpenTo" type="date" />
+            </label>
+          </div>
+        </div>
+
+        <label>24-Stunden-Anreise möglich
+          <select id="stellplatzArrival24h">
+            <option value="unknown">Unbekannt</option>
+            <option value="yes">Ja</option>
+            <option value="no">Nein</option>
+          </select>
+        </label>
+
+        <div id="stellplatzAccessTimes" class="conditional-fields">
+          <div class="grid-2">
+            <label>Zufahrt möglich von
+              <input id="stellplatzAccessFrom" type="time" />
+            </label>
+            <label>Zufahrt möglich bis
+              <input id="stellplatzAccessTo" type="time" />
+            </label>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <label>Maximale Aufenthaltsdauer
+            <input id="stellplatzMaxStayValue" type="number" inputmode="decimal" min="0" step="0.5" placeholder="optional" />
+          </label>
+          <label>Einheit
+            <select id="stellplatzMaxStayUnit">
+              <option value="days">Tage</option>
+              <option value="hours">Stunden</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="grid-2">
+          <label>Reservierung
+            <select id="stellplatzReservation">
+              <option value="unknown">Unbekannt</option>
+              <option value="not-needed">Nicht erforderlich</option>
+              <option value="possible">Möglich</option>
+              <option value="recommended">Empfohlen</option>
+              <option value="required">Erforderlich</option>
+            </select>
+          </label>
+          <label>Spontane Anreise möglich
+            <select id="stellplatzSpontaneous">
+              <option value="unknown">Unbekannt</option>
+              <option value="yes">Ja</option>
+              <option value="no">Nein</option>
+            </select>
+          </label>
+        </div>
+
+        <label>Hinweise Aufenthalt / Zufahrt
+          <textarea id="stellplatzSeasonNotes" rows="4" placeholder="z. B. Zufahrt nachts gesperrt, max. 48 Stunden Aufenthalt …"></textarea>
+        </label>
+      </section>
+
       <div class="sheet-actions sticky-sheet-actions">
         <button type="button" class="btn secondary" id="cancelStellplatzEdit">Abbrechen</button>
         <button type="submit" class="btn primary">Änderungen speichern</button>
@@ -1354,6 +1434,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.12-r1"></script>
+  <script src="app.js?v=0.3.13-r1"></script>
 </body>
 </html>

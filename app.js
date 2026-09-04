@@ -366,7 +366,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.12 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.13 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -413,7 +413,7 @@ function hasMeaningfulDetails(value){
 function compatibleCampingToStellplatz(camping){
   const c=camping||{}, p=c.pitch||{}, f=c.facilities||{};
   return {
-    season:c.season?structuredClone(c.season):{},
+    season:c.season?{operationType:c.season.operationType||'unknown',openFrom:c.season.openFrom||'',openTo:c.season.openTo||'',arrival24h:'unknown',accessFrom:'',accessTo:'',maxStayValue:null,maxStayUnit:'',reservation:c.season.reservation||'unknown',spontaneousArrival:c.season.spontaneousArrival||'unknown',notes:c.season.notes||''}:{},
     pitch:{
       area:p.area??null,length:p.length??null,width:p.width??null,largeMotorhome:p.largeMotorhome||'unknown',surface:[...(p.surface||[])],level:p.level||'unknown',
       electricity:p.electricity||'unknown',electricityBilling:p.electricityBilling||'unknown',electricityPrice:p.electricityPrice??null,electricityKwhPrice:p.electricityKwhPrice??null,
@@ -434,7 +434,7 @@ function compatibleCampingToStellplatz(camping){
 function compatibleStellplatzToCamping(stellplatz){
   const s=stellplatz||{}, p=s.pitch||{}, f=s.facilities||{};
   return {
-    season:s.season?structuredClone(s.season):{},
+    season:s.season?{operationType:s.season.operationType||'unknown',openFrom:s.season.openFrom||'',openTo:s.season.openTo||'',summerCamping:'unknown',winterCamping:'unknown',minStay:null,reservation:s.season.reservation||'unknown',spontaneousArrival:s.season.spontaneousArrival||'unknown',arrivalFrom:'',arrivalTo:'',departureFrom:'',departureTo:'',notes:s.season.notes||''}:{},
     pitch:{...structuredClone(p)},
     facilities:{...structuredClone(f)},
     location:s.location?structuredClone(s.location):{},
@@ -812,11 +812,13 @@ function ensureStellplatzDetails(e){
   e.details.stellplatz.prices=e.details.stellplatz.prices||{};
   e.details.stellplatz.personal=e.details.stellplatz.personal||{};
   e.details.stellplatz.usage=e.details.stellplatz.usage||{};
+  e.details.stellplatz.season=e.details.stellplatz.season||{};
   return e.details.stellplatz;
 }
 function ensureStellplatzPrices(e){return ensureStellplatzDetails(e).prices;}
 function ensureStellplatzPersonal(e){return ensureStellplatzDetails(e).personal;}
 function ensureStellplatzUsage(e){return ensureStellplatzDetails(e).usage;}
+function ensureStellplatzSeason(e){return ensureStellplatzDetails(e).season;}
 function stellplatzFeeBillingLabel(v){return ({night:'pro Nacht','24h':'pro 24 Stunden',hour:'pro Stunde',day:'Tagespauschale'})[v]||'';}
 function touristTaxBillingLabel(v){return ({personNight:'pro Person / Nacht',personStay:'pro Person / Aufenthalt',flat:'pauschal'})[v]||'';}
 function seasonPriceLabel(row){
@@ -871,6 +873,22 @@ function updateStellplatzUsageConditionalFields(){
   const condition=document.getElementById('stellplatzConditionRequired')?.value==='yes';
   const conditionWrap=document.getElementById('stellplatzConditionFields');
   if(conditionWrap){conditionWrap.hidden=!condition;conditionWrap.querySelectorAll('textarea').forEach(el=>el.disabled=!condition);}
+}
+
+function updateStellplatzSeasonConditionalFields(){
+  const seasonal=document.getElementById('stellplatzOperationType')?.value==='seasonal';
+  const seasonDates=document.getElementById('stellplatzSeasonDates');
+  if(seasonDates){seasonDates.hidden=!seasonal;seasonDates.querySelectorAll('input').forEach(el=>el.disabled=!seasonal);}
+  const limited=document.getElementById('stellplatzArrival24h')?.value==='no';
+  const accessTimes=document.getElementById('stellplatzAccessTimes');
+  if(accessTimes){accessTimes.hidden=!limited;accessTimes.querySelectorAll('input').forEach(el=>el.disabled=!limited);}
+}
+function stellplatzMaxStayText(season){
+  if(season?.maxStayValue==null || !season?.maxStayUnit) return '';
+  const v=formatNumber(season.maxStayValue);
+  if(season.maxStayUnit==='hours') return `${v} ${Number(season.maxStayValue)===1?'Stunde':'Stunden'}`;
+  if(season.maxStayUnit==='days') return `${v} ${Number(season.maxStayValue)===1?'Tag':'Tage'}`;
+  return v;
 }
 
 function renderStellplatzVisitEditor(visits=[]){
@@ -942,11 +960,21 @@ function stellplatzDetailCards(e){
   const conditionText=valueLabel(usage.conditionRequired,{unknown:'',yes:'Ja',no:'Nein'},'');
   const usageRows=[detailRow('Art des Stellplatzes',usageTypeText),detailRow('Geeignet für',purposeText),detailRow('Bezahlung bei/über',paymentText),detailRow('Bezahl-App',paymentApp),detailRow('Anmeldung / Check-in erforderlich',checkInText),detailRow('Anmeldung bei',usage.checkInRequired==='yes'?checkInAt:''),detailRow('Schranke / Zugangssystem',accessText),detailRow('Art des Zugangssystems',usage.accessSystem==='yes'?accessMethods:''),usage.accessSystem==='yes'&&usage.accessNotes?`<div class="detail-note"><span>Hinweise zum Zugang</span><p>${escapeHtml(usage.accessNotes).replace(/\n/g,'<br>')}</p></div>`:'',detailRow('Nutzung an Bedingung geknüpft',conditionText),usage.conditionRequired==='yes'&&usage.conditionText?`<div class="detail-note"><span>Bedingung / Voraussetzung</span><p>${escapeHtml(usage.conditionText).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
   const usageSummary=[usageTypeText,purposeText,checkInText?`Check-in ${checkInText.toLowerCase()}`:''].filter(Boolean).slice(0,2).join(' · ')||'Stellplatz & Nutzung';
+  const season=e.details?.stellplatz?.season||{};
+  const operation=valueLabel(season.operationType,{unknown:'','year-round':'Ganzjährig',seasonal:'Saisonal'},'');
+  const openPeriod=season.operationType==='seasonal'&&(season.openFrom||season.openTo)?`${formatDate(season.openFrom)||'–'} bis ${formatDate(season.openTo)||'–'}`:'';
+  const arrival24h=valueLabel(season.arrival24h,{unknown:'',yes:'Ja',no:'Nein'},'');
+  const accessPeriod=season.arrival24h==='no'&&(season.accessFrom||season.accessTo)?`${season.accessFrom||'–'} bis ${season.accessTo||'–'}`:'';
+  const reservation=valueLabel(season.reservation,{unknown:'','not-needed':'Nicht erforderlich',possible:'Möglich',recommended:'Empfohlen',required:'Erforderlich'},'');
+  const spontaneous=knownYesNo(season.spontaneousArrival,'Möglich','Nicht möglich');
+  const stayRowsSp=[detailRow('Betriebsart',operation),detailRow('Geöffnet',openPeriod),detailRow('24-Stunden-Anreise möglich',arrival24h),detailRow('Zufahrt möglich',accessPeriod),detailRow('Maximale Aufenthaltsdauer',stellplatzMaxStayText(season)),detailRow('Reservierung',reservation),detailRow('Spontane Anreise',spontaneous),season.notes?`<div class="detail-note"><span>Hinweise Aufenthalt / Zufahrt</span><p>${escapeHtml(season.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
+  const seasonSummary=[operation,arrival24h?`24h-Anreise ${arrival24h.toLowerCase()}`:'',stellplatzMaxStayText(season)].filter(Boolean).slice(0,2).join(' · ')||'Saison & Aufenthalt';
   return `<div class="detail-accordions">
     <details class="detail-accordion"><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>
     <details class="detail-accordion"><summary><span><small>Preise & Gebühren</small><strong>${escapeHtml(priceSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${priceRows||'<div class="detail-empty">Noch keine Preise oder Gebühren gespeichert.</div>'}</div></details>
     <details class="detail-accordion"><summary><span><small>Persönlich</small><strong>${escapeHtml(personalSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${personalRows||'<div class="detail-empty">Noch keine persönlichen Angaben gespeichert.</div>'}</div></details>
     <details class="detail-accordion"><summary><span><small>Stellplatz & Nutzung</small><strong>${escapeHtml(usageSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${usageRows||'<div class="detail-empty">Noch keine Angaben zur Nutzung gespeichert.</div>'}</div></details>
+    <details class="detail-accordion"><summary><span><small>Saison & Aufenthalt</small><strong>${escapeHtml(seasonSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${stayRowsSp||'<div class="detail-empty">Noch keine Angaben zu Saison oder Aufenthalt gespeichert.</div>'}</div></details>
   </div>`;
 }
 function entryTypeDetailCards(e){
@@ -1122,6 +1150,19 @@ function openStellplatzEditor(e){
   setField('stellplatzConditionRequired',usage.conditionRequired||'unknown');
   setField('stellplatzConditionText',usage.conditionText||'');
   updateStellplatzUsageConditionalFields();
+  const season=ensureStellplatzSeason(e);
+  setField('stellplatzOperationType',season.operationType||'unknown');
+  setField('stellplatzOpenFrom',season.openFrom||'');
+  setField('stellplatzOpenTo',season.openTo||'');
+  setField('stellplatzArrival24h',season.arrival24h||'unknown');
+  setField('stellplatzAccessFrom',season.accessFrom||'');
+  setField('stellplatzAccessTo',season.accessTo||'');
+  setField('stellplatzMaxStayValue',season.maxStayValue??'');
+  setField('stellplatzMaxStayUnit',season.maxStayUnit||'days');
+  setField('stellplatzReservation',season.reservation||'unknown');
+  setField('stellplatzSpontaneous',season.spontaneousArrival||'unknown');
+  setField('stellplatzSeasonNotes',season.notes||'');
+  updateStellplatzSeasonConditionalFields();
   document.getElementById('detailDialog').close();
   document.getElementById('stellplatzEditDialog').showModal();
 }
@@ -1136,6 +1177,8 @@ document.querySelectorAll('#stellplatzPaymentMethods input[type="checkbox"]').fo
 document.getElementById('stellplatzCheckInRequired').onchange=updateStellplatzUsageConditionalFields;
 document.getElementById('stellplatzAccessSystem').onchange=updateStellplatzUsageConditionalFields;
 document.getElementById('stellplatzConditionRequired').onchange=updateStellplatzUsageConditionalFields;
+document.getElementById('stellplatzOperationType').onchange=updateStellplatzSeasonConditionalFields;
+document.getElementById('stellplatzArrival24h').onchange=updateStellplatzSeasonConditionalFields;
 document.getElementById('addStellplatzSeasonPrice').onclick=()=>{stellplatzSeasonPriceDraft=collectStellplatzSeasonPrices();stellplatzSeasonPriceDraft.push({id:uid(),name:'',from:'',to:'',amount:null,billing:'unknown'});renderStellplatzSeasonPrices();};
 document.getElementById('addStellplatzVisit').onclick=addStellplatzVisitEditor;
 document.getElementById('addStellplatzMedia').onclick=()=>document.getElementById('stellplatzMediaInput').click();
@@ -1182,6 +1225,18 @@ document.getElementById('stellplatzEditForm').addEventListener('submit',ev=>{
   usage.accessNotes=usage.accessSystem==='yes'?document.getElementById('stellplatzAccessNotes').value.trim():'';
   usage.conditionRequired=document.getElementById('stellplatzConditionRequired').value;
   usage.conditionText=usage.conditionRequired==='yes'?document.getElementById('stellplatzConditionText').value.trim():'';
+  const season=ensureStellplatzSeason(e);
+  season.operationType=document.getElementById('stellplatzOperationType').value;
+  season.openFrom=season.operationType==='seasonal'?document.getElementById('stellplatzOpenFrom').value:'';
+  season.openTo=season.operationType==='seasonal'?document.getElementById('stellplatzOpenTo').value:'';
+  season.arrival24h=document.getElementById('stellplatzArrival24h').value;
+  season.accessFrom=season.arrival24h==='no'?document.getElementById('stellplatzAccessFrom').value:'';
+  season.accessTo=season.arrival24h==='no'?document.getElementById('stellplatzAccessTo').value:'';
+  season.maxStayValue=numericField('stellplatzMaxStayValue');
+  season.maxStayUnit=season.maxStayValue!=null?document.getElementById('stellplatzMaxStayUnit').value:'';
+  season.reservation=document.getElementById('stellplatzReservation').value;
+  season.spontaneousArrival=document.getElementById('stellplatzSpontaneous').value;
+  season.notes=document.getElementById('stellplatzSeasonNotes').value.trim();
   e.updatedAt=new Date().toISOString();
   saveEntries();
   closeStellplatzEditor();
