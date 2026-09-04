@@ -1,4 +1,4 @@
-const CACHE = 'viacruz-reisezeit-v0.3.14-r2';
+const CACHE = 'viacruz-reisezeit-v0.3.14-r3';
 const FILES = [
   './',
   './index.html',
