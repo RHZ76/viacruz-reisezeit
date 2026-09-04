@@ -1020,24 +1020,22 @@ function openDetail(id){
 
 function openImageViewer(src,alt='Gespeichertes Bild'){
   const existing=document.getElementById('imageViewerOverlay');
-  if(existing)existing.remove();
-  const overlay=document.createElement('div');
+  if(existing){if(typeof existing.close==='function'&&existing.open)existing.close();existing.remove();}
+  // Als echtes modales <dialog> öffnen: Nur so liegt der Bildbetrachter auch
+  // über der bereits modal geöffneten Camping-/Stellplatz-Detailansicht.
+  const overlay=document.createElement('dialog');
   overlay.id='imageViewerOverlay';
   overlay.className='image-viewer-overlay';
-  overlay.setAttribute('role','dialog');
-  overlay.setAttribute('aria-modal','true');
   overlay.setAttribute('aria-label','Bildansicht');
   overlay.innerHTML=`<div class="image-viewer-toolbar"><button type="button" class="image-viewer-back" id="imageViewerBack">← Zurück</button><button type="button" class="image-viewer-close" id="imageViewerClose" aria-label="Bildansicht schließen">×</button></div><div class="image-viewer-stage"><img src="${src}" alt="${escapeHtml(alt)}" /></div>`;
-  const closeViewer=()=>{
-    document.removeEventListener('keydown',onKeyDown);
-    overlay.remove();
-  };
-  const onKeyDown=(ev)=>{if(ev.key==='Escape')closeViewer();};
+  const closeViewer=()=>{if(overlay.open)overlay.close();};
+  overlay.addEventListener('cancel',ev=>{ev.preventDefault();closeViewer();});
+  overlay.addEventListener('close',()=>overlay.remove(),{once:true});
   overlay.addEventListener('click',ev=>{if(ev.target===overlay||ev.target.classList.contains('image-viewer-stage'))closeViewer();});
   overlay.querySelector('#imageViewerBack').onclick=closeViewer;
   overlay.querySelector('#imageViewerClose').onclick=closeViewer;
-  document.addEventListener('keydown',onKeyDown);
   document.body.appendChild(overlay);
+  overlay.showModal();
   overlay.querySelector('#imageViewerBack').focus();
 }
 function editBasic(e){
