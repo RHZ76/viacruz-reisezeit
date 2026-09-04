@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.17-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.18-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -1973,6 +1973,22 @@
         </div>
       </section>
 
+      <section class="edit-section">
+        <div class="edit-section-head"><h3>Hund</h3><p>Regeln, Kosten und Ausstattung für Hunde.</p></div>
+        <div class="grid-2"><label>Hunde erlaubt<select id="stellplatzDogAllowed"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select></label></div>
+        <div id="stellplatzDogDetails" class="conditional-fields">
+          <div class="grid-2"><label>Maximale Anzahl Hunde <span class="field-help-inline">optional</span><input id="stellplatzDogMaxCount" type="number" min="0" step="1" inputmode="numeric"></label><label>Hundekosten<select id="stellplatzDogFeeType"><option value="unknown">Unbekannt</option><option value="free">Kostenlos</option><option value="paid">Kostenpflichtig</option></select></label></div>
+          <div id="stellplatzDogFeeWrap" class="conditional-fields"><label>Preis pro Hund / Nacht in € <span class="field-help-inline">optional</span><input id="stellplatzDogFee" type="number" min="0" step="0.01" inputmode="decimal"></label></div>
+          <div class="grid-2">
+            <label>Leinenpflicht<select id="stellplatzDogLeash"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select></label><label>Eingeschränkte Bereiche<select id="stellplatzDogRestricted"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select></label>
+            <label>Hundeauslauf / Hundewiese<select id="stellplatzDogRun"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label><label>Hundestrand<select id="stellplatzDogBeach"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+            <label>Bademöglichkeit für Hunde<select id="stellplatzDogSwimming"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label><label>Hundedusche<select id="stellplatzDogShower"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+            <label>Hunde im Restaurant erlaubt<select id="stellplatzDogRestaurant"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select></label>
+          </div>
+          <label>Hinweise für Hunde<textarea id="stellplatzDogNotes" rows="4" placeholder="z. B. Saisonbeschränkungen, bestimmte Platzbereiche oder besondere Regeln …"></textarea></label>
+        </div>
+      </section>
+
       <div class="sheet-actions sticky-sheet-actions">
         <button type="button" class="btn secondary" id="cancelStellplatzEdit">Abbrechen</button>
         <button type="submit" class="btn primary">Änderungen speichern</button>
@@ -1980,6 +1996,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.17-r1"></script>
+  <script src="app.js?v=0.3.18-r1"></script>
 </body>
 </html>
