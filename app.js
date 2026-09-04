@@ -366,7 +366,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.11 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.12 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -427,7 +427,8 @@ function compatibleCampingToStellplatz(camping){
     location:c.location?structuredClone(c.location):{},
     dog:c.dog?structuredClone(c.dog):{},
     prices:c.prices?{year:c.prices.year??null,feeStatus:c.prices.base!=null?'paid':'unknown',billing:c.prices.base!=null?'night':'unknown',amount:c.prices.base??null,seasonPrices:[],touristTax:c.prices.touristTax??null,touristTaxBilling:c.prices.touristTax!=null?'personNight':'unknown',reservationFee:c.prices.reservationFee??null,otherLabel:c.prices.otherLabel||'',otherAmount:c.prices.otherAmount??null,included:c.prices.included||'',notes:c.prices.notes||''}:{},
-    personal:c.personal?structuredClone(c.personal):{}
+    personal:c.personal?structuredClone(c.personal):{},
+    usage:{}
   };
 }
 function compatibleStellplatzToCamping(stellplatz){
@@ -810,10 +811,12 @@ function ensureStellplatzDetails(e){
   e.details.stellplatz=e.details.stellplatz||{};
   e.details.stellplatz.prices=e.details.stellplatz.prices||{};
   e.details.stellplatz.personal=e.details.stellplatz.personal||{};
+  e.details.stellplatz.usage=e.details.stellplatz.usage||{};
   return e.details.stellplatz;
 }
 function ensureStellplatzPrices(e){return ensureStellplatzDetails(e).prices;}
 function ensureStellplatzPersonal(e){return ensureStellplatzDetails(e).personal;}
+function ensureStellplatzUsage(e){return ensureStellplatzDetails(e).usage;}
 function stellplatzFeeBillingLabel(v){return ({night:'pro Nacht','24h':'pro 24 Stunden',hour:'pro Stunde',day:'Tagespauschale'})[v]||'';}
 function touristTaxBillingLabel(v){return ({personNight:'pro Person / Nacht',personStay:'pro Person / Aufenthalt',flat:'pauschal'})[v]||'';}
 function seasonPriceLabel(row){
@@ -844,6 +847,30 @@ function collectStellplatzSeasonPrices(){
     const n=card.querySelector('.season-amount')?.value;
     return {id:stellplatzSeasonPriceDraft[Number(card.dataset.seasonIndex)]?.id||uid(),name:card.querySelector('.season-name')?.value.trim()||'',from:card.querySelector('.season-from')?.value||'',to:card.querySelector('.season-to')?.value||'',amount:n===''?null:Number(n),billing:card.querySelector('.season-billing')?.value||'unknown'};
   }).filter(r=>r.name||r.from||r.to||r.amount!=null||r.billing!=='unknown');
+}
+
+
+function stellplatzUsageTypeLabel(v){return ({classic:'Klassischer Wohnmobilstellplatz',municipal:'Kommunaler Stellplatz',private:'Privater Stellplatz','farm-winery':'Bauernhof / Winzer',restaurant:'Restaurant / Gasthof',marina:'Marina / Hafen','thermal-pool':'Therme / Freizeitbad','at-campsite':'Stellplatz am Campingplatz','overnight-parking':'Parkplatz mit erlaubter Übernachtung',other:'Sonstiger Stellplatz'})[v]||v;}
+function stellplatzPurposeLabel(v){return ({overnight:'Durchreise / Übernachtung',short:'Kurzaufenthalt','multi-day':'Mehrtägiger Aufenthalt'})[v]||v;}
+function stellplatzPaymentLabel(v){return ({machine:'Automat',reception:'Rezeption',operator:'Betreiber / Platzwart','tourist-info':'Tourist-Information',restaurant:'Restaurant / Gasthof',app:'App',online:'Online',other:'Sonstige'})[v]||v;}
+function stellplatzCheckInLabel(v){return ({operator:'Betreiber / Platzwart',reception:'Rezeption','tourist-info':'Tourist-Information',restaurant:'Restaurant / Gasthof','farm-winery':'Bauernhof / Winzer',online:'Online',app:'App',other:'Sonstige'})[v]||v;}
+function stellplatzAccessLabel(v){return ({'ticket-barrier':'Schranke mit Ticket','plate-recognition':'Kennzeichenerkennung',pin:'PIN / Zugangscode','card-chip':'Zugangskarte / Chip',app:'App',other:'Sonstiges'})[v]||v;}
+function updateStellplatzUsageConditionalFields(){
+  const paid=document.getElementById('stellplatzFeeStatus')?.value==='paid';
+  const paymentWrap=document.getElementById('stellplatzPaymentFields');
+  if(paymentWrap){paymentWrap.hidden=!paid;paymentWrap.querySelectorAll('input,select,textarea').forEach(el=>el.disabled=!paid);}
+  const appSelected=paid && getCheckboxGroup('stellplatzPaymentMethods').includes('app');
+  const appWrap=document.getElementById('stellplatzPaymentAppFields');
+  if(appWrap){appWrap.hidden=!appSelected;appWrap.querySelectorAll('input').forEach(el=>el.disabled=!appSelected);}
+  const checkIn=document.getElementById('stellplatzCheckInRequired')?.value==='yes';
+  const checkWrap=document.getElementById('stellplatzCheckInFields');
+  if(checkWrap){checkWrap.hidden=!checkIn;checkWrap.querySelectorAll('input').forEach(el=>el.disabled=!checkIn);}
+  const access=document.getElementById('stellplatzAccessSystem')?.value==='yes';
+  const accessWrap=document.getElementById('stellplatzAccessFields');
+  if(accessWrap){accessWrap.hidden=!access;accessWrap.querySelectorAll('input,textarea').forEach(el=>el.disabled=!access);}
+  const condition=document.getElementById('stellplatzConditionRequired')?.value==='yes';
+  const conditionWrap=document.getElementById('stellplatzConditionFields');
+  if(conditionWrap){conditionWrap.hidden=!condition;conditionWrap.querySelectorAll('textarea').forEach(el=>el.disabled=!condition);}
 }
 
 function renderStellplatzVisitEditor(visits=[]){
@@ -903,10 +930,23 @@ function stellplatzDetailCards(e){
   const personalRows=[detailRow('Status',[statusText,favoriteText].filter(Boolean).join(' · ')),e.why?`<div class="detail-note"><span>Warum gespeichert?</span><p>${escapeHtml(e.why).replace(/\n/g,'<br>')}</p></div>`:'',ratingRows,detailRow('Würde ich wiederkommen?',returnText),visits.length?`<div class="detail-note"><span>Besuchshistorie</span>${visitRows}</div>`:'',e.notes?`<div class="detail-note"><span>Persönliche Notizen</span><p>${escapeHtml(e.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
   const ratingAverage=personalRatingAverage(personal);
   const personalSummary=[statusText,favoriteText,ratingAverage!=null?`${formatNumber(ratingAverage,1)} / 5`:'',visits.length?`${visits.length} ${visits.length===1?'Besuch':'Besuche'}`:''].filter(Boolean).slice(0,3).join(' · ')||'Persönlich';
+  const usage=e.details?.stellplatz?.usage||{};
+  const usageTypeText=(usage.types||[]).map(stellplatzUsageTypeLabel).join(', ');
+  const purposeText=(usage.purposes||[]).map(stellplatzPurposeLabel).join(', ');
+  const paymentText=p.feeStatus==='paid'?(usage.paymentMethods||[]).map(stellplatzPaymentLabel).join(', '):'';
+  const paymentApp=paymentText&&usage.paymentMethods?.includes('app')&&usage.paymentAppName?`App: ${usage.paymentAppName}`:'';
+  const checkInText=valueLabel(usage.checkInRequired,{unknown:'',yes:'Ja',no:'Nein'},'');
+  const checkInAt=(usage.checkInAt||[]).map(stellplatzCheckInLabel).join(', ');
+  const accessText=valueLabel(usage.accessSystem,{unknown:'',yes:'Vorhanden',no:'Nicht vorhanden'},'');
+  const accessMethods=(usage.accessMethods||[]).map(stellplatzAccessLabel).join(', ');
+  const conditionText=valueLabel(usage.conditionRequired,{unknown:'',yes:'Ja',no:'Nein'},'');
+  const usageRows=[detailRow('Art des Stellplatzes',usageTypeText),detailRow('Geeignet für',purposeText),detailRow('Bezahlung bei/über',paymentText),detailRow('Bezahl-App',paymentApp),detailRow('Anmeldung / Check-in erforderlich',checkInText),detailRow('Anmeldung bei',usage.checkInRequired==='yes'?checkInAt:''),detailRow('Schranke / Zugangssystem',accessText),detailRow('Art des Zugangssystems',usage.accessSystem==='yes'?accessMethods:''),usage.accessSystem==='yes'&&usage.accessNotes?`<div class="detail-note"><span>Hinweise zum Zugang</span><p>${escapeHtml(usage.accessNotes).replace(/\n/g,'<br>')}</p></div>`:'',detailRow('Nutzung an Bedingung geknüpft',conditionText),usage.conditionRequired==='yes'&&usage.conditionText?`<div class="detail-note"><span>Bedingung / Voraussetzung</span><p>${escapeHtml(usage.conditionText).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
+  const usageSummary=[usageTypeText,purposeText,checkInText?`Check-in ${checkInText.toLowerCase()}`:''].filter(Boolean).slice(0,2).join(' · ')||'Stellplatz & Nutzung';
   return `<div class="detail-accordions">
     <details class="detail-accordion"><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>
     <details class="detail-accordion"><summary><span><small>Preise & Gebühren</small><strong>${escapeHtml(priceSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${priceRows||'<div class="detail-empty">Noch keine Preise oder Gebühren gespeichert.</div>'}</div></details>
     <details class="detail-accordion"><summary><span><small>Persönlich</small><strong>${escapeHtml(personalSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${personalRows||'<div class="detail-empty">Noch keine persönlichen Angaben gespeichert.</div>'}</div></details>
+    <details class="detail-accordion"><summary><span><small>Stellplatz & Nutzung</small><strong>${escapeHtml(usageSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${usageRows||'<div class="detail-empty">Noch keine Angaben zur Nutzung gespeichert.</div>'}</div></details>
   </div>`;
 }
 function entryTypeDetailCards(e){
@@ -1069,6 +1109,19 @@ function openStellplatzEditor(e){
   setField('stellplatzRatingOverall',personal.ratings?.overall);setField('stellplatzRatingLocation',personal.ratings?.location);setField('stellplatzRatingQuiet',personal.ratings?.quiet);setField('stellplatzRatingCleanliness',personal.ratings?.cleanliness);setField('stellplatzRatingSanitary',personal.ratings?.sanitary);setField('stellplatzRatingValue',personal.ratings?.value);
   setField('stellplatzPersonalReturn',personal.returnIntent||'unknown');setField('stellplatzPersonalNotes',e.notes||'');renderStellplatzVisitEditor(e.visits||[]);
   stellplatzMediaDraft=cloneMediaList(e.media);stellplatzTitleImageDraft=e.titleImageId||null;renderStellplatzMediaEditor();
+  const usage=ensureStellplatzUsage(e);
+  setCheckboxGroup('stellplatzUsageTypes',usage.types||[]);
+  setCheckboxGroup('stellplatzUsagePurpose',usage.purposes||[]);
+  setCheckboxGroup('stellplatzPaymentMethods',usage.paymentMethods||[]);
+  setField('stellplatzPaymentAppName',usage.paymentAppName||'');
+  setField('stellplatzCheckInRequired',usage.checkInRequired||'unknown');
+  setCheckboxGroup('stellplatzCheckInAt',usage.checkInAt||[]);
+  setField('stellplatzAccessSystem',usage.accessSystem||'unknown');
+  setCheckboxGroup('stellplatzAccessMethods',usage.accessMethods||[]);
+  setField('stellplatzAccessNotes',usage.accessNotes||'');
+  setField('stellplatzConditionRequired',usage.conditionRequired||'unknown');
+  setField('stellplatzConditionText',usage.conditionText||'');
+  updateStellplatzUsageConditionalFields();
   document.getElementById('detailDialog').close();
   document.getElementById('stellplatzEditDialog').showModal();
 }
@@ -1078,7 +1131,11 @@ function closeStellplatzEditor(){
 }
 document.getElementById('closeStellplatzEdit').onclick=closeStellplatzEditor;
 document.getElementById('cancelStellplatzEdit').onclick=closeStellplatzEditor;
-document.getElementById('stellplatzFeeStatus').onchange=updateStellplatzPaidFields;
+document.getElementById('stellplatzFeeStatus').onchange=()=>{updateStellplatzPaidFields();updateStellplatzUsageConditionalFields();};
+document.querySelectorAll('#stellplatzPaymentMethods input[type="checkbox"]').forEach(el=>el.onchange=updateStellplatzUsageConditionalFields);
+document.getElementById('stellplatzCheckInRequired').onchange=updateStellplatzUsageConditionalFields;
+document.getElementById('stellplatzAccessSystem').onchange=updateStellplatzUsageConditionalFields;
+document.getElementById('stellplatzConditionRequired').onchange=updateStellplatzUsageConditionalFields;
 document.getElementById('addStellplatzSeasonPrice').onclick=()=>{stellplatzSeasonPriceDraft=collectStellplatzSeasonPrices();stellplatzSeasonPriceDraft.push({id:uid(),name:'',from:'',to:'',amount:null,billing:'unknown'});renderStellplatzSeasonPrices();};
 document.getElementById('addStellplatzVisit').onclick=addStellplatzVisitEditor;
 document.getElementById('addStellplatzMedia').onclick=()=>document.getElementById('stellplatzMediaInput').click();
@@ -1112,6 +1169,19 @@ document.getElementById('stellplatzEditForm').addEventListener('submit',ev=>{
   const personalStatus=document.getElementById('stellplatzPersonalStatus').value;e.visited=personalStatus==='visited';e.wantToVisit=personalStatus==='want';e.favorite=!!document.getElementById('stellplatzPersonalFavorite').checked;e.why=document.getElementById('stellplatzPersonalWhy').value.trim();
   personal.ratings={overall:ratingValue('stellplatzRatingOverall'),location:ratingValue('stellplatzRatingLocation'),quiet:ratingValue('stellplatzRatingQuiet'),cleanliness:ratingValue('stellplatzRatingCleanliness'),sanitary:ratingValue('stellplatzRatingSanitary'),value:ratingValue('stellplatzRatingValue')};
   personal.returnIntent=document.getElementById('stellplatzPersonalReturn').value;e.visits=collectStellplatzVisits();e.notes=document.getElementById('stellplatzPersonalNotes').value.trim();
+  const usage=ensureStellplatzUsage(e);
+  usage.types=getCheckboxGroup('stellplatzUsageTypes');
+  usage.purposes=getCheckboxGroup('stellplatzUsagePurpose');
+  const isPaid=prices.feeStatus==='paid';
+  usage.paymentMethods=isPaid?getCheckboxGroup('stellplatzPaymentMethods'):[];
+  usage.paymentAppName=isPaid&&usage.paymentMethods.includes('app')?document.getElementById('stellplatzPaymentAppName').value.trim():'';
+  usage.checkInRequired=document.getElementById('stellplatzCheckInRequired').value;
+  usage.checkInAt=usage.checkInRequired==='yes'?getCheckboxGroup('stellplatzCheckInAt'):[];
+  usage.accessSystem=document.getElementById('stellplatzAccessSystem').value;
+  usage.accessMethods=usage.accessSystem==='yes'?getCheckboxGroup('stellplatzAccessMethods'):[];
+  usage.accessNotes=usage.accessSystem==='yes'?document.getElementById('stellplatzAccessNotes').value.trim():'';
+  usage.conditionRequired=document.getElementById('stellplatzConditionRequired').value;
+  usage.conditionText=usage.conditionRequired==='yes'?document.getElementById('stellplatzConditionText').value.trim():'';
   e.updatedAt=new Date().toISOString();
   saveEntries();
   closeStellplatzEditor();

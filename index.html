@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.11-r3" />
+  <link rel="stylesheet" href="styles.css?v=0.3.12-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -1233,6 +1233,120 @@
         <div id="stellplatzMediaEditor" class="media-editor-grid"></div>
       </section>
 
+
+      <section class="edit-section">
+        <div class="edit-section-head">
+          <h3>Stellplatz &amp; Nutzung</h3>
+          <p>Art des Stellplatzes, Nutzung, Bezahlung, Anmeldung und Zugang.</p>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Art des Stellplatzes <span class="field-help-inline">Mehrfachauswahl möglich</span></div>
+          <div class="option-grid" id="stellplatzUsageTypes">
+            <label class="check-option"><input type="checkbox" value="classic" />Klassischer Wohnmobilstellplatz</label>
+            <label class="check-option"><input type="checkbox" value="municipal" />Kommunaler Stellplatz</label>
+            <label class="check-option"><input type="checkbox" value="private" />Privater Stellplatz</label>
+            <label class="check-option"><input type="checkbox" value="farm-winery" />Bauernhof / Winzer</label>
+            <label class="check-option"><input type="checkbox" value="restaurant" />Restaurant / Gasthof</label>
+            <label class="check-option"><input type="checkbox" value="marina" />Marina / Hafen</label>
+            <label class="check-option"><input type="checkbox" value="thermal-pool" />Therme / Freizeitbad</label>
+            <label class="check-option"><input type="checkbox" value="at-campsite" />Stellplatz am Campingplatz</label>
+            <label class="check-option"><input type="checkbox" value="overnight-parking" />Parkplatz mit erlaubter Übernachtung</label>
+            <label class="check-option"><input type="checkbox" value="other" />Sonstiger Stellplatz</label>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Geeignet für <span class="field-help-inline">Mehrfachauswahl möglich</span></div>
+          <div class="option-grid" id="stellplatzUsagePurpose">
+            <label class="check-option"><input type="checkbox" value="overnight" />Durchreise / Übernachtung</label>
+            <label class="check-option"><input type="checkbox" value="short" />Kurzaufenthalt</label>
+            <label class="check-option"><input type="checkbox" value="multi-day" />Mehrtägiger Aufenthalt</label>
+          </div>
+        </div>
+
+        <div id="stellplatzPaymentFields" class="conditional-fields">
+          <div class="field-group">
+            <div class="field-group-title">Bezahlung bei/über <span class="field-help-inline">Mehrfachauswahl möglich</span></div>
+            <div class="option-grid" id="stellplatzPaymentMethods">
+              <label class="check-option"><input type="checkbox" value="machine" />Automat</label>
+              <label class="check-option"><input type="checkbox" value="reception" />Rezeption</label>
+              <label class="check-option"><input type="checkbox" value="operator" />Betreiber / Platzwart</label>
+              <label class="check-option"><input type="checkbox" value="tourist-info" />Tourist-Information</label>
+              <label class="check-option"><input type="checkbox" value="restaurant" />Restaurant / Gasthof</label>
+              <label class="check-option"><input type="checkbox" value="app" />App</label>
+              <label class="check-option"><input type="checkbox" value="online" />Online</label>
+              <label class="check-option"><input type="checkbox" value="other" />Sonstige</label>
+            </div>
+          </div>
+          <div id="stellplatzPaymentAppFields" class="conditional-fields">
+            <label>Name der App
+              <input id="stellplatzPaymentAppName" autocomplete="off" placeholder="z. B. EasyPark" />
+            </label>
+          </div>
+        </div>
+
+        <label>Anmeldung / Check-in erforderlich
+          <select id="stellplatzCheckInRequired">
+            <option value="unknown">Unbekannt</option>
+            <option value="yes">Ja</option>
+            <option value="no">Nein</option>
+          </select>
+        </label>
+        <div id="stellplatzCheckInFields" class="conditional-fields">
+          <div class="field-group">
+            <div class="field-group-title">Anmeldung bei <span class="field-help-inline">Mehrfachauswahl möglich</span></div>
+            <div class="option-grid" id="stellplatzCheckInAt">
+              <label class="check-option"><input type="checkbox" value="operator" />Betreiber / Platzwart</label>
+              <label class="check-option"><input type="checkbox" value="reception" />Rezeption</label>
+              <label class="check-option"><input type="checkbox" value="tourist-info" />Tourist-Information</label>
+              <label class="check-option"><input type="checkbox" value="restaurant" />Restaurant / Gasthof</label>
+              <label class="check-option"><input type="checkbox" value="farm-winery" />Bauernhof / Winzer</label>
+              <label class="check-option"><input type="checkbox" value="online" />Online</label>
+              <label class="check-option"><input type="checkbox" value="app" />App</label>
+              <label class="check-option"><input type="checkbox" value="other" />Sonstige</label>
+            </div>
+          </div>
+        </div>
+
+        <label>Schranke / Zugangssystem
+          <select id="stellplatzAccessSystem">
+            <option value="unknown">Unbekannt</option>
+            <option value="yes">Vorhanden</option>
+            <option value="no">Nicht vorhanden</option>
+          </select>
+        </label>
+        <div id="stellplatzAccessFields" class="conditional-fields">
+          <div class="field-group">
+            <div class="field-group-title">Art des Zugangssystems <span class="field-help-inline">Mehrfachauswahl möglich</span></div>
+            <div class="option-grid" id="stellplatzAccessMethods">
+              <label class="check-option"><input type="checkbox" value="ticket-barrier" />Schranke mit Ticket</label>
+              <label class="check-option"><input type="checkbox" value="plate-recognition" />Kennzeichenerkennung</label>
+              <label class="check-option"><input type="checkbox" value="pin" />PIN / Zugangscode</label>
+              <label class="check-option"><input type="checkbox" value="card-chip" />Zugangskarte / Chip</label>
+              <label class="check-option"><input type="checkbox" value="app" />App</label>
+              <label class="check-option"><input type="checkbox" value="other" />Sonstiges</label>
+            </div>
+          </div>
+          <label>Hinweise zum Zugang
+            <textarea id="stellplatzAccessNotes" rows="4" placeholder="z. B. Ticket an der Schranke ziehen, Code nach Online-Buchung …"></textarea>
+          </label>
+        </div>
+
+        <label>Nutzung an Bedingung geknüpft
+          <select id="stellplatzConditionRequired">
+            <option value="unknown">Unbekannt</option>
+            <option value="yes">Ja</option>
+            <option value="no">Nein</option>
+          </select>
+        </label>
+        <div id="stellplatzConditionFields" class="conditional-fields">
+          <label>Bedingung / Voraussetzung
+            <textarea id="stellplatzConditionText" rows="4" placeholder="z. B. Einkehr im Restaurant erforderlich, Einkauf im Hofladen erwünscht …"></textarea>
+          </label>
+        </div>
+      </section>
+
       <div class="sheet-actions sticky-sheet-actions">
         <button type="button" class="btn secondary" id="cancelStellplatzEdit">Abbrechen</button>
         <button type="submit" class="btn primary">Änderungen speichern</button>
@@ -1240,6 +1354,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.11-r3"></script>
+  <script src="app.js?v=0.3.12-r1"></script>
 </body>
 </html>
