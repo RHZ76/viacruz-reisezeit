@@ -442,7 +442,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.30 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.31 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1230,6 +1230,17 @@ function holidayDetailCards(e){
     const summary=[st.checkinFrom?`Check-in ab ${st.checkinFrom}`:'',st.checkoutUntil?`Check-out bis ${st.checkoutUntil}`:'',parking].filter(Boolean).slice(0,2).join(' · ')||'Aufenthalt & Anreise';
     stayCard=`<details class="detail-accordion"><summary><span><small>Aufenthalt &amp; Anreise</small><strong>${escapeHtml(summary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${rows||'<div class="detail-empty">Noch keine Angaben zu Aufenthalt oder Anreise gespeichert.</div>'}</div></details>`;
   }
+  let foodCard='';
+  if(isAccommodationHolidayType(e.type)){
+    const f=ensureHolidayFood(e);
+    const plans=[f.none?'Ohne Verpflegung':'',f.breakfast?'Frühstück':'',f.halfBoard?'Halbpension':'',f.fullBoard?'Vollpension':'',f.allInclusive?'All Inclusive':''].filter(Boolean);
+    const status=({included:'Im Preis enthalten',optional:'Zubuchbar',both:'Beides möglich'})[f.status]||'';
+    const services=[f.restaurant?'Restaurant':'',f.bar?'Bar':'',f.cafe?'Café':'',f.breakfastService?'Frühstücksservice':'',f.breadService?'Brötchenservice':'',f.farmShop?'Hofladen':'',f.groceries?'Lebensmittelangebot':'',f.regional?'Regionale / eigene Produkte':''].filter(Boolean);
+    const priceParts=[f.breakfastPrice!=null?`Frühstück ${formatNumber(f.breakfastPrice)} € / Person / Tag`:'',f.halfBoardPrice!=null?`Halbpension ${formatNumber(f.halfBoardPrice)} € / Person / Tag`:'',f.fullBoardPrice!=null?`Vollpension ${formatNumber(f.fullBoardPrice)} € / Person / Tag`:'',f.allInclusivePrice!=null?`All Inclusive ${formatNumber(f.allInclusivePrice)} € / Person / Tag`:''].filter(Boolean);
+    const rows=[detailRow('Verfügbare Verpflegung',plans.join(' · ')),detailRow('Verpflegungsstatus',status),detailRow('Zubuchbare Preise',priceParts.join(' · ')),detailRow('Gastronomie & Service',services.join(' · ')),f.notes?`<div class="detail-note"><span>Hinweise zur Verpflegung</span><p>${escapeHtml(f.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
+    const summary=[plans.slice(0,2).join(' · '),status].filter(Boolean).join(' · ')||'Verpflegung';
+    foodCard=`<details class="detail-accordion"><summary><span><small>Verpflegung</small><strong>${escapeHtml(summary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${rows||'<div class="detail-empty">Noch keine Angaben zur Verpflegung gespeichert.</div>'}</div></details>`;
+  }
   const personal=ensureHolidayPersonal(e);
   const statusText=e.visited?'Besucht':e.wantToVisit?'Möchte ich besuchen':'';
   const favoriteText=e.favorite?'Favorit':'';
@@ -1251,7 +1262,7 @@ function holidayDetailCards(e){
   const personalRows=[detailRow('Status',[statusText,favoriteText].filter(Boolean).join(' · ')),e.why?`<div class="detail-note"><span>Warum gespeichert?</span><p>${escapeHtml(e.why).replace(/\n/g,'<br>')}</p></div>`:'',ratingRows,detailRow('Würde ich wiederkommen?',returnText),visits.length?`<div class="detail-note"><span>Besuchshistorie</span>${visitRows}</div>`:'',e.notes?`<div class="detail-note"><span>Persönliche Notizen</span><p>${escapeHtml(e.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
   const personalSummary=[statusText,favoriteText,ratingAverage!=null?`${formatNumber(ratingAverage,1)} / 5`:'',visits.length?`${visits.length} ${visits.length===1?'Besuch':'Besuche'}`:''].filter(Boolean).slice(0,3).join(' · ')||'Persönlich';
   const personalCard=`<details class="detail-accordion"><summary><span><small>Persönlich</small><strong>${escapeHtml(personalSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${personalRows||'<div class="detail-empty">Noch keine persönlichen Angaben gespeichert.</div>'}</div></details>`;
-  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${accommodationCard}${priceCard}${stayCard}${personalCard}</div>`;
+  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${accommodationCard}${priceCard}${stayCard}${foodCard}${personalCard}</div>`;
 }
 
 let holidayEditMode='create';
@@ -1269,6 +1280,11 @@ function ensureHolidayPrices(e){
   const d=ensureHolidayDetails(e);
   if(!d.prices||typeof d.prices!=='object')d.prices={};
   return d.prices;
+}
+function ensureHolidayFood(e){
+  const d=ensureHolidayDetails(e);
+  if(!d.food||typeof d.food!=='object')d.food={};
+  return d.food;
 }
 function ensureHolidayAccommodation(e){
   const d=ensureHolidayDetails(e);
@@ -1367,6 +1383,13 @@ function updateHolidayStayConditionalFields(){
   const parkingPrice=document.getElementById('holidayStayParkingPriceWrap'); if(parkingPrice)parkingPrice.hidden=parking!=='yes'||document.getElementById('holidayStayParkingBilling')?.value!=='paid';
   const deposit=document.getElementById('holidayStayDepositDetails'); if(deposit)deposit.hidden=document.getElementById('holidayStayDeposit')?.value!=='required';
 }
+function updateHolidayFoodConditionalFields(){
+  const type=document.getElementById('holidayEntryType')?.value||'hotel';
+  const accommodation=isAccommodationHolidayType(type);
+  const section=document.getElementById('holidayFoodSection'); if(section)section.hidden=!accommodation;
+  const status=document.getElementById('holidayFoodStatus')?.value||'unknown';
+  const prices=document.getElementById('holidayFoodPriceFields'); if(prices)prices.hidden=!['optional','both'].includes(status);
+}
 function updateHolidayBasicConditionalFields(){
   const type=document.getElementById('holidayEntryType')?.value||'hotel';
   const booking=document.getElementById('holidayBookingWrap');
@@ -1378,6 +1401,7 @@ function updateHolidayBasicConditionalFields(){
   updateHolidayAccommodationConditionalFields();
   updateHolidayPriceConditionalFields();
   updateHolidayStayConditionalFields();
+  updateHolidayFoodConditionalFields();
   updateHolidayPersonalConditionalFields();
 }
 function openHolidayEditor(entry=null,pretype='hotel'){
@@ -1432,6 +1456,9 @@ function openHolidayEditor(entry=null,pretype='hotel'){
   setField('holidayPriceNotes',prices.notes||'');
   const stay=entry&&isAccommodationHolidayType(type)?ensureHolidayStay(entry):{};
   setField('holidayStayCheckinFrom',stay.checkinFrom||''); setField('holidayStayCheckinUntil',stay.checkinUntil||''); setField('holidayStayCheckoutUntil',stay.checkoutUntil||''); setField('holidayStayCheckinType',stay.checkinType||'unknown'); setField('holidayStayMinNights',stay.minNights); setField('holidayStayFlexible',stay.flexible||'unknown'); setField('holidayStayLate',stay.late||'unknown'); setField('holidayStayParking',stay.parking||'unknown'); setField('holidayStayParkingBilling',stay.parkingBilling||'unknown'); setField('holidayStayParkingType',stay.parkingType||'unknown'); setField('holidayStayParkingPrice',stay.parkingPrice); setField('holidayStayArrivalNotes',stay.arrivalNotes||''); setField('holidayStayDeposit',stay.deposit||'unknown'); setField('holidayStayDepositAmount',stay.depositAmount); setField('holidayStayDepositMethod',stay.depositMethod||'unknown');
+  const food=entry&&isAccommodationHolidayType(type)?ensureHolidayFood(entry):{};
+  ['None','Breakfast','HalfBoard','FullBoard','AllInclusive','Restaurant','Bar','Cafe','BreakfastService','BreadService','FarmShop','Groceries','Regional'].forEach(k=>setChecked('holidayFood'+k,food[k.charAt(0).toLowerCase()+k.slice(1)]));
+  setField('holidayFoodStatus',food.status||'unknown'); setField('holidayFoodBreakfastPrice',food.breakfastPrice); setField('holidayFoodHalfBoardPrice',food.halfBoardPrice); setField('holidayFoodFullBoardPrice',food.fullBoardPrice); setField('holidayFoodAllInclusivePrice',food.allInclusivePrice); setField('holidayFoodNotes',food.notes||'');
   const personal=entry?ensureHolidayPersonal(entry):{ratings:{},returnIntent:'unknown'};
   setField('holidayPersonalStatus',entry?.visited?'visited':entry?.wantToVisit?'want':'none');
   const holidayFavorite=document.getElementById('holidayPersonalFavorite'); if(holidayFavorite) holidayFavorite.checked=!!entry?.favorite;
@@ -1519,6 +1546,11 @@ function saveHolidayBasic(ev){
     stay.checkinFrom=document.getElementById('holidayStayCheckinFrom').value||''; stay.checkinUntil=document.getElementById('holidayStayCheckinUntil').value||''; stay.checkoutUntil=document.getElementById('holidayStayCheckoutUntil').value||''; stay.checkinType=document.getElementById('holidayStayCheckinType').value||'unknown'; stay.minNights=numericField('holidayStayMinNights'); stay.flexible=document.getElementById('holidayStayFlexible').value||'unknown'; stay.late=document.getElementById('holidayStayLate').value||'unknown';
     stay.parking=document.getElementById('holidayStayParking').value||'unknown'; stay.parkingBilling=stay.parking==='yes'?(document.getElementById('holidayStayParkingBilling').value||'unknown'):'unknown'; stay.parkingType=stay.parking==='yes'?(document.getElementById('holidayStayParkingType').value||'unknown'):'unknown'; stay.parkingPrice=stay.parking==='yes'&&stay.parkingBilling==='paid'?numericField('holidayStayParkingPrice'):null;
     stay.arrivalNotes=document.getElementById('holidayStayArrivalNotes').value.trim(); stay.deposit=document.getElementById('holidayStayDeposit').value||'unknown'; stay.depositAmount=stay.deposit==='required'?numericField('holidayStayDepositAmount'):null; stay.depositMethod=stay.deposit==='required'?(document.getElementById('holidayStayDepositMethod').value||'unknown'):'unknown';
+    const food=ensureHolidayFood(entry);
+    ['None','Breakfast','HalfBoard','FullBoard','AllInclusive','Restaurant','Bar','Cafe','BreakfastService','BreadService','FarmShop','Groceries','Regional'].forEach(k=>food[k.charAt(0).toLowerCase()+k.slice(1)]=!!document.getElementById('holidayFood'+k)?.checked);
+    food.status=document.getElementById('holidayFoodStatus').value||'unknown';
+    const foodCanCost=['optional','both'].includes(food.status);
+    food.breakfastPrice=foodCanCost?numericField('holidayFoodBreakfastPrice'):null; food.halfBoardPrice=foodCanCost?numericField('holidayFoodHalfBoardPrice'):null; food.fullBoardPrice=foodCanCost?numericField('holidayFoodFullBoardPrice'):null; food.allInclusivePrice=foodCanCost?numericField('holidayFoodAllInclusivePrice'):null; food.notes=document.getElementById('holidayFoodNotes').value.trim();
   }
   const personal=ensureHolidayPersonal(entry);
   const personalStatus=document.getElementById('holidayPersonalStatus').value;
@@ -1556,6 +1588,7 @@ document.getElementById('holidayFreeCancellation')?.addEventListener('change',up
 document.getElementById('holidayStayParking')?.addEventListener('change',updateHolidayStayConditionalFields);
 document.getElementById('holidayStayParkingBilling')?.addEventListener('change',updateHolidayStayConditionalFields);
 document.getElementById('holidayStayDeposit')?.addEventListener('change',updateHolidayStayConditionalFields);
+document.getElementById('holidayFoodStatus')?.addEventListener('change',updateHolidayFoodConditionalFields);
 document.getElementById('holidayAccWifi')?.addEventListener('change',updateHolidayAccommodationConditionalFields);
 document.getElementById('holidayAccWifiBilling')?.addEventListener('change',updateHolidayAccommodationConditionalFields);
 document.getElementById('holidayAccKitchen')?.addEventListener('change',updateHolidayAccommodationConditionalFields);

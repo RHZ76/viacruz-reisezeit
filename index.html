@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.30-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.31-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -487,6 +487,65 @@
         </div>
       </section>
 
+
+      <section class="edit-section" id="holidayFoodSection">
+        <div class="edit-section-head">
+          <h3>Verpflegung</h3>
+          <p>Verpflegungsarten und gastronomische Angebote – unabhängig von der Unterkunftsart.</p>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Verfügbare Verpflegung <span class="field-help-inline">Mehrfachauswahl möglich</span></div>
+          <div class="option-grid">
+            <label class="check-option"><input id="holidayFoodNone" type="checkbox" /> Ohne Verpflegung</label>
+            <label class="check-option"><input id="holidayFoodBreakfast" type="checkbox" /> Frühstück</label>
+            <label class="check-option"><input id="holidayFoodHalfBoard" type="checkbox" /> Halbpension</label>
+            <label class="check-option"><input id="holidayFoodFullBoard" type="checkbox" /> Vollpension</label>
+            <label class="check-option"><input id="holidayFoodAllInclusive" type="checkbox" /> All Inclusive</label>
+          </div>
+        </div>
+
+        <label>Verpflegungsstatus
+          <select id="holidayFoodStatus">
+            <option value="unknown">Unbekannt</option>
+            <option value="included">Im Preis enthalten</option>
+            <option value="optional">Zubuchbar</option>
+            <option value="both">Beides möglich</option>
+          </select>
+        </label>
+
+        <div id="holidayFoodPriceFields" hidden>
+          <div class="edit-subsection">
+            <div class="edit-section-head compact"><h4>Preise für zubuchbare Verpflegung</h4><p>Nur ausfüllen, wenn ein konkreter Preis bekannt ist.</p></div>
+            <div class="grid-2">
+              <label>Frühstück pro Person / Tag<div class="input-with-unit"><input id="holidayFoodBreakfastPrice" type="number" inputmode="decimal" min="0" step="0.01" /><span>€</span></div></label>
+              <label>Halbpension pro Person / Tag<div class="input-with-unit"><input id="holidayFoodHalfBoardPrice" type="number" inputmode="decimal" min="0" step="0.01" /><span>€</span></div></label>
+            </div>
+            <div class="grid-2">
+              <label>Vollpension pro Person / Tag<div class="input-with-unit"><input id="holidayFoodFullBoardPrice" type="number" inputmode="decimal" min="0" step="0.01" /><span>€</span></div></label>
+              <label>All Inclusive pro Person / Tag<div class="input-with-unit"><input id="holidayFoodAllInclusivePrice" type="number" inputmode="decimal" min="0" step="0.01" /><span>€</span></div></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Gastronomie &amp; Service</div>
+          <div class="option-grid">
+            <label class="check-option"><input id="holidayFoodRestaurant" type="checkbox" /> Restaurant</label>
+            <label class="check-option"><input id="holidayFoodBar" type="checkbox" /> Bar</label>
+            <label class="check-option"><input id="holidayFoodCafe" type="checkbox" /> Café</label>
+            <label class="check-option"><input id="holidayFoodBreakfastService" type="checkbox" /> Frühstücksservice</label>
+            <label class="check-option"><input id="holidayFoodBreadService" type="checkbox" /> Brötchenservice</label>
+            <label class="check-option"><input id="holidayFoodFarmShop" type="checkbox" /> Hofladen</label>
+            <label class="check-option"><input id="holidayFoodGroceries" type="checkbox" /> Lebensmittelangebot</label>
+            <label class="check-option"><input id="holidayFoodRegional" type="checkbox" /> Regionale / eigene Produkte</label>
+          </div>
+        </div>
+
+        <label>Hinweise zur Verpflegung
+          <textarea id="holidayFoodNotes" rows="4" placeholder="z. B. Halbpension im benachbarten Hotel zubuchbar …"></textarea>
+        </label>
+      </section>
 
       <section class="edit-section" id="holidayPersonalSection">
         <div class="edit-section-head">
@@ -2464,6 +2523,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.30-r1"></script>
+  <script src="app.js?v=0.3.31-r1"></script>
 </body>
 </html>
