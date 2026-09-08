@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.24-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.25-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -205,18 +205,79 @@
       <section class="edit-section" id="holidayAccommodationSection">
         <div class="edit-section-head">
           <h3>Unterkunft &amp; Ausstattung</h3>
-          <p>Größe, Schlafplätze und Ausstattung der Unterkunft.</p>
+          <p>Unterkunftsart auswählen und danach die passenden Merkmale und Ausstattungen erfassen.</p>
         </div>
 
-        <div class="grid-3">
-          <label>Max. Personen<input id="holidayAccMaxPersons" type="number" inputmode="numeric" min="1" step="1" /></label>
-          <label>Schlafzimmer<input id="holidayAccBedrooms" type="number" inputmode="numeric" min="0" step="1" /></label>
-          <label>Betten<input id="holidayAccBeds" type="number" inputmode="numeric" min="0" step="1" /></label>
+        <label>Unterkunftsart
+          <select id="holidayAccommodationType">
+            <option value="hotel">Hotel</option>
+            <option value="ferienwohnung">Ferienwohnung</option>
+            <option value="ferienhaus">Ferienhaus</option>
+            <option value="besonders">Besondere Unterkunft</option>
+          </select>
+          <span class="field-help">Dies ist dieselbe Unterkunftsart wie in den Grunddaten. Eine Änderung gilt für den gesamten Eintrag.</span>
+        </label>
+
+        <div class="field-group" id="holidayAccHotelFields">
+          <div class="field-group-title">Hotel</div>
+          <div class="grid-2">
+            <label>Kategorie / Sterne<input id="holidayAccHotelStars" type="number" inputmode="decimal" min="0" max="5" step="0.5" placeholder="z. B. 4" /></label>
+            <label>Zimmertyp<select id="holidayAccRoomType"><option value="unknown">Unbekannt</option><option value="single">Einzelzimmer</option><option value="double">Doppelzimmer</option><option value="family">Familienzimmer</option><option value="suite">Suite</option><option value="apartment">Apartment</option><option value="other">Sonstiges</option></select></label>
+          </div>
+          <div class="option-grid">
+            <label class="check-option"><input id="holidayAccReception" type="checkbox" /> Rezeption</label>
+            <label class="check-option"><input id="holidayAccReception24" type="checkbox" /> 24-h-Rezeption</label>
+            <label class="check-option"><input id="holidayAccRoomService" type="checkbox" /> Zimmerservice</label>
+            <label class="check-option"><input id="holidayAccRoomCleaning" type="checkbox" /> Zimmerreinigung</label>
+            <label class="check-option"><input id="holidayAccSafe" type="checkbox" /> Safe</label>
+            <label class="check-option"><input id="holidayAccMinibar" type="checkbox" /> Minibar / Kühlschrank</label>
+            <label class="check-option"><input id="holidayAccCoffeeTea" type="checkbox" /> Kaffee-/Teezubereitung</label>
+          </div>
         </div>
-        <div class="grid-3">
-          <label>Badezimmer<input id="holidayAccBathrooms" type="number" inputmode="numeric" min="0" step="1" /></label>
-          <label>Größe<div class="input-with-unit"><input id="holidayAccSize" type="number" inputmode="decimal" min="0" step="0.1" /><span>m²</span></div></label>
-          <label>Badart<select id="holidayAccBathroomType"><option value="unknown">Unbekannt</option><option value="private">Eigenes Bad</option><option value="shared">Gemeinschaftsbad</option></select></label>
+
+        <div class="field-group" id="holidayAccApartmentFields">
+          <div class="field-group-title">Ferienwohnung</div>
+          <label>Etage<input id="holidayAccFloor" autocomplete="off" placeholder="z. B. 2. OG" /></label>
+        </div>
+
+        <div class="field-group" id="holidayAccHouseFields">
+          <div class="field-group-title">Ferienhaus</div>
+          <label>Hausart<select id="holidayAccHouseType"><option value="unknown">Unbekannt</option><option value="detached">Freistehend</option><option value="semi">Doppelhaushälfte</option><option value="row">Reihenhaus</option><option value="other">Sonstiges</option></select></label>
+        </div>
+
+        <div class="field-group" id="holidayAccSpecialFields">
+          <div class="field-group-title">Besondere Unterkunft</div>
+          <label>Art der besonderen Unterkunft<select id="holidayAccSpecialType"><option value="unknown">Unbekannt</option><option value="treehouse">Baumhaus</option><option value="houseboat">Hausboot</option><option value="castle">Schloss / Gutshaus</option><option value="mill">Mühle</option><option value="tinyhouse">Tiny House</option><option value="glamping">Glamping</option><option value="hut">Berghütte</option><option value="farm">Bauernhof</option><option value="winery">Weingut</option><option value="specialhotel">Außergewöhnliches Hotel / Zimmer</option><option value="other">Sonstiges</option></select></label>
+        </div>
+
+        <div class="field-group" id="holidayAccKitchenFields">
+          <div class="field-group-title">Küche</div>
+          <label>Küche<select id="holidayAccKitchen"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          <div id="holidayAccKitchenEquipment" class="option-grid">
+            <label class="check-option"><input id="holidayAccStove" type="checkbox" /> Herd</label>
+            <label class="check-option"><input id="holidayAccOven" type="checkbox" /> Backofen</label>
+            <label class="check-option"><input id="holidayAccMicrowave" type="checkbox" /> Mikrowelle</label>
+            <label class="check-option"><input id="holidayAccFridge" type="checkbox" /> Kühlschrank</label>
+            <label class="check-option"><input id="holidayAccFreezer" type="checkbox" /> Gefrierfach / Gefrierschrank</label>
+            <label class="check-option"><input id="holidayAccDishwasher" type="checkbox" /> Geschirrspüler</label>
+            <label class="check-option"><input id="holidayAccCoffee" type="checkbox" /> Kaffeemaschine</label>
+            <label class="check-option"><input id="holidayAccKettle" type="checkbox" /> Wasserkocher</label>
+            <label class="check-option"><input id="holidayAccToaster" type="checkbox" /> Toaster</label>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Unterkunftsdaten</div>
+          <div class="grid-3">
+            <label>Max. Personen<input id="holidayAccMaxPersons" type="number" inputmode="numeric" min="1" step="1" /></label>
+            <label>Schlafzimmer<input id="holidayAccBedrooms" type="number" inputmode="numeric" min="0" step="1" /></label>
+            <label>Betten<input id="holidayAccBeds" type="number" inputmode="numeric" min="0" step="1" /></label>
+          </div>
+          <div class="grid-3">
+            <label>Badezimmer<input id="holidayAccBathrooms" type="number" inputmode="numeric" min="0" step="1" /></label>
+            <label>Größe<div class="input-with-unit"><input id="holidayAccSize" type="number" inputmode="decimal" min="0" step="0.1" /><span>m²</span></div></label>
+            <label>Badart<select id="holidayAccBathroomType"><option value="unknown">Unbekannt</option><option value="private">Eigenes Bad</option><option value="shared">Gemeinschaftsbad</option></select></label>
+          </div>
         </div>
 
         <div class="field-group">
@@ -237,54 +298,6 @@
             <label class="check-option"><input id="holidayAccWasher" type="checkbox" /> Waschmaschine</label>
             <label class="check-option"><input id="holidayAccDryer" type="checkbox" /> Trockner</label>
           </div>
-        </div>
-
-        <div class="field-group" id="holidayAccHotelFields">
-          <div class="field-group-title">Hotel</div>
-          <div class="grid-2">
-            <label>Kategorie / Sterne<input id="holidayAccHotelStars" type="number" inputmode="decimal" min="0" max="5" step="0.5" placeholder="z. B. 4" /></label>
-            <label>Zimmertyp<select id="holidayAccRoomType"><option value="unknown">Unbekannt</option><option value="single">Einzelzimmer</option><option value="double">Doppelzimmer</option><option value="family">Familienzimmer</option><option value="suite">Suite</option><option value="apartment">Apartment</option><option value="other">Sonstiges</option></select></label>
-          </div>
-          <div class="option-grid">
-            <label class="check-option"><input id="holidayAccReception" type="checkbox" /> Rezeption</label>
-            <label class="check-option"><input id="holidayAccReception24" type="checkbox" /> 24-h-Rezeption</label>
-            <label class="check-option"><input id="holidayAccRoomService" type="checkbox" /> Zimmerservice</label>
-            <label class="check-option"><input id="holidayAccRoomCleaning" type="checkbox" /> Zimmerreinigung</label>
-            <label class="check-option"><input id="holidayAccSafe" type="checkbox" /> Safe</label>
-            <label class="check-option"><input id="holidayAccMinibar" type="checkbox" /> Minibar / Kühlschrank</label>
-            <label class="check-option"><input id="holidayAccCoffeeTea" type="checkbox" /> Kaffee-/Teezubereitung</label>
-          </div>
-        </div>
-
-        <div class="field-group" id="holidayAccKitchenFields">
-          <div class="field-group-title">Küche</div>
-          <label>Küche<select id="holidayAccKitchen"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
-          <div id="holidayAccKitchenEquipment" class="option-grid">
-            <label class="check-option"><input id="holidayAccStove" type="checkbox" /> Herd</label>
-            <label class="check-option"><input id="holidayAccOven" type="checkbox" /> Backofen</label>
-            <label class="check-option"><input id="holidayAccMicrowave" type="checkbox" /> Mikrowelle</label>
-            <label class="check-option"><input id="holidayAccFridge" type="checkbox" /> Kühlschrank</label>
-            <label class="check-option"><input id="holidayAccFreezer" type="checkbox" /> Gefrierfach / Gefrierschrank</label>
-            <label class="check-option"><input id="holidayAccDishwasher" type="checkbox" /> Geschirrspüler</label>
-            <label class="check-option"><input id="holidayAccCoffee" type="checkbox" /> Kaffeemaschine</label>
-            <label class="check-option"><input id="holidayAccKettle" type="checkbox" /> Wasserkocher</label>
-            <label class="check-option"><input id="holidayAccToaster" type="checkbox" /> Toaster</label>
-          </div>
-        </div>
-
-        <div class="field-group" id="holidayAccHouseFields">
-          <div class="field-group-title">Ferienhaus</div>
-          <label>Hausart<select id="holidayAccHouseType"><option value="unknown">Unbekannt</option><option value="detached">Freistehend</option><option value="semi">Doppelhaushälfte</option><option value="row">Reihenhaus</option><option value="other">Sonstiges</option></select></label>
-        </div>
-
-        <div class="field-group" id="holidayAccApartmentFields">
-          <div class="field-group-title">Ferienwohnung</div>
-          <label>Etage<input id="holidayAccFloor" autocomplete="off" placeholder="z. B. 2. OG" /></label>
-        </div>
-
-        <div class="field-group" id="holidayAccSpecialFields">
-          <div class="field-group-title">Besondere Unterkunft</div>
-          <label>Art der besonderen Unterkunft<select id="holidayAccSpecialType"><option value="unknown">Unbekannt</option><option value="treehouse">Baumhaus</option><option value="houseboat">Hausboot</option><option value="castle">Schloss / Gutshaus</option><option value="mill">Mühle</option><option value="tinyhouse">Tiny House</option><option value="glamping">Glamping</option><option value="hut">Berghütte</option><option value="farm">Bauernhof</option><option value="winery">Weingut</option><option value="specialhotel">Außergewöhnliches Hotel / Zimmer</option><option value="other">Sonstiges</option></select></label>
         </div>
 
         <div class="field-group" id="holidayAccLinenFields">
@@ -2399,6 +2412,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.24-r1"></script>
+  <script src="app.js?v=0.3.25-r1"></script>
 </body>
 </html>

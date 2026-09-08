@@ -442,7 +442,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.24 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.25 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1317,6 +1317,8 @@ function updateHolidayAccommodationConditionalFields(){
   const type=document.getElementById('holidayEntryType')?.value||'hotel';
   const accommodation=isAccommodationHolidayType(type);
   const section=document.getElementById('holidayAccommodationSection'); if(section)section.hidden=!accommodation;
+  const accommodationType=document.getElementById('holidayAccommodationType');
+  if(accommodationType && accommodation && accommodationType.value!==type) accommodationType.value=type;
   const hotel=document.getElementById('holidayAccHotelFields'); if(hotel)hotel.hidden=type!=='hotel';
   const kitchen=document.getElementById('holidayAccKitchenFields'); if(kitchen)kitchen.hidden=!['ferienwohnung','ferienhaus','besonders'].includes(type);
   const house=document.getElementById('holidayAccHouseFields'); if(house)house.hidden=type!=='ferienhaus';
@@ -1364,6 +1366,7 @@ function openHolidayEditor(entry=null,pretype='hotel'){
   let type=entry?.type||pretype||'hotel';
   if(type==='ferien') type='ferienwohnung';
   setField('holidayEntryType',type);
+  if(isAccommodationHolidayType(type)) setField('holidayAccommodationType',type);
   setField('holidayName',entry?.name||'');
   setField('holidayCountry',entry?.country||'');
   setField('holidayRegion',entry?.region||'');
@@ -1451,7 +1454,7 @@ function saveHolidayBasic(ev){
   entry.sourceType=document.getElementById('holidaySourceType').value;
   entry.sourceUrl=normalizeExternalUrl(document.getElementById('holidaySourceUrl').value)||document.getElementById('holidaySourceUrl').value.trim();
   entry.bookingUrl=isAccommodationHolidayType(selectedType)?(normalizeExternalUrl(document.getElementById('holidayBookingUrl').value)||document.getElementById('holidayBookingUrl').value.trim()):'';
-  if(isAccommodationHolidayType(type)){
+  if(isAccommodationHolidayType(selectedType)){
     const acc=ensureHolidayAccommodation(entry);
     acc.maxPersons=numericField('holidayAccMaxPersons'); acc.bedrooms=numericField('holidayAccBedrooms'); acc.beds=numericField('holidayAccBeds'); acc.bathrooms=numericField('holidayAccBathrooms'); acc.size=numericField('holidayAccSize'); acc.bathroomType=document.getElementById('holidayAccBathroomType').value||'unknown';
     acc.wifi=document.getElementById('holidayAccWifi').value||'unknown'; acc.wifiBilling=acc.wifi==='yes'?(document.getElementById('holidayAccWifiBilling').value||'unknown'):'unknown'; acc.wifiPrice=acc.wifi==='yes'&&acc.wifiBilling==='paid'?numericField('holidayAccWifiPrice'):null;
@@ -1503,6 +1506,15 @@ function saveHolidayBasic(ev){
 document.getElementById('closeHolidayEdit')?.addEventListener('click',closeHolidayEditor);
 document.getElementById('cancelHolidayEdit')?.addEventListener('click',closeHolidayEditor);
 document.getElementById('holidayEntryType')?.addEventListener('change',()=>{const visits=collectHolidayVisits();updateHolidayBasicConditionalFields();renderHolidayVisitEditor(visits,document.getElementById('holidayEntryType').value);});
+document.getElementById('holidayAccommodationType')?.addEventListener('change',()=>{
+  const mainType=document.getElementById('holidayEntryType');
+  const mirror=document.getElementById('holidayAccommodationType');
+  if(!mainType||!mirror)return;
+  const visits=collectHolidayVisits();
+  mainType.value=mirror.value;
+  updateHolidayBasicConditionalFields();
+  renderHolidayVisitEditor(visits,mainType.value);
+});
 document.getElementById('addHolidayVisit')?.addEventListener('click',addHolidayVisit);
 document.getElementById('holidayHotelOccupancy')?.addEventListener('change',updateHolidayPriceConditionalFields);
 document.getElementById('holidayFreeCancellation')?.addEventListener('change',updateHolidayPriceConditionalFields);
