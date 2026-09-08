@@ -442,7 +442,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.28 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.29 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1219,6 +1219,17 @@ function holidayDetailCards(e){
     const priceSummary=[priceFrom,p.year!=null?`Preisstand ${p.year}`:''].filter(Boolean).join(' · ')||'Preise & Buchung';
     priceCard=`<details class="detail-accordion"><summary><span><small>Preise &amp; Buchung</small><strong>${escapeHtml(priceSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${priceRows||'<div class="detail-empty">Noch keine Preise oder Buchungsangaben gespeichert.</div>'}</div></details>`;
   }
+  let stayCard='';
+  if(isAccommodationHolidayType(e.type)){
+    const st=ensureHolidayStay(e);
+    const checkinType=({reception:'Rezeption',host:'Gastgeber persönlich',keybox:'Schlüsselbox',keysafe:'Schlüsseltresor',code:'Code / PIN',app:'App',self:'Selbst-Check-in',other:'Sonstiges'})[st.checkinType]||'';
+    const parking=st.parking==='yes'?[({included:'Inklusive',paid:'Kostenpflichtig',unknown:'Preis unbekannt'})[st.parkingBilling]||'',st.parkingBilling==='paid'&&st.parkingPrice!=null?`${formatNumber(st.parkingPrice)} €`:''].filter(Boolean).join(' · '):st.parking==='no'?'Nicht vorhanden':'';
+    const parkingType=({property:'Auf dem Grundstück',parking:'Parkplatz',garage:'Parkhaus / Tiefgarage',public:'Straße / öffentlich',other:'Sonstiges'})[st.parkingType]||'';
+    const deposit=st.deposit==='none'?'Keine':st.deposit==='required'?[st.depositAmount!=null?`${formatNumber(st.depositAmount)} €`:'Erforderlich',({cash:'Bar',card:'Kreditkarte',transfer:'Überweisung',other:'Sonstiges'})[st.depositMethod]||''].filter(Boolean).join(' · '):'';
+    const rows=[detailRow('Check-in ab',st.checkinFrom||''),detailRow('Check-in bis',st.checkinUntil||''),detailRow('Check-out bis',st.checkoutUntil||''),detailRow('Art des Check-ins',checkinType),detailRow('Mindestaufenthalt',st.minNights!=null?`${formatNumber(st.minNights,0)} ${Number(st.minNights)===1?'Nacht':'Nächte'}`:''),detailRow('Anreise flexibel möglich',st.flexible==='yes'?'Ja':st.flexible==='no'?'Nein':''),detailRow('Späte Anreise möglich',st.late==='yes'?'Ja':st.late==='no'?'Nein':''),detailRow('Parkplatz',parking),detailRow('Parkplatzart',parkingType),detailRow('Kaution',deposit),st.arrivalNotes?`<div class="detail-note"><span>Schlüsselübergabe / Hinweise zur Anreise</span><p>${escapeHtml(st.arrivalNotes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
+    const summary=[st.checkinFrom?`Check-in ab ${st.checkinFrom}`:'',st.checkoutUntil?`Check-out bis ${st.checkoutUntil}`:'',parking].filter(Boolean).slice(0,2).join(' · ')||'Aufenthalt & Anreise';
+    stayCard=`<details class="detail-accordion"><summary><span><small>Aufenthalt &amp; Anreise</small><strong>${escapeHtml(summary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${rows||'<div class="detail-empty">Noch keine Angaben zu Aufenthalt oder Anreise gespeichert.</div>'}</div></details>`;
+  }
   const personal=ensureHolidayPersonal(e);
   const statusText=e.visited?'Besucht':e.wantToVisit?'Möchte ich besuchen':'';
   const favoriteText=e.favorite?'Favorit':'';
@@ -1240,7 +1251,7 @@ function holidayDetailCards(e){
   const personalRows=[detailRow('Status',[statusText,favoriteText].filter(Boolean).join(' · ')),e.why?`<div class="detail-note"><span>Warum gespeichert?</span><p>${escapeHtml(e.why).replace(/\n/g,'<br>')}</p></div>`:'',ratingRows,detailRow('Würde ich wiederkommen?',returnText),visits.length?`<div class="detail-note"><span>Besuchshistorie</span>${visitRows}</div>`:'',e.notes?`<div class="detail-note"><span>Persönliche Notizen</span><p>${escapeHtml(e.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
   const personalSummary=[statusText,favoriteText,ratingAverage!=null?`${formatNumber(ratingAverage,1)} / 5`:'',visits.length?`${visits.length} ${visits.length===1?'Besuch':'Besuche'}`:''].filter(Boolean).slice(0,3).join(' · ')||'Persönlich';
   const personalCard=`<details class="detail-accordion"><summary><span><small>Persönlich</small><strong>${escapeHtml(personalSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${personalRows||'<div class="detail-empty">Noch keine persönlichen Angaben gespeichert.</div>'}</div></details>`;
-  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${accommodationCard}${priceCard}${personalCard}</div>`;
+  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${accommodationCard}${priceCard}${stayCard}${personalCard}</div>`;
 }
 
 let holidayEditMode='create';
@@ -1248,6 +1259,11 @@ function ensureHolidayDetails(e){
   if(!e.details||typeof e.details!=='object')e.details={};
   if(!e.details[e.type]||typeof e.details[e.type]!=='object')e.details[e.type]={};
   return e.details[e.type];
+}
+function ensureHolidayStay(e){
+  const d=ensureHolidayDetails(e);
+  if(!d.stay||typeof d.stay!=='object')d.stay={};
+  return d.stay;
 }
 function ensureHolidayPrices(e){
   const d=ensureHolidayDetails(e);
@@ -1341,6 +1357,16 @@ function updateHolidayPriceConditionalFields(){
   const cancellation=document.getElementById('holidayCancellationUntilWrap');
   if(cancellation)cancellation.hidden=document.getElementById('holidayFreeCancellation')?.value!=='yes';
 }
+function updateHolidayStayConditionalFields(){
+  const type=document.getElementById('holidayEntryType')?.value||'hotel';
+  const accommodation=isAccommodationHolidayType(type);
+  const section=document.getElementById('holidayStaySection'); if(section)section.hidden=!accommodation;
+  const parking=document.getElementById('holidayStayParking')?.value;
+  const parkingBilling=document.getElementById('holidayStayParkingBillingWrap'); if(parkingBilling)parkingBilling.hidden=parking!=='yes';
+  const parkingDetails=document.getElementById('holidayStayParkingDetailsWrap'); if(parkingDetails)parkingDetails.hidden=parking!=='yes';
+  const parkingPrice=document.getElementById('holidayStayParkingPriceWrap'); if(parkingPrice)parkingPrice.hidden=parking!=='yes'||document.getElementById('holidayStayParkingBilling')?.value!=='paid';
+  const deposit=document.getElementById('holidayStayDepositDetails'); if(deposit)deposit.hidden=document.getElementById('holidayStayDeposit')?.value!=='required';
+}
 function updateHolidayBasicConditionalFields(){
   const type=document.getElementById('holidayEntryType')?.value||'hotel';
   const booking=document.getElementById('holidayBookingWrap');
@@ -1351,6 +1377,7 @@ function updateHolidayBasicConditionalFields(){
   }
   updateHolidayAccommodationConditionalFields();
   updateHolidayPriceConditionalFields();
+  updateHolidayStayConditionalFields();
   updateHolidayPersonalConditionalFields();
 }
 function openHolidayEditor(entry=null,pretype='hotel'){
@@ -1403,6 +1430,8 @@ function openHolidayEditor(entry=null,pretype='hotel'){
   setField('holidayOfferPersons',prices.offer?.persons);
   setField('holidayOfferTotal',prices.offer?.total);
   setField('holidayPriceNotes',prices.notes||'');
+  const stay=entry&&isAccommodationHolidayType(type)?ensureHolidayStay(entry):{};
+  setField('holidayStayCheckinFrom',stay.checkinFrom||''); setField('holidayStayCheckinUntil',stay.checkinUntil||''); setField('holidayStayCheckoutUntil',stay.checkoutUntil||''); setField('holidayStayCheckinType',stay.checkinType||'unknown'); setField('holidayStayMinNights',stay.minNights); setField('holidayStayFlexible',stay.flexible||'unknown'); setField('holidayStayLate',stay.late||'unknown'); setField('holidayStayParking',stay.parking||'unknown'); setField('holidayStayParkingBilling',stay.parkingBilling||'unknown'); setField('holidayStayParkingType',stay.parkingType||'unknown'); setField('holidayStayParkingPrice',stay.parkingPrice); setField('holidayStayArrivalNotes',stay.arrivalNotes||''); setField('holidayStayDeposit',stay.deposit||'unknown'); setField('holidayStayDepositAmount',stay.depositAmount); setField('holidayStayDepositMethod',stay.depositMethod||'unknown');
   const personal=entry?ensureHolidayPersonal(entry):{ratings:{},returnIntent:'unknown'};
   setField('holidayPersonalStatus',entry?.visited?'visited':entry?.wantToVisit?'want':'none');
   const holidayFavorite=document.getElementById('holidayPersonalFavorite'); if(holidayFavorite) holidayFavorite.checked=!!entry?.favorite;
@@ -1486,6 +1515,10 @@ function saveHolidayBasic(ev){
       total:numericField('holidayOfferTotal')
     };
     prices.notes=document.getElementById('holidayPriceNotes').value.trim();
+    const stay=ensureHolidayStay(entry);
+    stay.checkinFrom=document.getElementById('holidayStayCheckinFrom').value||''; stay.checkinUntil=document.getElementById('holidayStayCheckinUntil').value||''; stay.checkoutUntil=document.getElementById('holidayStayCheckoutUntil').value||''; stay.checkinType=document.getElementById('holidayStayCheckinType').value||'unknown'; stay.minNights=numericField('holidayStayMinNights'); stay.flexible=document.getElementById('holidayStayFlexible').value||'unknown'; stay.late=document.getElementById('holidayStayLate').value||'unknown';
+    stay.parking=document.getElementById('holidayStayParking').value||'unknown'; stay.parkingBilling=stay.parking==='yes'?(document.getElementById('holidayStayParkingBilling').value||'unknown'):'unknown'; stay.parkingType=stay.parking==='yes'?(document.getElementById('holidayStayParkingType').value||'unknown'):'unknown'; stay.parkingPrice=stay.parking==='yes'&&stay.parkingBilling==='paid'?numericField('holidayStayParkingPrice'):null;
+    stay.arrivalNotes=document.getElementById('holidayStayArrivalNotes').value.trim(); stay.deposit=document.getElementById('holidayStayDeposit').value||'unknown'; stay.depositAmount=stay.deposit==='required'?numericField('holidayStayDepositAmount'):null; stay.depositMethod=stay.deposit==='required'?(document.getElementById('holidayStayDepositMethod').value||'unknown'):'unknown';
   }
   const personal=ensureHolidayPersonal(entry);
   const personalStatus=document.getElementById('holidayPersonalStatus').value;
@@ -1520,6 +1553,9 @@ document.getElementById('holidayAccommodationType')?.addEventListener('change',(
 document.getElementById('addHolidayVisit')?.addEventListener('click',addHolidayVisit);
 document.getElementById('holidayHotelOccupancy')?.addEventListener('change',updateHolidayPriceConditionalFields);
 document.getElementById('holidayFreeCancellation')?.addEventListener('change',updateHolidayPriceConditionalFields);
+document.getElementById('holidayStayParking')?.addEventListener('change',updateHolidayStayConditionalFields);
+document.getElementById('holidayStayParkingBilling')?.addEventListener('change',updateHolidayStayConditionalFields);
+document.getElementById('holidayStayDeposit')?.addEventListener('change',updateHolidayStayConditionalFields);
 document.getElementById('holidayAccWifi')?.addEventListener('change',updateHolidayAccommodationConditionalFields);
 document.getElementById('holidayAccWifiBilling')?.addEventListener('change',updateHolidayAccommodationConditionalFields);
 document.getElementById('holidayAccKitchen')?.addEventListener('change',updateHolidayAccommodationConditionalFields);
