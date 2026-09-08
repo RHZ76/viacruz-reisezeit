@@ -18,6 +18,25 @@ const typeLabels = {
 };
 const typeIcons = {camping:'△', stellplatz:'▣', hotel:'H', ferienwohnung:'⌂', ferienhaus:'⌂', ferien:'⌂', besonders:'◇', reiseziel:'◎'};
 
+const HOLIDAY_DESTINATION_CATEGORIES = [
+  ['city','Stadt / Ort'],['sight','Sehenswürdigkeit'],['nature','Natur / Landschaft'],['lake','See'],['coast','Strand / Küste'],
+  ['mountain','Berg / Aussichtspunkt'],['castle','Burg / Schloss'],['museum','Museum'],['church','Kirche / Kloster'],['spa','Therme / Bad'],
+  ['amusement','Freizeitpark'],['zoo','Tierpark / Zoo'],['christmas','Weihnachtsmarkt'],['event','Veranstaltung / Event'],
+  ['scenic-road','Panoramastraße'],['hiking','Wanderziel'],['cycling','Radziel'],['shopping','Shopping'],['culinary','Kulinarik'],['other','Sonstiges']
+];
+const HOLIDAY_DESTINATION_CHARACTERS = [
+  ['nature','Natur'],['culture','Kultur'],['history','Geschichte'],['relaxation','Erholung'],['active','Aktiv'],
+  ['family','Familie'],['romantic','Romantisch'],['culinary','Kulinarisch'],['unusual','Außergewöhnlich']
+];
+const HOLIDAY_DESTINATION_SCOPE_LABELS={single:'Einzelnes Ziel',city:'Ort / Stadt',region:'Gebiet / Region',route:'Route / Strecke',event:'Veranstaltung'};
+function customDestinationValue(label){return `custom:${String(label||'').trim()}`;}
+function customDestinationLabel(value){return String(value||'').startsWith('custom:')?String(value).slice(7):'';}
+function holidayDestinationChoiceLabel(value,kind){
+  const list=kind==='character'?HOLIDAY_DESTINATION_CHARACTERS:HOLIDAY_DESTINATION_CATEGORIES;
+  const found=list.find(([key])=>key===value);
+  return found?found[1]:(customDestinationLabel(value)||value||'');
+}
+
 const state = {
   route: 'home',
   holidayFilter: 'all',
@@ -442,7 +461,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.34 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.35 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1295,6 +1314,16 @@ function holidayDetailCards(e){
     const summary=dog.allowed==='yes'?['Hunde erlaubt',fee,dog.alone==='yes'?'darf allein bleiben':''].filter(Boolean).slice(0,2).join(' · '):dog.allowed==='no'?'Hunde nicht erlaubt':'Hund';
     holidayDogCard=`<details class="detail-accordion"><summary><span><small>Hund</small><strong>${escapeHtml(summary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${rows||'<div class="detail-empty">Noch keine Angaben zu Hunden gespeichert.</div>'}</div></details>`;
   }
+  let destinationCard='';
+  if(e.type==='reiseziel'){
+    const destination=ensureHolidayDestination(e);
+    const scope=HOLIDAY_DESTINATION_SCOPE_LABELS[destination.scope]||'';
+    const categories=(destination.categories||[]).map(v=>holidayDestinationChoiceLabel(v,'category')).filter(Boolean);
+    const characters=(destination.characters||[]).map(v=>holidayDestinationChoiceLabel(v,'character')).filter(Boolean);
+    const rows=[detailRow('Umfang des Reiseziels',scope),detailRow('Art des Reiseziels',categories.join(' · ')),detailRow('Charakter',characters.join(' · ')),destination.wish?`<div class="detail-note"><span>Was möchte ich dort sehen / erleben?</span><p>${escapeHtml(destination.wish).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
+    const summary=[scope,categories.slice(0,2).join(' · ')].filter(Boolean).join(' · ')||'Reiseziel & Kategorie';
+    destinationCard=`<details class="detail-accordion"><summary><span><small>Reiseziel &amp; Kategorie</small><strong>${escapeHtml(summary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${rows||'<div class="detail-empty">Noch keine Kategorien oder Merkmale gespeichert.</div>'}</div></details>`;
+  }
   const personal=ensureHolidayPersonal(e);
   const statusText=e.visited?'Besucht':e.wantToVisit?'Möchte ich besuchen':'';
   const favoriteText=e.favorite?'Favorit':'';
@@ -1316,7 +1345,7 @@ function holidayDetailCards(e){
   const personalRows=[detailRow('Status',[statusText,favoriteText].filter(Boolean).join(' · ')),e.why?`<div class="detail-note"><span>Warum gespeichert?</span><p>${escapeHtml(e.why).replace(/\n/g,'<br>')}</p></div>`:'',ratingRows,detailRow('Würde ich wiederkommen?',returnText),visits.length?`<div class="detail-note"><span>Besuchshistorie</span>${visitRows}</div>`:'',e.notes?`<div class="detail-note"><span>Persönliche Notizen</span><p>${escapeHtml(e.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
   const personalSummary=[statusText,favoriteText,ratingAverage!=null?`${formatNumber(ratingAverage,1)} / 5`:'',visits.length?`${visits.length} ${visits.length===1?'Besuch':'Besuche'}`:''].filter(Boolean).slice(0,3).join(' · ')||'Persönlich';
   const personalCard=`<details class="detail-accordion"><summary><span><small>Persönlich</small><strong>${escapeHtml(personalSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${personalRows||'<div class="detail-empty">Noch keine persönlichen Angaben gespeichert.</div>'}</div></details>`;
-  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${accommodationCard}${priceCard}${stayCard}${foodCard}${holidayLeisureCard}${holidayLocationCard}${holidayDogCard}${personalCard}</div>`;
+  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${destinationCard}${accommodationCard}${priceCard}${stayCard}${foodCard}${holidayLeisureCard}${holidayLocationCard}${holidayDogCard}${personalCard}</div>`;
 }
 
 let holidayEditMode='create';
@@ -1489,6 +1518,85 @@ function updateHolidayDogConditionalFields(){
   const feeWrap=document.getElementById('holidayDogFeeWrap'); if(feeWrap)feeWrap.hidden=!allowed||document.getElementById('holidayDogFeeType')?.value!=='paid';
   const aloneWrap=document.getElementById('holidayDogAloneNotesWrap'); if(aloneWrap)aloneWrap.hidden=!allowed||document.getElementById('holidayDogAlone')?.value!=='conditional';
 }
+function ensureHolidayDestination(e){
+  const d=ensureHolidayDetails(e);
+  if(!d.destination||typeof d.destination!=='object')d.destination={};
+  if(!Array.isArray(d.destination.categories))d.destination.categories=[];
+  if(!Array.isArray(d.destination.characters))d.destination.characters=[];
+  return d.destination;
+}
+function holidayDestinationSettings(kind){
+  const key=kind==='character'?'holidayDestinationCustomCharacters':'holidayDestinationCustomCategories';
+  const value=loadSettings()[key];
+  return Array.isArray(value)?value.filter(v=>typeof v==='string'&&v.trim()).map(v=>v.trim()):[];
+}
+function setHolidayDestinationSettings(kind,values){
+  const key=kind==='character'?'holidayDestinationCustomCharacters':'holidayDestinationCustomCategories';
+  updateSetting(key,[...new Set(values.map(v=>String(v).trim()).filter(Boolean))]);
+}
+function currentHolidayDestinationSelections(kind){
+  const id=kind==='character'?'holidayDestinationCharacterOptions':'holidayDestinationCategoryOptions';
+  return [...document.querySelectorAll(`#${id} input[type="checkbox"]:checked`)].map(el=>el.value);
+}
+function renderHolidayDestinationChoices(categorySelected=null,characterSelected=null){
+  const renderKind=(kind,selectedInput)=>{
+    const container=document.getElementById(kind==='character'?'holidayDestinationCharacterOptions':'holidayDestinationCategoryOptions');
+    if(!container)return;
+    const selected=new Set(selectedInput??currentHolidayDestinationSelections(kind));
+    const standards=kind==='character'?HOLIDAY_DESTINATION_CHARACTERS:HOLIDAY_DESTINATION_CATEGORIES;
+    const custom=holidayDestinationSettings(kind);
+    const selectedCustom=[...selected].map(customDestinationLabel).filter(Boolean);
+    const customLabels=[...new Set([...custom,...selectedCustom])];
+    const standardHtml=standards.map(([value,label])=>`<label class="check-option"><input type="checkbox" value="${escapeHtml(value)}" ${selected.has(value)?'checked':''}/> ${escapeHtml(label)}</label>`).join('');
+    const customHtml=customLabels.map(label=>{
+      const value=customDestinationValue(label);
+      return `<div class="destination-custom-choice"><label class="check-option"><input type="checkbox" value="${escapeHtml(value)}" ${selected.has(value)?'checked':''}/> ${escapeHtml(label)}</label><button type="button" class="destination-delete-choice" data-destination-kind="${kind}" data-destination-label="${escapeHtml(label)}" aria-label="${escapeHtml(label)} löschen">×</button></div>`;
+    }).join('');
+    container.innerHTML=standardHtml+customHtml;
+  };
+  renderKind('category',categorySelected);
+  renderKind('character',characterSelected);
+}
+function addHolidayDestinationCustom(kind){
+  const input=document.getElementById(kind==='character'?'holidayDestinationNewCharacter':'holidayDestinationNewCategory');
+  if(!input)return;
+  const label=input.value.trim().replace(/\s+/g,' ');
+  if(!label)return;
+  const standards=kind==='character'?HOLIDAY_DESTINATION_CHARACTERS:HOLIDAY_DESTINATION_CATEGORIES;
+  const existingLabels=[...standards.map(x=>x[1]),...holidayDestinationSettings(kind)];
+  if(existingLabels.some(x=>x.toLocaleLowerCase('de-DE')===label.toLocaleLowerCase('de-DE'))){
+    alert('Diese Auswahl ist bereits vorhanden.'); return;
+  }
+  const cats=currentHolidayDestinationSelections('category');
+  const chars=currentHolidayDestinationSelections('character');
+  setHolidayDestinationSettings(kind,[...holidayDestinationSettings(kind),label]);
+  const value=customDestinationValue(label);
+  if(kind==='category')cats.push(value);else chars.push(value);
+  renderHolidayDestinationChoices(cats,chars);
+  input.value=''; input.focus();
+}
+function deleteHolidayDestinationCustom(kind,label){
+  const value=customDestinationValue(label);
+  const used=state.entries.filter(e=>e.type==='reiseziel'&&!e.deleted).filter(e=>{
+    const destination=e.details?.reiseziel?.destination||{};
+    const values=kind==='character'?destination.characters:destination.categories;
+    return Array.isArray(values)&&values.includes(value);
+  });
+  if(used.length){
+    alert(`„${label}“ wird noch in ${used.length} ${used.length===1?'Reiseziel':'Reisezielen'} verwendet. Entferne die Auswahl dort zuerst, bevor du sie löschst.`);
+    return;
+  }
+  if(!confirm(`Eigene ${kind==='character'?'Charakter-Auswahl':'Kategorie'} „${label}“ wirklich löschen?`))return;
+  const cats=currentHolidayDestinationSelections('category').filter(v=>v!==value);
+  const chars=currentHolidayDestinationSelections('character').filter(v=>v!==value);
+  setHolidayDestinationSettings(kind,holidayDestinationSettings(kind).filter(x=>x!==label));
+  renderHolidayDestinationChoices(cats,chars);
+}
+function updateHolidayDestinationConditionalFields(){
+  const type=document.getElementById('holidayEntryType')?.value||'hotel';
+  const section=document.getElementById('holidayDestinationSection');
+  if(section)section.hidden=type!=='reiseziel';
+}
 function updateHolidayBasicConditionalFields(){
   const type=document.getElementById('holidayEntryType')?.value||'hotel';
   const booking=document.getElementById('holidayBookingWrap');
@@ -1497,6 +1605,7 @@ function updateHolidayBasicConditionalFields(){
   if(websiteLabel){
     websiteLabel.childNodes[0].nodeValue=type==='reiseziel'?'Website des Reiseziels\n          ':'Website der Unterkunft\n          ';
   }
+  updateHolidayDestinationConditionalFields();
   updateHolidayAccommodationConditionalFields();
   updateHolidayPriceConditionalFields();
   updateHolidayStayConditionalFields();
@@ -1531,6 +1640,10 @@ function openHolidayEditor(entry=null,pretype='hotel'){
   setField('holidaySourceType',entry?.sourceType||'');
   setField('holidaySourceUrl',sourceUrl(entry||{}));
   setField('holidayBookingUrl',entry?.bookingUrl||'');
+  const destination=entry&&type==='reiseziel'?ensureHolidayDestination(entry):{};
+  setField('holidayDestinationScope',destination.scope||'unknown');
+  setField('holidayDestinationWish',destination.wish||'');
+  renderHolidayDestinationChoices(destination.categories||[],destination.characters||[]);
   const acc=entry&&isAccommodationHolidayType(type)?ensureHolidayAccommodation(entry):{};
   setField('holidayAccMaxPersons',acc.maxPersons); setField('holidayAccBedrooms',acc.bedrooms); setField('holidayAccBeds',acc.beds); setField('holidayAccBathrooms',acc.bathrooms); setField('holidayAccSize',acc.size); setField('holidayAccBathroomType',acc.bathroomType||'unknown');
   setField('holidayAccWifi',acc.wifi||'unknown'); setField('holidayAccWifiBilling',acc.wifiBilling||'unknown'); setField('holidayAccWifiPrice',acc.wifiPrice);
@@ -1695,6 +1808,13 @@ function saveHolidayBasic(ev){
       dog.maxCount=null; dog.feeType='unknown'; dog.fee=null; dog.sizeWeight=''; dog.restrictedUnits='unknown'; dog.leash='unknown'; dog.alone='unknown'; dog.aloneNotes=''; dog.run='unknown'; dog.beach='unknown'; dog.swimming='unknown'; dog.shower='unknown'; dog.restaurant='unknown'; dog.notes='';
     }
   }
+  if(selectedType==='reiseziel'){
+    const destination=ensureHolidayDestination(entry);
+    destination.scope=document.getElementById('holidayDestinationScope')?.value||'unknown';
+    destination.categories=currentHolidayDestinationSelections('category');
+    destination.characters=currentHolidayDestinationSelections('character');
+    destination.wish=document.getElementById('holidayDestinationWish')?.value.trim()||'';
+  }
   const personal=ensureHolidayPersonal(entry);
   const personalStatus=document.getElementById('holidayPersonalStatus').value;
   entry.visited=personalStatus==='visited'; entry.wantToVisit=personalStatus==='want';
@@ -1741,6 +1861,13 @@ document.getElementById('holidayAccTowels')?.addEventListener('change',updateHol
 document.getElementById('holidayDogAllowed')?.addEventListener('change',updateHolidayDogConditionalFields);
 document.getElementById('holidayDogFeeType')?.addEventListener('change',updateHolidayDogConditionalFields);
 document.getElementById('holidayDogAlone')?.addEventListener('change',updateHolidayDogConditionalFields);
+document.getElementById('addHolidayDestinationCategory')?.addEventListener('click',()=>addHolidayDestinationCustom('category'));
+document.getElementById('addHolidayDestinationCharacter')?.addEventListener('click',()=>addHolidayDestinationCustom('character'));
+['holidayDestinationNewCategory','holidayDestinationNewCharacter'].forEach(id=>document.getElementById(id)?.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();addHolidayDestinationCustom(id.endsWith('Character')?'character':'category');}}));
+document.getElementById('holidayDestinationSection')?.addEventListener('click',ev=>{
+  const btn=ev.target.closest('.destination-delete-choice'); if(!btn)return;
+  deleteHolidayDestinationCustom(btn.dataset.destinationKind,btn.dataset.destinationLabel);
+});
 document.getElementById('holidayEditForm')?.addEventListener('submit',saveHolidayBasic);
 document.querySelectorAll('#holidayRatings select').forEach(select=>select.addEventListener('change',updateHolidayRatingAverage));
 document.getElementById('addHolidayMedia')?.addEventListener('click',()=>document.getElementById('holidayMediaInput')?.click());

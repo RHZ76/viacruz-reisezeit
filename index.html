@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.34-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.35-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -201,6 +201,50 @@
         <div id="holidayMediaEditor" class="media-editor"></div>
       </section>
 
+
+
+
+      <section class="edit-section" id="holidayDestinationSection" hidden>
+        <div class="edit-section-head">
+          <h3>Reiseziel &amp; Kategorie</h3>
+          <p>Art, Umfang und Charakter des Reiseziels festlegen. Mehrfachauswahl ist möglich.</p>
+        </div>
+
+        <label>Umfang des Reiseziels
+          <select id="holidayDestinationScope">
+            <option value="unknown">Unbekannt</option>
+            <option value="single">Einzelnes Ziel</option>
+            <option value="city">Ort / Stadt</option>
+            <option value="region">Gebiet / Region</option>
+            <option value="route">Route / Strecke</option>
+            <option value="event">Veranstaltung</option>
+          </select>
+        </label>
+
+        <div class="field-group">
+          <div class="field-group-title">Art des Reiseziels <span class="field-help-inline">Mehrfachauswahl</span></div>
+          <div id="holidayDestinationCategoryOptions" class="option-grid destination-choice-grid"></div>
+          <div class="destination-add-row">
+            <input id="holidayDestinationNewCategory" autocomplete="off" placeholder="Eigene Kategorie, z. B. Wasserfall" />
+            <button type="button" class="btn secondary compact-btn" id="addHolidayDestinationCategory">+ Hinzufügen</button>
+          </div>
+          <span class="field-help">Eigene Kategorien bleiben dauerhaft verfügbar. Verwendete Kategorien sind beim Löschen geschützt.</span>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Charakter <span class="field-help-inline">Mehrfachauswahl</span></div>
+          <div id="holidayDestinationCharacterOptions" class="option-grid destination-choice-grid"></div>
+          <div class="destination-add-row">
+            <input id="holidayDestinationNewCharacter" autocomplete="off" placeholder="Eigener Charakter, z. B. Abenteuer" />
+            <button type="button" class="btn secondary compact-btn" id="addHolidayDestinationCharacter">+ Hinzufügen</button>
+          </div>
+          <span class="field-help">Auch eigene Charaktere können später als Filter verwendet werden.</span>
+        </div>
+
+        <label>Was möchte ich dort sehen / erleben?
+          <textarea id="holidayDestinationWish" rows="4" placeholder="z. B. Altstadt ansehen, Aussichtspunkt besuchen, regionale Spezialitäten probieren …"></textarea>
+        </label>
+      </section>
 
       <section class="edit-section" id="holidayAccommodationSection">
         <div class="edit-section-head">
@@ -2700,6 +2744,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.34-r1"></script>
+  <script src="app.js?v=0.3.35-r1"></script>
 </body>
 </html>

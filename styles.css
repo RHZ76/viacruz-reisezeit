@@ -281,3 +281,14 @@ button{cursor:pointer}
 .edit-subaccordion[open] .accordion-chevron{transform:rotate(180deg)}
 .edit-subaccordion-body{padding:14px;display:grid;gap:14px}
 @media (max-width:640px){.holiday-subaccordions{gap:8px}.edit-subaccordion>summary{min-height:46px;padding:11px 12px}.edit-subaccordion-body{padding:12px}}
+
+
+/* v0.3.35 · Reiseziel & Kategorie */
+.destination-add-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:stretch;margin-top:10px}
+.destination-add-row .btn{min-height:44px;white-space:nowrap}
+.destination-choice-grid{margin-top:2px}
+.destination-custom-choice{display:grid;grid-template-columns:minmax(0,1fr) 38px;gap:6px;align-items:stretch}
+.destination-custom-choice .check-option{margin:0}
+.destination-delete-choice{border:1px solid var(--line);background:var(--surface);border-radius:10px;min-width:38px;min-height:42px;font-size:20px;line-height:1;cursor:pointer;color:var(--muted)}
+.destination-delete-choice:hover{background:var(--surface-2)}
+@media(max-width:520px){.destination-add-row{grid-template-columns:1fr}.destination-add-row .btn{width:100%}}
