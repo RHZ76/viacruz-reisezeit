@@ -261,6 +261,9 @@ button{cursor:pointer}
 .input-with-unit{display:grid;grid-template-columns:minmax(0,1fr) 42px;align-items:stretch;margin-top:6px}
 .sheet-card .input-with-unit input{margin-top:0;border-radius:13px 0 0 13px;min-width:0}
 .input-with-unit>span{height:46px;display:grid;place-items:center;border:1px solid var(--line);border-left:0;border-radius:0 13px 13px 0;background:var(--surface-2);color:var(--muted);font-size:13px;font-weight:750}
+.grid-2[hidden]{display:none!important}
+.stay-nights-unit{grid-template-columns:minmax(72px,.72fr) minmax(86px,1.28fr)}
+.stay-nights-unit>span{white-space:nowrap;font-size:14px}
 .edit-subsection{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
 .edit-section-head.compact{margin-bottom:2px}
 .edit-section-head.compact h4{margin:0;font-size:15px;color:var(--text)}

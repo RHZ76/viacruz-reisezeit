@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.29-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.30-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -461,7 +461,7 @@
         <label>Check-out bis<input id="holidayStayCheckoutUntil" type="time" /></label>
         <label>Art des Check-ins<select id="holidayStayCheckinType"><option value="unknown">Unbekannt</option><option value="reception">Rezeption</option><option value="host">Gastgeber persönlich</option><option value="keybox">Schlüsselbox</option><option value="keysafe">Schlüsseltresor</option><option value="code">Code / PIN</option><option value="app">App</option><option value="self">Selbst-Check-in</option><option value="other">Sonstiges</option></select></label>
         <div class="grid-2">
-          <label>Mindestaufenthalt<div class="input-with-unit"><input id="holidayStayMinNights" type="number" inputmode="numeric" min="1" step="1" /><span>Nächte</span></div></label>
+          <label>Mindestaufenthalt<div class="input-with-unit stay-nights-unit"><input id="holidayStayMinNights" type="number" inputmode="numeric" min="1" step="1" /><span>Nächte</span></div></label>
           <label>Anreise flexibel möglich<select id="holidayStayFlexible"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select></label>
         </div>
         <label>Späte Anreise möglich<select id="holidayStayLate"><option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option></select></label>
@@ -469,18 +469,18 @@
           <div class="edit-section-head compact"><h4>Parken bei der Unterkunft</h4></div>
           <div class="grid-2">
             <label>Parkplatz<select id="holidayStayParking"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
-            <label id="holidayStayParkingBillingWrap">Kosten<select id="holidayStayParkingBilling"><option value="unknown">Preis unbekannt</option><option value="included">Inklusive</option><option value="paid">Kostenpflichtig</option></select></label>
+            <label id="holidayStayParkingBillingWrap" hidden>Kosten<select id="holidayStayParkingBilling"><option value="unknown">Preis unbekannt</option><option value="included">Inklusive</option><option value="paid">Kostenpflichtig</option></select></label>
           </div>
-          <div class="grid-2" id="holidayStayParkingDetailsWrap">
+          <div class="grid-2" id="holidayStayParkingDetailsWrap" hidden>
             <label>Parkplatzart<select id="holidayStayParkingType"><option value="unknown">Unbekannt</option><option value="property">Auf dem Grundstück</option><option value="parking">Parkplatz</option><option value="garage">Parkhaus / Tiefgarage</option><option value="public">Straße / öffentlich</option><option value="other">Sonstiges</option></select></label>
-            <label id="holidayStayParkingPriceWrap">Parkpreis<div class="input-with-unit"><input id="holidayStayParkingPrice" type="number" inputmode="decimal" min="0" step="0.01" /><span>€</span></div></label>
+            <label id="holidayStayParkingPriceWrap" hidden>Parkpreis<div class="input-with-unit"><input id="holidayStayParkingPrice" type="number" inputmode="decimal" min="0" step="0.01" /><span>€</span></div></label>
           </div>
         </div>
         <label>Schlüsselübergabe / Hinweise zur Anreise<textarea id="holidayStayArrivalNotes" rows="4" placeholder="z. B. Schlüsselbox am Eingang, Gastgeber vorher anrufen …"></textarea></label>
         <div class="edit-subsection">
           <div class="edit-section-head compact"><h4>Kaution</h4></div>
           <label>Kaution<select id="holidayStayDeposit"><option value="unknown">Unbekannt</option><option value="none">Keine</option><option value="required">Erforderlich</option></select></label>
-          <div class="grid-2" id="holidayStayDepositDetails">
+          <div class="grid-2" id="holidayStayDepositDetails" hidden>
             <label>Betrag<div class="input-with-unit"><input id="holidayStayDepositAmount" type="number" inputmode="decimal" min="0" step="0.01" /><span>€</span></div></label>
             <label>Art der Kaution<select id="holidayStayDepositMethod"><option value="unknown">Unbekannt</option><option value="cash">Bar</option><option value="card">Kreditkarte</option><option value="transfer">Überweisung</option><option value="other">Sonstiges</option></select></label>
           </div>
@@ -2464,6 +2464,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.29-r1"></script>
+  <script src="app.js?v=0.3.30-r1"></script>
 </body>
 </html>
