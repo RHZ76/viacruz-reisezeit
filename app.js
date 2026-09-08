@@ -442,7 +442,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.33 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.34 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1271,6 +1271,30 @@ function holidayDetailCards(e){
     const summary=[features.slice(0,2).join(' · '),location.motorwayDistance!=null?`${formatNumber(location.motorwayDistance)} km zur Autobahn`:'',location.airportDistance!=null?`${formatNumber(location.airportDistance)} km zum Flughafen`:''].filter(Boolean).slice(0,2).join(' · ')||'Lage & Umgebung';
     holidayLocationCard=`<details class="detail-accordion"><summary><span><small>Lage &amp; Umgebung</small><strong>${escapeHtml(summary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${rows||'<div class="detail-empty">Noch keine Angaben zu Lage und Umgebung gespeichert.</div>'}</div></details>`;
   }
+  let holidayDogCard='';
+  if(isAccommodationHolidayType(e.type)){
+    const dog=ensureHolidayDog(e);
+    const fee=dog.feeType==='free'?'Kostenlos':dog.feeType==='paid'?(dog.fee!=null?`${formatNumber(dog.fee)} € / Hund / Nacht`:'Kostenpflichtig'):'';
+    const alone=({yes:'Ja',no:'Nein',conditional:'Nur unter Bedingungen'})[dog.alone]||'';
+    const rows=dog.allowed==='unknown'||!dog.allowed?'':[
+      detailRow('Hunde erlaubt',dog.allowed==='yes'?'Ja':'Nein'),
+      dog.allowed==='yes'?detailRow('Maximale Anzahl Hunde',dog.maxCount!=null?String(dog.maxCount):''):'',
+      dog.allowed==='yes'?detailRow('Hundekosten',fee):'',
+      dog.allowed==='yes'?detailRow('Maximale Größe / Gewicht',dog.sizeWeight||''):'',
+      dog.allowed==='yes'?detailRow('Nur bestimmte Zimmer / Unterkünfte',knownYesNo(dog.restrictedUnits,'Ja','Nein')):'',
+      dog.allowed==='yes'?detailRow('Leinenpflicht auf dem Gelände',knownYesNo(dog.leash,'Ja','Nein')):'',
+      dog.allowed==='yes'?detailRow('Hund darf allein in der Unterkunft bleiben',alone):'',
+      dog.allowed==='yes'&&dog.alone==='conditional'&&dog.aloneNotes?`<div class="detail-note"><span>Bedingungen für das Alleinbleiben</span><p>${escapeHtml(dog.aloneNotes).replace(/\n/g,'<br>')}</p></div>`:'',
+      dog.allowed==='yes'?detailRow('Hundeauslauf / Hundewiese',knownYesNo(dog.run,'Vorhanden','Nicht vorhanden')):'',
+      dog.allowed==='yes'?detailRow('Hundestrand',knownYesNo(dog.beach,'Vorhanden','Nicht vorhanden')):'',
+      dog.allowed==='yes'?detailRow('Bademöglichkeit für Hunde',knownYesNo(dog.swimming,'Vorhanden','Nicht vorhanden')):'',
+      dog.allowed==='yes'?detailRow('Hundedusche',knownYesNo(dog.shower,'Vorhanden','Nicht vorhanden')):'',
+      dog.allowed==='yes'?detailRow('Hunde im Restaurant erlaubt',knownYesNo(dog.restaurant,'Ja','Nein')):'',
+      dog.allowed==='yes'&&dog.notes?`<div class="detail-note"><span>Hinweise für Hunde</span><p>${escapeHtml(dog.notes).replace(/\n/g,'<br>')}</p></div>`:''
+    ].filter(Boolean).join('');
+    const summary=dog.allowed==='yes'?['Hunde erlaubt',fee,dog.alone==='yes'?'darf allein bleiben':''].filter(Boolean).slice(0,2).join(' · '):dog.allowed==='no'?'Hunde nicht erlaubt':'Hund';
+    holidayDogCard=`<details class="detail-accordion"><summary><span><small>Hund</small><strong>${escapeHtml(summary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${rows||'<div class="detail-empty">Noch keine Angaben zu Hunden gespeichert.</div>'}</div></details>`;
+  }
   const personal=ensureHolidayPersonal(e);
   const statusText=e.visited?'Besucht':e.wantToVisit?'Möchte ich besuchen':'';
   const favoriteText=e.favorite?'Favorit':'';
@@ -1292,7 +1316,7 @@ function holidayDetailCards(e){
   const personalRows=[detailRow('Status',[statusText,favoriteText].filter(Boolean).join(' · ')),e.why?`<div class="detail-note"><span>Warum gespeichert?</span><p>${escapeHtml(e.why).replace(/\n/g,'<br>')}</p></div>`:'',ratingRows,detailRow('Würde ich wiederkommen?',returnText),visits.length?`<div class="detail-note"><span>Besuchshistorie</span>${visitRows}</div>`:'',e.notes?`<div class="detail-note"><span>Persönliche Notizen</span><p>${escapeHtml(e.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
   const personalSummary=[statusText,favoriteText,ratingAverage!=null?`${formatNumber(ratingAverage,1)} / 5`:'',visits.length?`${visits.length} ${visits.length===1?'Besuch':'Besuche'}`:''].filter(Boolean).slice(0,3).join(' · ')||'Persönlich';
   const personalCard=`<details class="detail-accordion"><summary><span><small>Persönlich</small><strong>${escapeHtml(personalSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${personalRows||'<div class="detail-empty">Noch keine persönlichen Angaben gespeichert.</div>'}</div></details>`;
-  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${accommodationCard}${priceCard}${stayCard}${foodCard}${holidayLeisureCard}${holidayLocationCard}${personalCard}</div>`;
+  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${accommodationCard}${priceCard}${stayCard}${foodCard}${holidayLeisureCard}${holidayLocationCard}${holidayDogCard}${personalCard}</div>`;
 }
 
 let holidayEditMode='create';
@@ -1327,6 +1351,11 @@ function ensureHolidayLocation(e){
   if(!d.location.distances||typeof d.location.distances!=='object')d.location.distances={};
   if(!d.location.mobility||typeof d.location.mobility!=='object')d.location.mobility={};
   return d.location;
+}
+function ensureHolidayDog(e){
+  const d=ensureHolidayDetails(e);
+  if(!d.dog||typeof d.dog!=='object')d.dog={};
+  return d.dog;
 }
 function ensureHolidayAccommodation(e){
   const d=ensureHolidayDetails(e);
@@ -1451,6 +1480,15 @@ function updateHolidayLocationConditionalFields(){
   const section=document.getElementById('holidayLocationSection');
   if(section)section.hidden=!isAccommodationHolidayType(type);
 }
+function updateHolidayDogConditionalFields(){
+  const type=document.getElementById('holidayEntryType')?.value||'hotel';
+  const accommodation=isAccommodationHolidayType(type);
+  const section=document.getElementById('holidayDogSection'); if(section)section.hidden=!accommodation;
+  const allowed=document.getElementById('holidayDogAllowed')?.value==='yes';
+  const details=document.getElementById('holidayDogDetails'); if(details)details.hidden=!allowed;
+  const feeWrap=document.getElementById('holidayDogFeeWrap'); if(feeWrap)feeWrap.hidden=!allowed||document.getElementById('holidayDogFeeType')?.value!=='paid';
+  const aloneWrap=document.getElementById('holidayDogAloneNotesWrap'); if(aloneWrap)aloneWrap.hidden=!allowed||document.getElementById('holidayDogAlone')?.value!=='conditional';
+}
 function updateHolidayBasicConditionalFields(){
   const type=document.getElementById('holidayEntryType')?.value||'hotel';
   const booking=document.getElementById('holidayBookingWrap');
@@ -1465,6 +1503,7 @@ function updateHolidayBasicConditionalFields(){
   updateHolidayFoodConditionalFields();
   updateHolidayLeisureConditionalFields();
   updateHolidayLocationConditionalFields();
+  updateHolidayDogConditionalFields();
   updateHolidayPersonalConditionalFields();
 }
 function openHolidayEditor(entry=null,pretype='hotel'){
@@ -1532,6 +1571,8 @@ function openHolidayEditor(entry=null,pretype='hotel'){
   [['Centre','centre'],['Supermarket','supermarket'],['Restaurant','restaurant'],['Bakery','bakery'],['Water','water'],['Sights','sights']].forEach(([suffix,key])=>{setField('holidayDistance'+suffix,hld[key]?.km);setField('holidayWalk'+suffix,hld[key]?.walkable||'unknown');});
   setField('holidayAirportDistance',location.airportDistance); setField('holidayMotorwayDistance',location.motorwayDistance); setField('holidayMotorwayJunction',location.motorwayJunction||'');
   const hlm=location.mobility||{}; setField('holidayMobilityPublicTransport',hlm.publicTransport||'unknown'); setField('holidayMobilityBus',hlm.bus||'unknown'); setField('holidayMobilityTrain',hlm.train||'unknown'); setField('holidayMobilityCycle',hlm.cycle||'unknown'); setField('holidayMobilityHiking',hlm.hiking||'unknown'); setField('holidayMobilityCableCar',hlm.cableCar||'unknown'); setField('holidayMobilityFerry',hlm.ferry||'unknown'); setField('holidayLocationNotes',location.notes||'');
+  const dog=entry&&isAccommodationHolidayType(type)?ensureHolidayDog(entry):{};
+  setField('holidayDogAllowed',dog.allowed||'unknown'); setField('holidayDogMaxCount',dog.maxCount); setField('holidayDogFeeType',dog.feeType||'unknown'); setField('holidayDogFee',dog.fee); setField('holidayDogSizeWeight',dog.sizeWeight||''); setField('holidayDogRestrictedUnits',dog.restrictedUnits||'unknown'); setField('holidayDogLeash',dog.leash||'unknown'); setField('holidayDogAlone',dog.alone||'unknown'); setField('holidayDogAloneNotes',dog.aloneNotes||''); setField('holidayDogRun',dog.run||'unknown'); setField('holidayDogBeach',dog.beach||'unknown'); setField('holidayDogSwimming',dog.swimming||'unknown'); setField('holidayDogShower',dog.shower||'unknown'); setField('holidayDogRestaurant',dog.restaurant||'unknown'); setField('holidayDogNotes',dog.notes||'');
   const personal=entry?ensureHolidayPersonal(entry):{ratings:{},returnIntent:'unknown'};
   setField('holidayPersonalStatus',entry?.visited?'visited':entry?.wantToVisit?'want':'none');
   const holidayFavorite=document.getElementById('holidayPersonalFavorite'); if(holidayFavorite) holidayFavorite.checked=!!entry?.favorite;
@@ -1646,6 +1687,13 @@ function saveHolidayBasic(ev){
     location.airportDistance=numericField('holidayAirportDistance'); location.motorwayDistance=numericField('holidayMotorwayDistance'); location.motorwayJunction=document.getElementById('holidayMotorwayJunction').value.trim();
     location.mobility={publicTransport:document.getElementById('holidayMobilityPublicTransport').value,bus:document.getElementById('holidayMobilityBus').value,train:document.getElementById('holidayMobilityTrain').value,cycle:document.getElementById('holidayMobilityCycle').value,hiking:document.getElementById('holidayMobilityHiking').value,cableCar:document.getElementById('holidayMobilityCableCar').value,ferry:document.getElementById('holidayMobilityFerry').value};
     location.notes=document.getElementById('holidayLocationNotes').value.trim();
+    const dog=ensureHolidayDog(entry);
+    dog.allowed=document.getElementById('holidayDogAllowed').value||'unknown';
+    if(dog.allowed==='yes'){
+      dog.maxCount=numericField('holidayDogMaxCount'); dog.feeType=document.getElementById('holidayDogFeeType').value||'unknown'; dog.fee=dog.feeType==='paid'?numericField('holidayDogFee'):null; dog.sizeWeight=document.getElementById('holidayDogSizeWeight').value.trim(); dog.restrictedUnits=document.getElementById('holidayDogRestrictedUnits').value||'unknown'; dog.leash=document.getElementById('holidayDogLeash').value||'unknown'; dog.alone=document.getElementById('holidayDogAlone').value||'unknown'; dog.aloneNotes=dog.alone==='conditional'?document.getElementById('holidayDogAloneNotes').value.trim():''; dog.run=document.getElementById('holidayDogRun').value||'unknown'; dog.beach=document.getElementById('holidayDogBeach').value||'unknown'; dog.swimming=document.getElementById('holidayDogSwimming').value||'unknown'; dog.shower=document.getElementById('holidayDogShower').value||'unknown'; dog.restaurant=document.getElementById('holidayDogRestaurant').value||'unknown'; dog.notes=document.getElementById('holidayDogNotes').value.trim();
+    }else{
+      dog.maxCount=null; dog.feeType='unknown'; dog.fee=null; dog.sizeWeight=''; dog.restrictedUnits='unknown'; dog.leash='unknown'; dog.alone='unknown'; dog.aloneNotes=''; dog.run='unknown'; dog.beach='unknown'; dog.swimming='unknown'; dog.shower='unknown'; dog.restaurant='unknown'; dog.notes='';
+    }
   }
   const personal=ensureHolidayPersonal(entry);
   const personalStatus=document.getElementById('holidayPersonalStatus').value;
@@ -1690,6 +1738,9 @@ document.getElementById('holidayAccWifiBilling')?.addEventListener('change',upda
 document.getElementById('holidayAccKitchen')?.addEventListener('change',updateHolidayAccommodationConditionalFields);
 document.getElementById('holidayAccLinen')?.addEventListener('change',updateHolidayAccommodationConditionalFields);
 document.getElementById('holidayAccTowels')?.addEventListener('change',updateHolidayAccommodationConditionalFields);
+document.getElementById('holidayDogAllowed')?.addEventListener('change',updateHolidayDogConditionalFields);
+document.getElementById('holidayDogFeeType')?.addEventListener('change',updateHolidayDogConditionalFields);
+document.getElementById('holidayDogAlone')?.addEventListener('change',updateHolidayDogConditionalFields);
 document.getElementById('holidayEditForm')?.addEventListener('submit',saveHolidayBasic);
 document.querySelectorAll('#holidayRatings select').forEach(select=>select.addEventListener('change',updateHolidayRatingAverage));
 document.getElementById('addHolidayMedia')?.addEventListener('click',()=>document.getElementById('holidayMediaInput')?.click());
