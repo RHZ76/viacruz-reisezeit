@@ -442,7 +442,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.32 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.33 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1259,6 +1259,18 @@ function holidayDetailCards(e){
     const summary=[pool[0]||'',sport[0]||'',family[0]||''].filter(Boolean).slice(0,3).join(' · ')||'Freizeit & Angebote';
     holidayLeisureCard=`<details class="detail-accordion"><summary><span><small>Freizeit &amp; Angebote</small><strong>${escapeHtml(summary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${rows||'<div class="detail-empty">Noch keine Freizeit- oder Angebotsangaben gespeichert.</div>'}</div></details>`;
   }
+  let holidayLocationCard='';
+  if(isAccommodationHolidayType(e.type)){
+    const location=ensureHolidayLocation(e);
+    const featureLabels={sea:'Meer',lake:'See',river:'Fluss',mountains:'Berge',forest:'Wald',rural:'Ländlich',city:'Stadt / Innenstadt','city-edge':'Stadtrand','beach-nearby':'Strandnähe',waterfront:'Direkt am Wasser',remote:'Abgelegen / ruhig'};
+    const features=(location.features||[]).map(v=>featureLabels[v]).filter(Boolean);
+    const d=location.distances||{};
+    const distanceText=item=>{if(!item)return '';const parts=[];if(item.km!=null)parts.push(`${formatNumber(item.km)} km`);if(item.walkable==='yes')parts.push('fußläufig');else if(item.walkable==='no')parts.push('nicht fußläufig');return parts.join(' · ');};
+    const m=location.mobility||{};
+    const rows=[detailRow('Lage',features.join(' · ')),detailRow('Orts-/Stadtzentrum',distanceText(d.centre)),detailRow('Supermarkt',distanceText(d.supermarket)),detailRow('Restaurant',distanceText(d.restaurant)),detailRow('Bäckerei',distanceText(d.bakery)),detailRow('Strand / See',distanceText(d.water)),detailRow('Sehenswürdigkeiten',distanceText(d.sights)),detailRow('Entfernung zum Flughafen',location.airportDistance!=null?`${formatNumber(location.airportDistance)} km`:''),detailRow('Entfernung zur Autobahn',location.motorwayDistance!=null?`${formatNumber(location.motorwayDistance)} km`:''),detailRow('Autobahn / Anschlussstelle',location.motorwayJunction),detailRow('ÖPNV',knownYesNo(m.publicTransport,'Vorhanden','Nicht vorhanden')),detailRow('Bushaltestelle',knownYesNo(m.bus,'Vorhanden','Nicht vorhanden')),detailRow('Bahnhof',knownYesNo(m.train,'Vorhanden','Nicht vorhanden')),detailRow('Radwege',knownYesNo(m.cycle,'Vorhanden','Nicht vorhanden')),detailRow('Wanderwege',knownYesNo(m.hiking,'Vorhanden','Nicht vorhanden')),detailRow('Seilbahn',knownYesNo(m.cableCar,'Vorhanden','Nicht vorhanden')),detailRow('Fähranleger / Hafen',knownYesNo(m.ferry,'Vorhanden','Nicht vorhanden')),location.notes?`<div class="detail-note"><span>Ausflugsziele / Hinweise zur Umgebung</span><p>${escapeHtml(location.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
+    const summary=[features.slice(0,2).join(' · '),location.motorwayDistance!=null?`${formatNumber(location.motorwayDistance)} km zur Autobahn`:'',location.airportDistance!=null?`${formatNumber(location.airportDistance)} km zum Flughafen`:''].filter(Boolean).slice(0,2).join(' · ')||'Lage & Umgebung';
+    holidayLocationCard=`<details class="detail-accordion"><summary><span><small>Lage &amp; Umgebung</small><strong>${escapeHtml(summary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${rows||'<div class="detail-empty">Noch keine Angaben zu Lage und Umgebung gespeichert.</div>'}</div></details>`;
+  }
   const personal=ensureHolidayPersonal(e);
   const statusText=e.visited?'Besucht':e.wantToVisit?'Möchte ich besuchen':'';
   const favoriteText=e.favorite?'Favorit':'';
@@ -1280,7 +1292,7 @@ function holidayDetailCards(e){
   const personalRows=[detailRow('Status',[statusText,favoriteText].filter(Boolean).join(' · ')),e.why?`<div class="detail-note"><span>Warum gespeichert?</span><p>${escapeHtml(e.why).replace(/\n/g,'<br>')}</p></div>`:'',ratingRows,detailRow('Würde ich wiederkommen?',returnText),visits.length?`<div class="detail-note"><span>Besuchshistorie</span>${visitRows}</div>`:'',e.notes?`<div class="detail-note"><span>Persönliche Notizen</span><p>${escapeHtml(e.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
   const personalSummary=[statusText,favoriteText,ratingAverage!=null?`${formatNumber(ratingAverage,1)} / 5`:'',visits.length?`${visits.length} ${visits.length===1?'Besuch':'Besuche'}`:''].filter(Boolean).slice(0,3).join(' · ')||'Persönlich';
   const personalCard=`<details class="detail-accordion"><summary><span><small>Persönlich</small><strong>${escapeHtml(personalSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${personalRows||'<div class="detail-empty">Noch keine persönlichen Angaben gespeichert.</div>'}</div></details>`;
-  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${accommodationCard}${priceCard}${stayCard}${foodCard}${holidayLeisureCard}${personalCard}</div>`;
+  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${accommodationCard}${priceCard}${stayCard}${foodCard}${holidayLeisureCard}${holidayLocationCard}${personalCard}</div>`;
 }
 
 let holidayEditMode='create';
@@ -1308,6 +1320,13 @@ function ensureHolidayLeisure(e){
   const d=ensureHolidayDetails(e);
   if(!d.leisure||typeof d.leisure!=='object')d.leisure={};
   return d.leisure;
+}
+function ensureHolidayLocation(e){
+  const d=ensureHolidayDetails(e);
+  if(!d.location||typeof d.location!=='object')d.location={};
+  if(!d.location.distances||typeof d.location.distances!=='object')d.location.distances={};
+  if(!d.location.mobility||typeof d.location.mobility!=='object')d.location.mobility={};
+  return d.location;
 }
 function ensureHolidayAccommodation(e){
   const d=ensureHolidayDetails(e);
@@ -1427,6 +1446,11 @@ function updateHolidayLeisureConditionalFields(){
   const sauna=document.getElementById('holidayLeisureSaunaUseWrap'); if(sauna)sauna.hidden=document.getElementById('holidayLeisureSauna')?.value!=='yes';
   const whirl=document.getElementById('holidayLeisureWhirlpoolUseWrap'); if(whirl)whirl.hidden=document.getElementById('holidayLeisureWhirlpool')?.value!=='yes';
 }
+function updateHolidayLocationConditionalFields(){
+  const type=document.getElementById('holidayEntryType')?.value||'hotel';
+  const section=document.getElementById('holidayLocationSection');
+  if(section)section.hidden=!isAccommodationHolidayType(type);
+}
 function updateHolidayBasicConditionalFields(){
   const type=document.getElementById('holidayEntryType')?.value||'hotel';
   const booking=document.getElementById('holidayBookingWrap');
@@ -1440,6 +1464,7 @@ function updateHolidayBasicConditionalFields(){
   updateHolidayStayConditionalFields();
   updateHolidayFoodConditionalFields();
   updateHolidayLeisureConditionalFields();
+  updateHolidayLocationConditionalFields();
   updateHolidayPersonalConditionalFields();
 }
 function openHolidayEditor(entry=null,pretype='hotel'){
@@ -1501,6 +1526,12 @@ function openHolidayEditor(entry=null,pretype='hotel'){
   setField('holidayLeisureOutdoorPool',leisure.outdoorPool||'unknown'); setField('holidayLeisureOutdoorPoolUse',leisure.outdoorPoolUse||'unknown'); setField('holidayLeisureIndoorPool',leisure.indoorPool||'unknown'); setField('holidayLeisureIndoorPoolUse',leisure.indoorPoolUse||'unknown'); setField('holidayLeisureSauna',leisure.sauna||'unknown'); setField('holidayLeisureSaunaUse',leisure.saunaUse||'unknown'); setField('holidayLeisureWhirlpool',leisure.whirlpool||'unknown'); setField('holidayLeisureWhirlpoolUse',leisure.whirlpoolUse||'unknown');
   ['PoolHeated','PoolSeasonal','Wellness','Massage','BathingAccess','PrivateBeach','Fitness','BikeRental','EBikeRental','Tennis','TableTennis','MiniGolf','WaterSports','SkiRoom','SkiInOut','Playground','Playroom','Childcare','Entertainment','KidsProgram'].forEach(k=>setChecked('holidayLeisure'+k,leisure[k.charAt(0).toLowerCase()+k.slice(1)]));
   setField('holidayLeisureNotes',leisure.notes||'');
+  const location=entry&&isAccommodationHolidayType(type)?ensureHolidayLocation(entry):{distances:{},mobility:{}};
+  setCheckboxGroup('holidayLocationFeatures',location.features||[]);
+  const hld=location.distances||{};
+  [['Centre','centre'],['Supermarket','supermarket'],['Restaurant','restaurant'],['Bakery','bakery'],['Water','water'],['Sights','sights']].forEach(([suffix,key])=>{setField('holidayDistance'+suffix,hld[key]?.km);setField('holidayWalk'+suffix,hld[key]?.walkable||'unknown');});
+  setField('holidayAirportDistance',location.airportDistance); setField('holidayMotorwayDistance',location.motorwayDistance); setField('holidayMotorwayJunction',location.motorwayJunction||'');
+  const hlm=location.mobility||{}; setField('holidayMobilityPublicTransport',hlm.publicTransport||'unknown'); setField('holidayMobilityBus',hlm.bus||'unknown'); setField('holidayMobilityTrain',hlm.train||'unknown'); setField('holidayMobilityCycle',hlm.cycle||'unknown'); setField('holidayMobilityHiking',hlm.hiking||'unknown'); setField('holidayMobilityCableCar',hlm.cableCar||'unknown'); setField('holidayMobilityFerry',hlm.ferry||'unknown'); setField('holidayLocationNotes',location.notes||'');
   const personal=entry?ensureHolidayPersonal(entry):{ratings:{},returnIntent:'unknown'};
   setField('holidayPersonalStatus',entry?.visited?'visited':entry?.wantToVisit?'want':'none');
   const holidayFavorite=document.getElementById('holidayPersonalFavorite'); if(holidayFavorite) holidayFavorite.checked=!!entry?.favorite;
@@ -1602,6 +1633,19 @@ function saveHolidayBasic(ev){
     if(leisure.outdoorPool!=='yes'&&leisure.indoorPool!=='yes'){leisure.poolHeated=false;leisure.poolSeasonal=false;}
     if(selectedType!=='hotel'){leisure.entertainment=false;leisure.kidsProgram=false;}
     leisure.notes=document.getElementById('holidayLeisureNotes').value.trim();
+    const location=ensureHolidayLocation(entry);
+    location.features=getCheckboxGroup('holidayLocationFeatures');
+    location.distances={
+      centre:{km:numericField('holidayDistanceCentre'),walkable:document.getElementById('holidayWalkCentre').value},
+      supermarket:{km:numericField('holidayDistanceSupermarket'),walkable:document.getElementById('holidayWalkSupermarket').value},
+      restaurant:{km:numericField('holidayDistanceRestaurant'),walkable:document.getElementById('holidayWalkRestaurant').value},
+      bakery:{km:numericField('holidayDistanceBakery'),walkable:document.getElementById('holidayWalkBakery').value},
+      water:{km:numericField('holidayDistanceWater'),walkable:document.getElementById('holidayWalkWater').value},
+      sights:{km:numericField('holidayDistanceSights'),walkable:document.getElementById('holidayWalkSights').value}
+    };
+    location.airportDistance=numericField('holidayAirportDistance'); location.motorwayDistance=numericField('holidayMotorwayDistance'); location.motorwayJunction=document.getElementById('holidayMotorwayJunction').value.trim();
+    location.mobility={publicTransport:document.getElementById('holidayMobilityPublicTransport').value,bus:document.getElementById('holidayMobilityBus').value,train:document.getElementById('holidayMobilityTrain').value,cycle:document.getElementById('holidayMobilityCycle').value,hiking:document.getElementById('holidayMobilityHiking').value,cableCar:document.getElementById('holidayMobilityCableCar').value,ferry:document.getElementById('holidayMobilityFerry').value};
+    location.notes=document.getElementById('holidayLocationNotes').value.trim();
   }
   const personal=ensureHolidayPersonal(entry);
   const personalStatus=document.getElementById('holidayPersonalStatus').value;
