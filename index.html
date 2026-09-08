@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.19-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.20-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -186,6 +186,127 @@
         <label id="holidayBookingWrap">Buchungsseite
           <input id="holidayBookingUrl" type="text" inputmode="url" autocomplete="url" autocapitalize="none" spellcheck="false" placeholder="Direkter Link zur Buchungsseite, optional" />
           <span class="field-help">Getrennt von offizieller Website und Quelle gespeichert.</span>
+        </label>
+      </section>
+
+      <section class="edit-section" id="holidayPricesSection">
+        <div class="edit-section-head">
+          <h3>Preise &amp; Buchung</h3>
+          <p>Allgemeine Preisangaben, Buchungsbedingungen und ein konkret gefundener Reisepreis.</p>
+        </div>
+
+        <div class="grid-2">
+          <label>Preisstand / Jahr
+            <input id="holidayPriceYear" type="number" inputmode="numeric" min="2000" max="2100" placeholder="z. B. 2026" />
+          </label>
+          <label>Preis ab
+            <div class="input-with-unit"><input id="holidayPriceFrom" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00" /><span>€</span></div>
+          </label>
+        </div>
+
+        <div class="grid-2">
+          <label>Abrechnung
+            <select id="holidayPriceBilling">
+              <option value="unknown">Unbekannt</option>
+              <option value="night">pro Nacht</option>
+              <option value="stay">pro Aufenthalt</option>
+              <option value="week">pro Woche</option>
+            </select>
+          </label>
+          <label>Preis gilt für
+            <select id="holidayPriceBasis">
+              <option value="unknown">Unbekannt</option>
+              <option value="unit">Unterkunft / Zimmer</option>
+              <option value="person">pro Person</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="holidayHotelOccupancyWrap" hidden>
+          <div class="grid-2">
+            <label>Zimmerpreis für
+              <select id="holidayHotelOccupancy">
+                <option value="unknown">Unbekannt</option>
+                <option value="1">1 Person</option>
+                <option value="2">2 Personen</option>
+                <option value="other">andere Personenzahl</option>
+              </select>
+            </label>
+            <label id="holidayHotelOccupancyOtherWrap" hidden>Personenzahl
+              <input id="holidayHotelOccupancyOther" type="number" inputmode="numeric" min="1" step="1" />
+            </label>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <label>Kurtaxe / Tourismusabgabe
+            <div class="input-with-unit"><input id="holidayTouristTax" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00" /><span>€</span></div>
+          </label>
+          <label>Endreinigung
+            <div class="input-with-unit"><input id="holidayCleaningFee" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00" /><span>€</span></div>
+          </label>
+        </div>
+
+        <div class="grid-2">
+          <label>Reservierungs-/Buchungsgebühr
+            <div class="input-with-unit"><input id="holidayBookingFee" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00" /><span>€</span></div>
+          </label>
+          <label>Sonstige Gebühr
+            <div class="input-with-unit"><input id="holidayOtherFee" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00" /><span>€</span></div>
+          </label>
+        </div>
+
+        <label>Bezeichnung sonstige Gebühr
+          <input id="holidayOtherFeeLabel" autocomplete="off" placeholder="z. B. Servicegebühr" />
+        </label>
+
+        <div class="grid-2">
+          <label>Buchung / Reservierung
+            <select id="holidayReservationStatus">
+              <option value="unknown">Unbekannt</option>
+              <option value="possible">Möglich</option>
+              <option value="recommended">Empfohlen</option>
+              <option value="required">Erforderlich</option>
+            </select>
+          </label>
+          <label>Kostenlose Stornierung
+            <select id="holidayFreeCancellation">
+              <option value="unknown">Unbekannt</option>
+              <option value="yes">Ja</option>
+              <option value="no">Nein</option>
+            </select>
+          </label>
+        </div>
+
+        <label id="holidayCancellationUntilWrap" hidden>Kostenlos stornierbar bis
+          <input id="holidayCancellationUntil" autocomplete="off" placeholder="z. B. 7 Tage vor Anreise" />
+        </label>
+
+        <div class="edit-subsection">
+          <div class="edit-section-head compact">
+            <h4>Gefundener Preis für unsere Reise</h4>
+            <p>Ein konkret recherchiertes Angebot. Der Gesamtbetrag wird nicht automatisch aus Einzelpreisen berechnet.</p>
+          </div>
+          <div class="grid-2">
+            <label>Anreise
+              <input id="holidayOfferArrival" type="date" />
+            </label>
+            <label>Abreise
+              <input id="holidayOfferDeparture" type="date" />
+            </label>
+          </div>
+          <div class="grid-2">
+            <label>Personen
+              <input id="holidayOfferPersons" type="number" inputmode="numeric" min="1" step="1" />
+            </label>
+            <label>Gesamtbetrag
+              <div class="input-with-unit"><input id="holidayOfferTotal" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00" /><span>€</span></div>
+            </label>
+          </div>
+        </div>
+
+        <label>Hinweise zu Preis &amp; Buchung
+          <textarea id="holidayPriceNotes" rows="4" placeholder="Weitere Angaben zu Preisen, Buchung oder Stornierung"></textarea>
         </label>
       </section>
 
@@ -2102,6 +2223,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.19-r1"></script>
+  <script src="app.js?v=0.3.20-r1"></script>
 </body>
 </html>

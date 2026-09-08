@@ -367,7 +367,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.19 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.20 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1096,10 +1096,65 @@ function holidayDetailCards(e){
     isAccommodationHolidayType(e.type)?detailRow('Buchungsseite',booking,true):''
   ].filter(Boolean).join('');
   const basicSummary=[e.town||e.region||e.country,regions].filter(Boolean).slice(0,2).join(' · ') || 'Grunddaten';
-  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details></div>`;
+  let priceCard='';
+  if(isAccommodationHolidayType(e.type)){
+    const p=ensureHolidayPrices(e);
+    const billing=holidayPriceBillingLabel(p.billing);
+    const basis=holidayPriceBasisLabel(p.basis);
+    const priceFrom=p.priceFrom!=null?`${formatNumber(p.priceFrom)} €${billing?` ${billing}`:''}`:'';
+    let roomFor='';
+    if(e.type==='hotel'){
+      roomFor=p.hotelOccupancy==='1'?'1 Person':p.hotelOccupancy==='2'?'2 Personen':p.hotelOccupancy==='other'&&p.hotelOccupancyOther!=null?`${formatNumber(p.hotelOccupancyOther,0)} Personen`:'';
+    }
+    const reservation=({possible:'Möglich',recommended:'Empfohlen',required:'Erforderlich'})[p.reservationStatus]||'';
+    const cancellation=p.freeCancellation==='yes'?(p.cancellationUntil?`Ja · bis ${p.cancellationUntil}`:'Ja'):p.freeCancellation==='no'?'Nein':'';
+    const nights=visitNights(p.offer?.arrival,p.offer?.departure);
+    const offerPeriod=[p.offer?.arrival,p.offer?.departure].filter(Boolean).join(' – ');
+    const offerDetails=[offerPeriod,nights!=null?`${nights} ${nights===1?'Nacht':'Nächte'}`:'',p.offer?.persons!=null?`${formatNumber(p.offer.persons,0)} ${Number(p.offer.persons)===1?'Person':'Personen'}`:''].filter(Boolean).join(' · ');
+    const priceRows=[
+      detailRow('Preisstand / Jahr',p.year!=null?String(p.year):''),
+      detailRow('Preis ab',priceFrom),
+      detailRow('Preis gilt für',basis),
+      e.type==='hotel'?detailRow('Zimmerpreis für',roomFor):'',
+      detailRow('Kurtaxe / Tourismusabgabe',p.touristTax!=null?`${formatNumber(p.touristTax)} €`:''),
+      detailRow('Endreinigung',p.cleaningFee!=null?`${formatNumber(p.cleaningFee)} €`:''),
+      detailRow('Reservierungs-/Buchungsgebühr',p.bookingFee!=null?`${formatNumber(p.bookingFee)} €`:''),
+      detailRow(p.otherFeeLabel||'Sonstige Gebühr',p.otherFee!=null?`${formatNumber(p.otherFee)} €`:''),
+      detailRow('Buchung / Reservierung',reservation),
+      detailRow('Kostenlose Stornierung',cancellation),
+      p.offer?.total!=null?`<div class="detail-note"><span>Gefundener Preis für unsere Reise</span><p>${offerDetails?`${escapeHtml(offerDetails)}<br>`:''}<strong>${formatNumber(p.offer.total)} € gesamt</strong></p></div>`:'',
+      p.notes?`<div class="detail-note"><span>Hinweise zu Preis &amp; Buchung</span><p>${escapeHtml(p.notes).replace(/\n/g,'<br>')}</p></div>`:''
+    ].filter(Boolean).join('');
+    const priceSummary=[priceFrom,p.year!=null?`Preisstand ${p.year}`:''].filter(Boolean).join(' · ')||'Preise & Buchung';
+    priceCard=`<details class="detail-accordion"><summary><span><small>Preise &amp; Buchung</small><strong>${escapeHtml(priceSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${priceRows||'<div class="detail-empty">Noch keine Preise oder Buchungsangaben gespeichert.</div>'}</div></details>`;
+  }
+  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${priceCard}</div>`;
 }
 
 let holidayEditMode='create';
+function ensureHolidayDetails(e){
+  if(!e.details||typeof e.details!=='object')e.details={};
+  if(!e.details[e.type]||typeof e.details[e.type]!=='object')e.details[e.type]={};
+  return e.details[e.type];
+}
+function ensureHolidayPrices(e){
+  const d=ensureHolidayDetails(e);
+  if(!d.prices||typeof d.prices!=='object')d.prices={};
+  return d.prices;
+}
+function holidayPriceBillingLabel(value){return ({night:'pro Nacht',stay:'pro Aufenthalt',week:'pro Woche'})[value]||'';}
+function holidayPriceBasisLabel(value){return ({unit:'Unterkunft / Zimmer',person:'pro Person'})[value]||'';}
+function updateHolidayPriceConditionalFields(){
+  const type=document.getElementById('holidayEntryType')?.value||'hotel';
+  const section=document.getElementById('holidayPricesSection');
+  if(section)section.hidden=!isAccommodationHolidayType(type);
+  const occupancy=document.getElementById('holidayHotelOccupancyWrap');
+  if(occupancy)occupancy.hidden=type!=='hotel';
+  const other=document.getElementById('holidayHotelOccupancyOtherWrap');
+  if(other)other.hidden=type!=='hotel'||document.getElementById('holidayHotelOccupancy')?.value!=='other';
+  const cancellation=document.getElementById('holidayCancellationUntilWrap');
+  if(cancellation)cancellation.hidden=document.getElementById('holidayFreeCancellation')?.value!=='yes';
+}
 function updateHolidayBasicConditionalFields(){
   const type=document.getElementById('holidayEntryType')?.value||'hotel';
   const booking=document.getElementById('holidayBookingWrap');
@@ -1108,6 +1163,7 @@ function updateHolidayBasicConditionalFields(){
   if(websiteLabel){
     websiteLabel.childNodes[0].nodeValue=type==='reiseziel'?'Website des Reiseziels\n          ':'Website der Unterkunft\n          ';
   }
+  updateHolidayPriceConditionalFields();
 }
 function openHolidayEditor(entry=null,pretype='hotel'){
   const dlg=document.getElementById('holidayEditDialog');
@@ -1133,6 +1189,26 @@ function openHolidayEditor(entry=null,pretype='hotel'){
   setField('holidaySourceType',entry?.sourceType||'');
   setField('holidaySourceUrl',sourceUrl(entry||{}));
   setField('holidayBookingUrl',entry?.bookingUrl||'');
+  const prices=entry&&isAccommodationHolidayType(type)?ensureHolidayPrices(entry):{};
+  setField('holidayPriceYear',prices.year);
+  setField('holidayPriceFrom',prices.priceFrom);
+  setField('holidayPriceBilling',prices.billing||'unknown');
+  setField('holidayPriceBasis',prices.basis||'unknown');
+  setField('holidayHotelOccupancy',prices.hotelOccupancy||'unknown');
+  setField('holidayHotelOccupancyOther',prices.hotelOccupancyOther);
+  setField('holidayTouristTax',prices.touristTax);
+  setField('holidayCleaningFee',prices.cleaningFee);
+  setField('holidayBookingFee',prices.bookingFee);
+  setField('holidayOtherFee',prices.otherFee);
+  setField('holidayOtherFeeLabel',prices.otherFeeLabel||'');
+  setField('holidayReservationStatus',prices.reservationStatus||'unknown');
+  setField('holidayFreeCancellation',prices.freeCancellation||'unknown');
+  setField('holidayCancellationUntil',prices.cancellationUntil||'');
+  setField('holidayOfferArrival',prices.offer?.arrival||'');
+  setField('holidayOfferDeparture',prices.offer?.departure||'');
+  setField('holidayOfferPersons',prices.offer?.persons);
+  setField('holidayOfferTotal',prices.offer?.total);
+  setField('holidayPriceNotes',prices.notes||'');
   updateHolidayBasicConditionalFields();
   const detail=document.getElementById('detailDialog');
   if(detail?.open)detail.close();
@@ -1173,6 +1249,30 @@ function saveHolidayBasic(ev){
   entry.sourceType=document.getElementById('holidaySourceType').value;
   entry.sourceUrl=normalizeExternalUrl(document.getElementById('holidaySourceUrl').value)||document.getElementById('holidaySourceUrl').value.trim();
   entry.bookingUrl=isAccommodationHolidayType(selectedType)?(normalizeExternalUrl(document.getElementById('holidayBookingUrl').value)||document.getElementById('holidayBookingUrl').value.trim()):'';
+  if(isAccommodationHolidayType(selectedType)){
+    const prices=ensureHolidayPrices(entry);
+    prices.year=numericField('holidayPriceYear');
+    prices.priceFrom=numericField('holidayPriceFrom');
+    prices.billing=document.getElementById('holidayPriceBilling').value||'unknown';
+    prices.basis=document.getElementById('holidayPriceBasis').value||'unknown';
+    prices.hotelOccupancy=selectedType==='hotel'?(document.getElementById('holidayHotelOccupancy').value||'unknown'):'unknown';
+    prices.hotelOccupancyOther=selectedType==='hotel'&&prices.hotelOccupancy==='other'?numericField('holidayHotelOccupancyOther'):null;
+    prices.touristTax=numericField('holidayTouristTax');
+    prices.cleaningFee=numericField('holidayCleaningFee');
+    prices.bookingFee=numericField('holidayBookingFee');
+    prices.otherFee=numericField('holidayOtherFee');
+    prices.otherFeeLabel=document.getElementById('holidayOtherFeeLabel').value.trim();
+    prices.reservationStatus=document.getElementById('holidayReservationStatus').value||'unknown';
+    prices.freeCancellation=document.getElementById('holidayFreeCancellation').value||'unknown';
+    prices.cancellationUntil=prices.freeCancellation==='yes'?document.getElementById('holidayCancellationUntil').value.trim():'';
+    prices.offer={
+      arrival:document.getElementById('holidayOfferArrival').value||'',
+      departure:document.getElementById('holidayOfferDeparture').value||'',
+      persons:numericField('holidayOfferPersons'),
+      total:numericField('holidayOfferTotal')
+    };
+    prices.notes=document.getElementById('holidayPriceNotes').value.trim();
+  }
   entry.geoTags=[entry.country,entry.region,entry.town,...entry.travelRegions].filter(Boolean);
   entry.updatedAt=new Date().toISOString();
   if(!existing)state.entries.push(entry);
@@ -1185,6 +1285,8 @@ function saveHolidayBasic(ev){
 document.getElementById('closeHolidayEdit')?.addEventListener('click',closeHolidayEditor);
 document.getElementById('cancelHolidayEdit')?.addEventListener('click',closeHolidayEditor);
 document.getElementById('holidayEntryType')?.addEventListener('change',updateHolidayBasicConditionalFields);
+document.getElementById('holidayHotelOccupancy')?.addEventListener('change',updateHolidayPriceConditionalFields);
+document.getElementById('holidayFreeCancellation')?.addEventListener('change',updateHolidayPriceConditionalFields);
 document.getElementById('holidayEditForm')?.addEventListener('submit',saveHolidayBasic);
 
 function campingPdfActionHtml(){
