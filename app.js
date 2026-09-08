@@ -461,7 +461,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.35 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.36 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1712,10 +1712,16 @@ function splitCommaValues(value){
   return [...new Set(String(value||'').split(',').map(x=>x.trim()).filter(Boolean))];
 }
 function saveHolidayBasic(ev){
-  ev.preventDefault();
-  const id=document.getElementById('holidayEditId').value;
+  ev?.preventDefault?.();
+  const id=document.getElementById('holidayEditId')?.value||'';
   const existing=holidayEditMode==='edit'?state.entries.find(x=>x.id===id):null;
-  const selectedType=document.getElementById('holidayEntryType').value;
+  const selectedType=document.getElementById('holidayEntryType')?.value||'';
+  const nameField=document.getElementById('holidayName');
+  if(!selectedType || !nameField?.value.trim()){
+    alert('Bitte mindestens einen Namen für den Eintrag angeben.');
+    nameField?.focus();
+    return;
+  }
   if(existing && !convertEntryType(existing,selectedType)) return;
   const entry=existing||{
     id:uid(), type:selectedType, name:'', country:'', region:'', source:'', sourceType:'', sourceUrl:'',
@@ -1723,8 +1729,7 @@ function saveHolidayBasic(ev){
     createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), location:null, accessPoint:null, visits:[], media:[], details:{}
   };
   entry.type=selectedType;
-  entry.name=document.getElementById('holidayName').value.trim();
-  if(!entry.name)return;
+  entry.name=nameField.value.trim();
   entry.country=document.getElementById('holidayCountry').value.trim();
   entry.region=document.getElementById('holidayRegion').value.trim();
   entry.travelRegions=splitCommaValues(document.getElementById('holidayTravelRegions').value);
@@ -1810,10 +1815,12 @@ function saveHolidayBasic(ev){
   }
   if(selectedType==='reiseziel'){
     const destination=ensureHolidayDestination(entry);
-    destination.scope=document.getElementById('holidayDestinationScope')?.value||'unknown';
-    destination.categories=currentHolidayDestinationSelections('category');
-    destination.characters=currentHolidayDestinationSelections('character');
-    destination.wish=document.getElementById('holidayDestinationWish')?.value.trim()||'';
+    const scopeField=document.getElementById('holidayDestinationScope');
+    const wishField=document.getElementById('holidayDestinationWish');
+    destination.scope=scopeField?.value||'unknown';
+    destination.categories=[...currentHolidayDestinationSelections('category')];
+    destination.characters=[...currentHolidayDestinationSelections('character')];
+    destination.wish=(wishField?.value||'').trim();
   }
   const personal=ensureHolidayPersonal(entry);
   const personalStatus=document.getElementById('holidayPersonalStatus').value;
@@ -1868,7 +1875,13 @@ document.getElementById('holidayDestinationSection')?.addEventListener('click',e
   const btn=ev.target.closest('.destination-delete-choice'); if(!btn)return;
   deleteHolidayDestinationCustom(btn.dataset.destinationKind,btn.dataset.destinationLabel);
 });
-document.getElementById('holidayEditForm')?.addEventListener('submit',saveHolidayBasic);
+document.getElementById('holidayEditForm')?.addEventListener('submit',ev=>{
+  try{saveHolidayBasic(ev);}catch(err){
+    ev.preventDefault();
+    console.error('Urlaub konnte nicht gespeichert werden:',err);
+    alert('Der Eintrag konnte nicht gespeichert werden. Bitte versuche es erneut.');
+  }
+});
 document.querySelectorAll('#holidayRatings select').forEach(select=>select.addEventListener('change',updateHolidayRatingAverage));
 document.getElementById('addHolidayMedia')?.addEventListener('click',()=>document.getElementById('holidayMediaInput')?.click());
 document.getElementById('holidayMediaInput')?.addEventListener('change',ev=>addHolidayMediaFiles(ev.target.files));
