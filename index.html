@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.18-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.19-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -48,7 +48,8 @@
           <option value="camping">Campingplatz</option>
           <option value="stellplatz">Stellplatz</option>
           <option value="hotel">Hotel</option>
-          <option value="ferien">Ferienwohnung/Ferienhaus</option>
+          <option value="ferienwohnung">Ferienwohnung</option>
+          <option value="ferienhaus">Ferienhaus</option>
           <option value="besonders">Besondere Unterkunft</option>
           <option value="reiseziel">Reiseziel/Ausflugsziel</option>
         </select>
@@ -93,6 +94,109 @@
     </form>
   </dialog>
 
+  <dialog id="holidayEditDialog" class="sheet edit-sheet-dialog">
+    <form method="dialog" id="holidayEditForm" class="sheet-card edit-sheet-card">
+      <div class="sheet-head sticky-sheet-head">
+        <div>
+          <div class="eyebrow">Urlaub</div>
+          <h2 id="holidayEditTitle">Urlaub eintragen</h2>
+        </div>
+        <button type="button" class="icon-btn close" id="closeHolidayEdit" aria-label="Schließen">×</button>
+      </div>
+
+      <input type="hidden" id="holidayEditId" />
+
+      <section class="edit-section">
+        <div class="edit-section-head">
+          <h3>Grunddaten</h3>
+          <p>Allgemeine Angaben zur Unterkunft oder zum Reiseziel.</p>
+        </div>
+
+        <label>Art des Eintrags
+          <select id="holidayEntryType" required>
+            <option value="hotel">Hotel</option>
+            <option value="ferienwohnung">Ferienwohnung</option>
+            <option value="ferienhaus">Ferienhaus</option>
+            <option value="besonders">Besondere Unterkunft</option>
+            <option value="reiseziel">Reiseziel/Ausflugsziel</option>
+          </select>
+          <span class="field-help">Die Auswahl steuert später die passenden Karten und Filter.</span>
+        </label>
+
+        <label>Name
+          <input id="holidayName" required autocomplete="off" placeholder="z. B. Strandhotel Seeblick" />
+        </label>
+
+        <div class="grid-2">
+          <label>Land
+            <input id="holidayCountry" autocomplete="country-name" placeholder="z. B. Italien" />
+          </label>
+          <label>Region/Bundesland
+            <input id="holidayRegion" autocomplete="off" placeholder="z. B. Venetien" />
+          </label>
+        </div>
+
+        <label>Gebiet/Reiseregion
+          <input id="holidayTravelRegions" autocomplete="off" placeholder="z. B. Gardasee, Norditalien" />
+          <span class="field-help">Mehrere Zuordnungen durch Komma trennen.</span>
+        </label>
+
+        <div class="grid-2">
+          <label>Ort
+            <input id="holidayTown" autocomplete="address-level2" />
+          </label>
+          <label>Adresse
+            <input id="holidayAddress" autocomplete="street-address" />
+          </label>
+        </div>
+
+        <label id="holidayWebsiteLabel">Website der Unterkunft
+          <input id="holidayWebsite" type="text" inputmode="url" autocomplete="url" autocapitalize="none" spellcheck="false" placeholder="www.beispiel.de" />
+        </label>
+
+        <div class="grid-2">
+          <label>Telefon
+            <input id="holidayPhone" type="tel" autocomplete="tel" />
+          </label>
+          <label>E-Mail
+            <input id="holidayEmail" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" />
+          </label>
+        </div>
+
+        <div class="grid-2">
+          <label>Quelle
+            <select id="holidaySourceType">
+              <option value="">Nicht angegeben</option>
+              <option value="Instagram">Instagram</option>
+              <option value="Google">Google</option>
+              <option value="Facebook">Facebook</option>
+              <option value="YouTube">YouTube</option>
+              <option value="Campingportal">Campingportal</option>
+              <option value="Buchungsportal">Buchungsportal</option>
+              <option value="Empfehlung">Empfehlung</option>
+              <option value="Zeitschrift">Zeitschrift</option>
+              <option value="Sonstige">Sonstige</option>
+            </select>
+          </label>
+          <label>Link zur Quelle
+            <input id="holidaySourceUrl" type="text" inputmode="url" autocomplete="url" autocapitalize="none" spellcheck="false" placeholder="www.beispiel.de oder https:// …" />
+          </label>
+        </div>
+
+        <label id="holidayBookingWrap">Buchungsseite
+          <input id="holidayBookingUrl" type="text" inputmode="url" autocomplete="url" autocapitalize="none" spellcheck="false" placeholder="Direkter Link zur Buchungsseite, optional" />
+          <span class="field-help">Getrennt von offizieller Website und Quelle gespeichert.</span>
+        </label>
+      </section>
+
+      <div class="sheet-actions sticky-sheet-actions">
+        <button type="button" class="btn secondary" id="cancelHolidayEdit">Abbrechen</button>
+        <button type="submit" class="btn primary" id="holidaySubmitBtn">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+
   <dialog id="detailDialog" class="sheet">
     <div class="sheet-card detail-sheet" id="detailContent"></div>
   </dialog>
@@ -120,7 +224,8 @@
             <option value="camping">Campingplatz</option>
             <option value="stellplatz">Stellplatz</option>
             <option value="hotel">Hotel</option>
-            <option value="ferien">Ferienwohnung/Ferienhaus</option>
+            <option value="ferienwohnung">Ferienwohnung</option>
+          <option value="ferienhaus">Ferienhaus</option>
             <option value="besonders">Besondere Unterkunft</option>
             <option value="reiseziel">Reiseziel/Ausflugsziel</option>
           </select>
@@ -1023,7 +1128,8 @@
             <option value="camping">Campingplatz</option>
             <option value="stellplatz">Stellplatz</option>
             <option value="hotel">Hotel</option>
-            <option value="ferien">Ferienwohnung/Ferienhaus</option>
+            <option value="ferienwohnung">Ferienwohnung</option>
+          <option value="ferienhaus">Ferienhaus</option>
             <option value="besonders">Besondere Unterkunft</option>
             <option value="reiseziel">Reiseziel/Ausflugsziel</option>
           </select>
@@ -1996,6 +2102,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.18-r1"></script>
+  <script src="app.js?v=0.3.19-r1"></script>
 </body>
 </html>

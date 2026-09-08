@@ -13,9 +13,10 @@ function updateSetting(key,value){
 
 const typeLabels = {
   camping: 'Campingplatz', stellplatz: 'Stellplatz', hotel: 'Hotel',
-  ferien: 'Ferienwohnung/Ferienhaus', besonders: 'Besondere Unterkunft', reiseziel: 'Reiseziel/Ausflugsziel'
+  ferienwohnung: 'Ferienwohnung', ferienhaus: 'Ferienhaus', ferien: 'Ferienwohnung/Ferienhaus',
+  besonders: 'Besondere Unterkunft', reiseziel: 'Reiseziel/Ausflugsziel'
 };
-const typeIcons = {camping:'△', stellplatz:'▣', hotel:'H', ferien:'⌂', besonders:'◇', reiseziel:'◎'};
+const typeIcons = {camping:'△', stellplatz:'▣', hotel:'H', ferienwohnung:'⌂', ferienhaus:'⌂', ferien:'⌂', besonders:'◇', reiseziel:'◎'};
 
 const state = {
   route: 'home',
@@ -288,7 +289,7 @@ function homeView(){
       <div class="cards-3">
         ${categoryCard('camping','Campingplätze',count(e=>e.type==='camping'),'gespeicherte Plätze')}
         ${categoryCard('stellplatz','Stellplätze',count(e=>e.type==='stellplatz'),'gespeicherte Plätze')}
-        ${categoryCard('urlaub','Urlaub',count(e=>['hotel','ferien','besonders','reiseziel'].includes(e.type)),'Unterkünfte & Ziele')}
+        ${categoryCard('urlaub','Urlaub',count(e=>['hotel','ferienwohnung','ferienhaus','ferien','besonders','reiseziel'].includes(e.type)),'Unterkünfte & Ziele')}
       </div>
     </section>
 
@@ -336,10 +337,10 @@ function listView(type,title){
 }
 
 function holidayView(){
-  const types = ['hotel','ferien','besonders','reiseziel'];
+  const types = ['hotel','ferienwohnung','ferienhaus','ferien','besonders','reiseziel'];
   const items = state.entries.filter(e=>!e.deleted && types.includes(e.type) && (state.holidayFilter==='all'||e.type===state.holidayFilter) && matchesQuery(e,state.query));
   return `<section><div class="section-head"><div><div class="eyebrow">Sammlung</div><h2>Urlaub</h2></div><button class="btn primary" data-action="new">+ Neu</button></div>
-  <div class="subtabs"><button data-holiday="all" class="${state.holidayFilter==='all'?'active':''}">Alle</button><button data-holiday="hotel" class="${state.holidayFilter==='hotel'?'active':''}">Hotels</button><button data-holiday="ferien" class="${state.holidayFilter==='ferien'?'active':''}">Ferienwohnung/-haus</button><button data-holiday="besonders" class="${state.holidayFilter==='besonders'?'active':''}">Besondere Unterkunft</button><button data-holiday="reiseziel" class="${state.holidayFilter==='reiseziel'?'active':''}">Reiseziele</button></div>
+  <div class="subtabs"><button data-holiday="all" class="${state.holidayFilter==='all'?'active':''}">Alle</button><button data-holiday="hotel" class="${state.holidayFilter==='hotel'?'active':''}">Hotels</button><button data-holiday="ferienwohnung" class="${state.holidayFilter==='ferienwohnung'?'active':''}">Ferienwohnungen</button><button data-holiday="ferienhaus" class="${state.holidayFilter==='ferienhaus'?'active':''}">Ferienhäuser</button><button data-holiday="besonders" class="${state.holidayFilter==='besonders'?'active':''}">Besondere Unterkunft</button><button data-holiday="reiseziel" class="${state.holidayFilter==='reiseziel'?'active':''}">Reiseziele</button></div>
   <div class="toolbar"><input class="searchbox route-search" value="${escapeHtml(state.query)}" placeholder="Urlaub durchsuchen …"><button class="btn secondary" data-action="clear-search">Löschen</button></div>
   ${items.length?`<div class="place-list">${items.map(placeCard).join('')}</div>`:`<div class="empty">Keine passenden Einträge vorhanden.</div>`}<div class="footer-brand">powered by viacruz</div></section>`;
 }
@@ -366,13 +367,16 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.18 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.19 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
 function wireViewEvents(){
   document.querySelectorAll('[data-route-go]').forEach(b=>b.onclick=()=>{state.route=b.dataset.routeGo;state.query='';render();});
-  document.querySelectorAll('[data-action="new"]').forEach(b=>b.onclick=()=>openEntryDialog(b.dataset.pretype));
+  document.querySelectorAll('[data-action="new"]').forEach(b=>b.onclick=()=>{
+    if(state.route==='urlaub' && !b.dataset.pretype) openHolidayEditor();
+    else openEntryDialog(b.dataset.pretype);
+  });
   document.querySelectorAll('[data-detail]').forEach(b=>b.onclick=()=>openDetail(b.dataset.detail));
   document.querySelectorAll('.route-search').forEach(i=>i.oninput=()=>{state.query=i.value;render(); const next=document.querySelector('.route-search'); if(next){next.focus();next.setSelectionRange(next.value.length,next.value.length)}});
   document.querySelectorAll('[data-action="clear-search"]').forEach(b=>b.onclick=()=>{state.query='';render();});
@@ -1056,8 +1060,132 @@ function stellplatzDetailCards(e){
 function entryTypeDetailCards(e){
   if(e.type==='camping') return campingDetailCards(e);
   if(e.type==='stellplatz') return stellplatzDetailCards(e);
+  if(isHolidayType(e.type)) return holidayDetailCards(e);
   return `<div class="info-card"><small>Technisches Fundament</small><strong>Gemeinsame ID · zentrale Standortfelder · Besuchshistorie · Medienliste · typbezogene Details</strong></div>`;
 }
+
+
+function isHolidayType(type){
+  return ['hotel','ferienwohnung','ferienhaus','ferien','besonders','reiseziel'].includes(type);
+}
+function isAccommodationHolidayType(type){
+  return ['hotel','ferienwohnung','ferienhaus','ferien','besonders'].includes(type);
+}
+function holidayDetailCards(e){
+  const regions=(e.travelRegions||[]).join(', ');
+  const phone=e.phone ? `<a class="contact-link" href="${escapeHtml(phoneHref(e.phone))}">${escapeHtml(e.phone)}</a>` : '';
+  const email=e.email ? `<a class="contact-link" href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a>` : '';
+  const srcLabel=sourceLabel(e);
+  const srcUrl=sourceUrl(e);
+  const source=srcLabel || srcUrl ? `${escapeHtml(srcLabel||'Internet')}${srcUrl?` <a class="inline-link" href="${escapeHtml(srcUrl)}" target="_blank" rel="noopener noreferrer">öffnen ↗</a>`:''}` : '';
+  const websiteUrl=normalizeExternalUrl(e.website);
+  const website=e.website ? (websiteUrl?`<a class="inline-link" href="${escapeHtml(websiteUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(e.website)} ↗</a>`:escapeHtml(e.website)) : '';
+  const bookingUrl=normalizeExternalUrl(e.bookingUrl);
+  const booking=e.bookingUrl ? (bookingUrl?`<a class="inline-link" href="${escapeHtml(bookingUrl)}" target="_blank" rel="noopener noreferrer">Buchungsseite öffnen ↗</a>`:escapeHtml(e.bookingUrl)) : '';
+  const basicRows=[
+    detailRow('Art des Eintrags',typeLabels[e.type]||e.type),
+    detailRow('Land',e.country),
+    detailRow('Region/Bundesland',e.region),
+    detailRow('Gebiet/Reiseregion',regions),
+    detailRow('Ort',e.town),
+    detailRow('Adresse',e.address),
+    detailRow('Website',website,true),
+    detailRow('Telefon',phone,true),
+    detailRow('E-Mail',email,true),
+    detailRow('Quelle',source,true),
+    isAccommodationHolidayType(e.type)?detailRow('Buchungsseite',booking,true):''
+  ].filter(Boolean).join('');
+  const basicSummary=[e.town||e.region||e.country,regions].filter(Boolean).slice(0,2).join(' · ') || 'Grunddaten';
+  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details></div>`;
+}
+
+let holidayEditMode='create';
+function updateHolidayBasicConditionalFields(){
+  const type=document.getElementById('holidayEntryType')?.value||'hotel';
+  const booking=document.getElementById('holidayBookingWrap');
+  const websiteLabel=document.getElementById('holidayWebsiteLabel');
+  if(booking) booking.hidden=!isAccommodationHolidayType(type);
+  if(websiteLabel){
+    websiteLabel.childNodes[0].nodeValue=type==='reiseziel'?'Website des Reiseziels\n          ':'Website der Unterkunft\n          ';
+  }
+}
+function openHolidayEditor(entry=null,pretype='hotel'){
+  const dlg=document.getElementById('holidayEditDialog');
+  const form=document.getElementById('holidayEditForm');
+  if(!dlg||!form)return;
+  form.reset();
+  holidayEditMode=entry?'edit':'create';
+  setField('holidayEditId',entry?.id||'');
+  document.getElementById('holidayEditTitle').textContent=entry?'Urlaub bearbeiten':'Urlaub eintragen';
+  document.getElementById('holidaySubmitBtn').textContent=entry?'Änderungen speichern':'Speichern';
+  let type=entry?.type||pretype||'hotel';
+  if(type==='ferien') type='ferienwohnung';
+  setField('holidayEntryType',type);
+  setField('holidayName',entry?.name||'');
+  setField('holidayCountry',entry?.country||'');
+  setField('holidayRegion',entry?.region||'');
+  setField('holidayTravelRegions',(entry?.travelRegions||[]).join(', '));
+  setField('holidayTown',entry?.town||'');
+  setField('holidayAddress',entry?.address||'');
+  setField('holidayWebsite',entry?.website||'');
+  setField('holidayPhone',entry?.phone||'');
+  setField('holidayEmail',entry?.email||'');
+  setField('holidaySourceType',entry?.sourceType||'');
+  setField('holidaySourceUrl',sourceUrl(entry||{}));
+  setField('holidayBookingUrl',entry?.bookingUrl||'');
+  updateHolidayBasicConditionalFields();
+  const detail=document.getElementById('detailDialog');
+  if(detail?.open)detail.close();
+  dlg.showModal();
+  setTimeout(()=>document.getElementById('holidayName')?.focus(),80);
+}
+function closeHolidayEditor(){
+  const dlg=document.getElementById('holidayEditDialog');
+  if(dlg?.open)dlg.close();
+  holidayEditMode='create';
+}
+function splitCommaValues(value){
+  return [...new Set(String(value||'').split(',').map(x=>x.trim()).filter(Boolean))];
+}
+function saveHolidayBasic(ev){
+  ev.preventDefault();
+  const id=document.getElementById('holidayEditId').value;
+  const existing=holidayEditMode==='edit'?state.entries.find(x=>x.id===id):null;
+  const selectedType=document.getElementById('holidayEntryType').value;
+  if(existing && !convertEntryType(existing,selectedType)) return;
+  const entry=existing||{
+    id:uid(), type:selectedType, name:'', country:'', region:'', source:'', sourceType:'', sourceUrl:'',
+    geoTags:[], tags:[], favorite:false, wantToVisit:false, visited:false, deleted:false,
+    createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), location:null, accessPoint:null, visits:[], media:[], details:{}
+  };
+  entry.type=selectedType;
+  entry.name=document.getElementById('holidayName').value.trim();
+  if(!entry.name)return;
+  entry.country=document.getElementById('holidayCountry').value.trim();
+  entry.region=document.getElementById('holidayRegion').value.trim();
+  entry.travelRegions=splitCommaValues(document.getElementById('holidayTravelRegions').value);
+  entry.town=document.getElementById('holidayTown').value.trim();
+  entry.address=document.getElementById('holidayAddress').value.trim();
+  entry.website=normalizeExternalUrl(document.getElementById('holidayWebsite').value)||document.getElementById('holidayWebsite').value.trim();
+  entry.phone=document.getElementById('holidayPhone').value.trim();
+  entry.email=document.getElementById('holidayEmail').value.trim();
+  entry.source='';
+  entry.sourceType=document.getElementById('holidaySourceType').value;
+  entry.sourceUrl=normalizeExternalUrl(document.getElementById('holidaySourceUrl').value)||document.getElementById('holidaySourceUrl').value.trim();
+  entry.bookingUrl=isAccommodationHolidayType(selectedType)?(normalizeExternalUrl(document.getElementById('holidayBookingUrl').value)||document.getElementById('holidayBookingUrl').value.trim()):'';
+  entry.geoTags=[entry.country,entry.region,entry.town,...entry.travelRegions].filter(Boolean);
+  entry.updatedAt=new Date().toISOString();
+  if(!existing)state.entries.push(entry);
+  saveEntries();
+  closeHolidayEditor();
+  render();
+  openDetail(entry.id);
+}
+
+document.getElementById('closeHolidayEdit')?.addEventListener('click',closeHolidayEditor);
+document.getElementById('cancelHolidayEdit')?.addEventListener('click',closeHolidayEditor);
+document.getElementById('holidayEntryType')?.addEventListener('change',updateHolidayBasicConditionalFields);
+document.getElementById('holidayEditForm')?.addEventListener('submit',saveHolidayBasic);
 
 function campingPdfActionHtml(){
   return `<div class="pdf-action-card">
@@ -1149,7 +1277,7 @@ function openDetail(id){
   ${entryTypeDetailCards(e)}
   ${e.type==='camping'?campingGalleryHtml(e):e.type==='stellplatz'?stellplatzGalleryHtml(e):''}
   <div class="detail-actions status-actions"><button class="btn secondary" id="favoriteDetail">${e.favorite?'★ Favorit entfernen':'☆ Als Favorit'}</button><button class="btn secondary" id="wantDetail">${e.wantToVisit?'Wunsch entfernen':'♡ Möchte ich besuchen'}</button></div>
-  <div class="detail-actions"><button class="btn secondary" id="visitedDetail">${e.visited?'Besucht ✓':'Als besucht markieren'}</button><button class="btn secondary" id="editBasic">${e.type==='camping'?'Campingplatz bearbeiten':e.type==='stellplatz'?'Stellplatz bearbeiten':'Grunddaten bearbeiten'}</button></div>
+  <div class="detail-actions"><button class="btn secondary" id="visitedDetail">${e.visited?'Besucht ✓':'Als besucht markieren'}</button><button class="btn secondary" id="editBasic">${e.type==='camping'?'Campingplatz bearbeiten':e.type==='stellplatz'?'Stellplatz bearbeiten':isHolidayType(e.type)?'Urlaub bearbeiten':'Grunddaten bearbeiten'}</button></div>
   <div class="detail-actions single-action"><button class="btn danger" id="trashDetail">In Papierkorb</button></div>`;
   const dlg=document.getElementById('detailDialog'); dlg.showModal();
   document.getElementById('closeDetail').onclick=()=>dlg.close();
@@ -1158,7 +1286,7 @@ function openDetail(id){
   document.getElementById('wantDetail').onclick=()=>{e.wantToVisit=!e.wantToVisit;if(e.wantToVisit)e.visited=false;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
   document.getElementById('visitedDetail').onclick=()=>{e.visited=!e.visited;if(e.visited)e.wantToVisit=false;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
   document.getElementById('trashDetail').onclick=()=>{if(confirm('Diesen Eintrag in den Papierkorb verschieben?')){e.deleted=true;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();}};
-  document.getElementById('editBasic').onclick=()=>e.type==='camping'?openCampingEditor(e):e.type==='stellplatz'?openStellplatzEditor(e):editBasic(e);
+  document.getElementById('editBasic').onclick=()=>e.type==='camping'?openCampingEditor(e):e.type==='stellplatz'?openStellplatzEditor(e):isHolidayType(e.type)?openHolidayEditor(e):editBasic(e);
   content.querySelectorAll('.gallery-item img').forEach(img=>img.onclick=()=>openImageViewer(img.src,img.alt||'Gespeichertes Bild'));
 }
 
