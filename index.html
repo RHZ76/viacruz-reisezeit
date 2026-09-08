@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.22-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.23-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -373,6 +373,17 @@
         <label>Persönliche Notizen
           <textarea id="holidayPersonalNotes" rows="4" placeholder="Allgemeine persönliche Notizen …"></textarea>
         </label>
+      </section>
+
+      <section class="edit-section" id="holidayMediaSection">
+        <div class="edit-section-head">
+          <h3>Titelbild &amp; Bilder</h3>
+          <p>Fotos und Screenshots speichern, beschreiben und ein Titelbild festlegen.</p>
+        </div>
+        <input id="holidayMediaInput" type="file" accept="image/*" multiple hidden />
+        <button type="button" class="btn secondary" id="addHolidayMedia">+ Bilder auswählen</button>
+        <span class="field-help">Bilder werden für die App automatisch verkleinert. Das erste Bild wird zunächst als Titelbild verwendet.</span>
+        <div id="holidayMediaEditor" class="media-editor"></div>
       </section>
 
       <div class="sheet-actions sticky-sheet-actions">
@@ -2288,6 +2299,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.22-r1"></script>
+  <script src="app.js?v=0.3.23-r1"></script>
 </body>
 </html>

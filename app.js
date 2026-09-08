@@ -30,6 +30,8 @@ let campingMediaDraft=[];
 let campingTitleImageDraft=null;
 let stellplatzMediaDraft=[];
 let stellplatzTitleImageDraft=null;
+let holidayMediaDraft=[];
+let holidayTitleImageDraft=null;
 let stellplatzSeasonPriceDraft=[];
 
 function cloneMediaList(media){
@@ -190,6 +192,79 @@ async function addStellplatzMediaFiles(files){
     const input=document.getElementById('stellplatzMediaInput'); if(input)input.value='';
   }
 }
+
+function renderHolidayMediaEditor(){
+  const wrap=document.getElementById('holidayMediaEditor'); if(!wrap)return;
+  if(!holidayMediaDraft.length){
+    wrap.innerHTML='<div class="media-empty">Noch keine Bilder gespeichert.</div>';
+    return;
+  }
+  wrap.innerHTML=holidayMediaDraft.map(m=>{
+    const isTitle=m.id===holidayTitleImageDraft;
+    return `<div class="media-edit-card" data-media-id="${escapeHtml(m.id)}">
+      <div class="media-edit-image-wrap">
+        <img src="${m.dataUrl}" alt="${escapeHtml(m.description||'Gespeichertes Bild')}" />
+        ${isTitle?'<span class="media-title-badge">Titelbild</span>':''}
+      </div>
+      <input class="media-description" type="text" value="${escapeHtml(m.description||'')}" placeholder="Kurze Beschreibung, optional" />
+      <div class="media-card-actions">
+        <button type="button" class="btn secondary media-set-title">${isTitle?'Titelbild':'Als Titelbild'}</button>
+        <button type="button" class="btn danger media-delete">Löschen</button>
+      </div>
+    </div>`;
+  }).join('');
+  wrap.querySelectorAll('.media-description').forEach(input=>{
+    input.addEventListener('input',()=>{
+      const id=input.closest('.media-edit-card')?.dataset.mediaId;
+      const m=holidayMediaDraft.find(x=>x.id===id);
+      if(m)m.description=input.value;
+    });
+  });
+  wrap.querySelectorAll('.media-set-title').forEach(btn=>{
+    btn.onclick=()=>{holidayTitleImageDraft=btn.closest('.media-edit-card')?.dataset.mediaId||null;renderHolidayMediaEditor();};
+  });
+  wrap.querySelectorAll('.media-delete').forEach(btn=>{
+    btn.onclick=()=>{
+      const id=btn.closest('.media-edit-card')?.dataset.mediaId;
+      holidayMediaDraft=holidayMediaDraft.filter(m=>m.id!==id);
+      if(holidayTitleImageDraft===id)holidayTitleImageDraft=null;
+      renderHolidayMediaEditor();
+    };
+  });
+}
+async function addHolidayMediaFiles(files){
+  const selected=[...files].filter(f=>f.type.startsWith('image/'));
+  if(!selected.length)return;
+  const button=document.getElementById('addHolidayMedia');
+  if(button){button.disabled=true;button.textContent='Bilder werden vorbereitet …';}
+  try{
+    for(const file of selected){
+      const dataUrl=await imageFileToDataUrl(file);
+      const item={id:uid(),kind:'image',name:file.name||'Bild',description:'',dataUrl,createdAt:new Date().toISOString()};
+      holidayMediaDraft.push(item);
+      if(!holidayTitleImageDraft)holidayTitleImageDraft=item.id;
+    }
+    renderHolidayMediaEditor();
+  }catch(err){
+    alert('Mindestens ein Bild konnte nicht verarbeitet werden.');
+  }finally{
+    if(button){button.disabled=false;button.textContent='+ Bilder auswählen';}
+    const input=document.getElementById('holidayMediaInput'); if(input)input.value='';
+  }
+}
+function holidayHeroHtml(e){
+  const title=imageById(e,e.titleImageId);
+  if(title?.dataUrl)return `<div class="detail-title-image"><img src="${title.dataUrl}" alt="${escapeHtml(title.description||e.name||typeLabels[e.type]||'Urlaub')}" /></div>`;
+  return `<div class="detail-title-image detail-title-placeholder"><span>${escapeHtml(typeIcons[e.type]||'◎')}</span><strong>${escapeHtml(typeLabels[e.type]||'Urlaub')}</strong></div>`;
+}
+function holidayGalleryHtml(e){
+  const media=Array.isArray(e.media)?e.media.filter(m=>m.kind==='image'&&m.dataUrl):[];
+  if(!media.length)return '';
+  return `<section class="detail-gallery-section"><div class="detail-gallery-head"><small>Bilder</small><strong>${media.length} ${media.length===1?'Bild':'Bilder'}</strong></div>
+    <div class="detail-gallery">${media.map(m=>`<figure class="gallery-item ${m.id===e.titleImageId?'is-title':''}"><img src="${m.dataUrl}" alt="${escapeHtml(m.description||'Gespeichertes Bild')}" />${m.id===e.titleImageId?'<span>Titelbild</span>':''}${m.description?`<figcaption>${escapeHtml(m.description)}</figcaption>`:''}</figure>`).join('')}</div>
+  </section>`;
+}
+
 function stellplatzHeroHtml(e){
   const title=imageById(e,e.titleImageId);
   if(title?.dataUrl){
@@ -367,7 +442,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.22 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.23 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1287,6 +1362,9 @@ function openHolidayEditor(entry=null,pretype='hotel'){
   setField('holidayPersonalWhy',entry?.why||'');
   setField('holidayRatingLocation',personal.ratings?.location); setField('holidayRatingQuiet',personal.ratings?.quiet); setField('holidayRatingCleanliness',personal.ratings?.cleanliness); setField('holidayRatingEquipment',personal.ratings?.equipment); setField('holidayRatingService',personal.ratings?.service); setField('holidayRatingValue',personal.ratings?.value); setField('holidayRatingExperience',personal.ratings?.experience); setField('holidayRatingSightseeing',personal.ratings?.sightseeing);
   setField('holidayPersonalReturn',personal.returnIntent||'unknown'); setField('holidayPersonalNotes',entry?.notes||'');
+  holidayMediaDraft=cloneMediaList(entry?.media||[]);
+  holidayTitleImageDraft=entry?.titleImageId||null;
+  renderHolidayMediaEditor();
   updateHolidayBasicConditionalFields();
   renderHolidayVisitEditor(entry?.visits||[],type);
   const detail=document.getElementById('detailDialog');
@@ -1358,6 +1436,8 @@ function saveHolidayBasic(ev){
   entry.favorite=!!document.getElementById('holidayPersonalFavorite').checked; entry.why=document.getElementById('holidayPersonalWhy').value.trim();
   personal.ratings={location:ratingValue('holidayRatingLocation'),quiet:ratingValue('holidayRatingQuiet'),cleanliness:ratingValue('holidayRatingCleanliness'),equipment:ratingValue('holidayRatingEquipment'),service:ratingValue('holidayRatingService'),value:ratingValue('holidayRatingValue'),experience:ratingValue('holidayRatingExperience'),sightseeing:ratingValue('holidayRatingSightseeing')};
   personal.returnIntent=document.getElementById('holidayPersonalReturn').value||'unknown'; entry.visits=collectHolidayVisits(); entry.notes=document.getElementById('holidayPersonalNotes').value.trim();
+  entry.media=cloneMediaList(holidayMediaDraft);
+  entry.titleImageId=holidayTitleImageDraft&&entry.media.some(m=>m.id===holidayTitleImageDraft)?holidayTitleImageDraft:null;
   entry.geoTags=[entry.country,entry.region,entry.town,...entry.travelRegions].filter(Boolean);
   entry.updatedAt=new Date().toISOString();
   if(!existing)state.entries.push(entry);
@@ -1375,6 +1455,8 @@ document.getElementById('holidayHotelOccupancy')?.addEventListener('change',upda
 document.getElementById('holidayFreeCancellation')?.addEventListener('change',updateHolidayPriceConditionalFields);
 document.getElementById('holidayEditForm')?.addEventListener('submit',saveHolidayBasic);
 document.querySelectorAll('#holidayRatings select').forEach(select=>select.addEventListener('change',updateHolidayRatingAverage));
+document.getElementById('addHolidayMedia')?.addEventListener('click',()=>document.getElementById('holidayMediaInput')?.click());
+document.getElementById('holidayMediaInput')?.addEventListener('change',ev=>addHolidayMediaFiles(ev.target.files));
 
 function campingPdfActionHtml(){
   return `<div class="pdf-action-card">
@@ -1460,11 +1542,11 @@ function openDetail(id){
     const sourceText=srcLabel || 'Internet';
     infoCards.push(`<div class="info-card source-card"><small>Quelle</small><strong>${escapeHtml(sourceText)}</strong>${srcUrl?`<a class="source-link" href="${escapeHtml(srcUrl)}" target="_blank" rel="noopener noreferrer">Quelle öffnen ↗</a>`:''}</div>`);
   }
-  content.innerHTML=`${e.type==='camping'?campingHeroHtml(e):e.type==='stellplatz'?stellplatzHeroHtml(e):''}<div class="sheet-head"><div><div class="eyebrow">${typeLabels[e.type]}</div><h2>${escapeHtml(e.name)}</h2><div class="detail-meta">${escapeHtml(locationText(e))}</div></div><button class="icon-btn close" id="closeDetail">×</button></div>
+  content.innerHTML=`${e.type==='camping'?campingHeroHtml(e):e.type==='stellplatz'?stellplatzHeroHtml(e):isHolidayType(e.type)?holidayHeroHtml(e):''}<div class="sheet-head"><div><div class="eyebrow">${typeLabels[e.type]}</div><h2>${escapeHtml(e.name)}</h2><div class="detail-meta">${escapeHtml(locationText(e))}</div></div><button class="icon-btn close" id="closeDetail">×</button></div>
   ${e.type==='camping'?campingPdfActionHtml():''}
   ${infoCards.length?`<div class="detail-grid">${infoCards.join('')}</div>`:''}
   ${entryTypeDetailCards(e)}
-  ${e.type==='camping'?campingGalleryHtml(e):e.type==='stellplatz'?stellplatzGalleryHtml(e):''}
+  ${e.type==='camping'?campingGalleryHtml(e):e.type==='stellplatz'?stellplatzGalleryHtml(e):isHolidayType(e.type)?holidayGalleryHtml(e):''}
   <div class="detail-actions status-actions"><button class="btn secondary" id="favoriteDetail">${e.favorite?'★ Favorit entfernen':'☆ Als Favorit'}</button><button class="btn secondary" id="wantDetail">${e.wantToVisit?'Wunsch entfernen':'♡ Möchte ich besuchen'}</button></div>
   <div class="detail-actions"><button class="btn secondary" id="visitedDetail">${e.visited?'Besucht ✓':'Als besucht markieren'}</button><button class="btn secondary" id="editBasic">${e.type==='camping'?'Campingplatz bearbeiten':e.type==='stellplatz'?'Stellplatz bearbeiten':isHolidayType(e.type)?'Urlaub bearbeiten':'Grunddaten bearbeiten'}</button></div>
   <div class="detail-actions single-action"><button class="btn danger" id="trashDetail">In Papierkorb</button></div>`;
