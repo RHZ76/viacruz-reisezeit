@@ -442,7 +442,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.26 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.27 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1076,6 +1076,7 @@ function stellplatzDetailCards(e){
   const visits=Array.isArray(e.visits)?e.visits:[];
   const visitRows=visits.length?`<div class="visit-history">${visits.map((v,index)=>{const nights=visitNights(v.arrival,v.departure);const dateText=(v.arrival||v.departure)?`${formatDate(v.arrival)||'–'} bis ${formatDate(v.departure)||'–'}`:'Datum nicht angegeben';const meta=[nights!=null?`${nights} ${nights===1?'Nacht':'Nächte'}`:'',v.pitch?`Platz ${v.pitch}`:''].filter(Boolean).join(' · ');return `<div class="visit-history-card"><div class="visit-history-head"><strong>Aufenthalt ${index+1}</strong><span>${escapeHtml(dateText)}</span></div>${meta?`<small>${escapeHtml(meta)}</small>`:''}${v.note?`<p>${escapeHtml(v.note).replace(/\n/g,'<br>')}</p>`:''}</div>`;}).join('')}</div>`:'';
   const personalRows=[detailRow('Status',[statusText,favoriteText].filter(Boolean).join(' · ')),e.why?`<div class="detail-note"><span>Warum gespeichert?</span><p>${escapeHtml(e.why).replace(/\n/g,'<br>')}</p></div>`:'',ratingRows,detailRow('Würde ich wiederkommen?',returnText),visits.length?`<div class="detail-note"><span>Besuchshistorie</span>${visitRows}</div>`:'',e.notes?`<div class="detail-note"><span>Persönliche Notizen</span><p>${escapeHtml(e.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
+  const ratingAverage=personalRatingAverage(personal);
   const personalSummary=[statusText,favoriteText,ratingAverage!=null?`${formatNumber(ratingAverage,1)} / 5`:'',visits.length?`${visits.length} ${visits.length===1?'Besuch':'Besuche'}`:''].filter(Boolean).slice(0,3).join(' · ')||'Persönlich';
   const usage=e.details?.stellplatz?.usage||{};
   const usageTypeText=(usage.types||[]).map(stellplatzUsageTypeLabel).join(', ');
@@ -1460,6 +1461,7 @@ function saveHolidayBasic(ev){
     ['Aircon','Heating','Balcony','Terrace','Garden','Elevator','Accessible','Washer','Dryer','Reception','Reception24','RoomService','RoomCleaning','Safe','Minibar','CoffeeTea','Stove','Oven','Microwave','Fridge','Freezer','Dishwasher','Coffee','Kettle','Toaster'].forEach(k=>acc[k.charAt(0).toLowerCase()+k.slice(1)]=!!document.getElementById('holidayAcc'+k)?.checked);
     acc.hotelStars=selectedType==='hotel'?numericField('holidayAccHotelStars'):null; acc.roomType=selectedType==='hotel'?(document.getElementById('holidayAccRoomType').value||'unknown'):'unknown';
     acc.kitchen=document.getElementById('holidayAccKitchen').value||'unknown';
+    if(acc.kitchen!=='yes'){['stove','oven','microwave','fridge','freezer','dishwasher','coffee','kettle','toaster'].forEach(k=>acc[k]=false);}
     acc.houseType=selectedType==='ferienhaus'?(document.getElementById('holidayAccHouseType').value||'unknown'):'unknown'; acc.floor=selectedType==='ferienwohnung'?document.getElementById('holidayAccFloor').value.trim():''; acc.specialType=selectedType==='besonders'?(document.getElementById('holidayAccSpecialType').value||'unknown'):'unknown';
     acc.linen=document.getElementById('holidayAccLinen').value||'unknown';acc.linenPrice=acc.linen==='paid'?numericField('holidayAccLinenPrice'):null;acc.towels=document.getElementById('holidayAccTowels').value||'unknown';acc.towelsPrice=acc.towels==='paid'?numericField('holidayAccTowelsPrice'):null;
     const prices=ensureHolidayPrices(entry);
