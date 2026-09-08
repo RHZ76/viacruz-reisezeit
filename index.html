@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.21-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.22-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -335,27 +335,19 @@
           <textarea id="holidayPersonalWhy" rows="3" placeholder="Warum möchtest du diesen Ort speichern?"></textarea>
         </label>
 
-        <div class="field-group" id="holidayAccommodationRatings">
+        <div class="field-group" id="holidayRatings">
           <div class="field-group-title">Eigene Bewertung <span class="field-help-inline">1 = schwach · 5 = sehr gut</span></div>
           <div class="rating-grid">
-            <label>Gesamt<select id="holidayRatingOverall"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
             <label>Lage<select id="holidayRatingLocation"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
             <label>Ruhe<select id="holidayRatingQuiet"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
             <label>Sauberkeit<select id="holidayRatingCleanliness"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
             <label>Ausstattung<select id="holidayRatingEquipment"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
             <label>Service / Gastgeber<select id="holidayRatingService"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
             <label>Preis-Leistung<select id="holidayRatingValue"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+            <label>Erlebnis<select id="holidayRatingExperience"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+            <label>Sehenswert<select id="holidayRatingSightseeing"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
           </div>
-        </div>
-
-        <div class="field-group" id="holidayDestinationRatings" hidden>
-          <div class="field-group-title">Eigene Bewertung <span class="field-help-inline">1 = schwach · 5 = sehr gut</span></div>
-          <div class="rating-grid">
-            <label>Gesamt<select id="holidayDestinationRatingOverall"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
-            <label>Erlebnis / Sehenswert<select id="holidayRatingExperience"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
-            <label>Lage / Umgebung<select id="holidayDestinationRatingLocation"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
-            <label>Preis-Leistung<select id="holidayDestinationRatingValue"><option value="">Nicht bewertet</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
-          </div>
+          <div class="rating-summary" aria-live="polite"><span>Gesamtbewertung</span><strong id="holidayRatingAverage">Noch keine Bewertung</strong></div>
         </div>
 
         <label>Würde ich wiederkommen?
@@ -2296,6 +2288,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.21-r1"></script>
+  <script src="app.js?v=0.3.22-r1"></script>
 </body>
 </html>

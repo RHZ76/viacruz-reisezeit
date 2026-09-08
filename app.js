@@ -367,7 +367,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.21 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.22 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1001,7 +1001,6 @@ function stellplatzDetailCards(e){
   const visits=Array.isArray(e.visits)?e.visits:[];
   const visitRows=visits.length?`<div class="visit-history">${visits.map((v,index)=>{const nights=visitNights(v.arrival,v.departure);const dateText=(v.arrival||v.departure)?`${formatDate(v.arrival)||'–'} bis ${formatDate(v.departure)||'–'}`:'Datum nicht angegeben';const meta=[nights!=null?`${nights} ${nights===1?'Nacht':'Nächte'}`:'',v.pitch?`Platz ${v.pitch}`:''].filter(Boolean).join(' · ');return `<div class="visit-history-card"><div class="visit-history-head"><strong>Aufenthalt ${index+1}</strong><span>${escapeHtml(dateText)}</span></div>${meta?`<small>${escapeHtml(meta)}</small>`:''}${v.note?`<p>${escapeHtml(v.note).replace(/\n/g,'<br>')}</p>`:''}</div>`;}).join('')}</div>`:'';
   const personalRows=[detailRow('Status',[statusText,favoriteText].filter(Boolean).join(' · ')),e.why?`<div class="detail-note"><span>Warum gespeichert?</span><p>${escapeHtml(e.why).replace(/\n/g,'<br>')}</p></div>`:'',ratingRows,detailRow('Würde ich wiederkommen?',returnText),visits.length?`<div class="detail-note"><span>Besuchshistorie</span>${visitRows}</div>`:'',e.notes?`<div class="detail-note"><span>Persönliche Notizen</span><p>${escapeHtml(e.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
-  const ratingAverage=personalRatingAverage(personal);
   const personalSummary=[statusText,favoriteText,ratingAverage!=null?`${formatNumber(ratingAverage,1)} / 5`:'',visits.length?`${visits.length} ${visits.length===1?'Besuch':'Besuche'}`:''].filter(Boolean).slice(0,3).join(' · ')||'Persönlich';
   const usage=e.details?.stellplatz?.usage||{};
   const usageTypeText=(usage.types||[]).map(stellplatzUsageTypeLabel).join(', ');
@@ -1132,10 +1131,9 @@ function holidayDetailCards(e){
   const statusText=e.visited?'Besucht':e.wantToVisit?'Möchte ich besuchen':'';
   const favoriteText=e.favorite?'Favorit':'';
   const returnText=holidayReturnLabel(personal.returnIntent);
-  const ratingLabels=e.type==='reiseziel'
-    ?[['Gesamt',personal.ratings?.overall],['Erlebnis / Sehenswert',personal.ratings?.experience],['Lage / Umgebung',personal.ratings?.location],['Preis-Leistung',personal.ratings?.value]]
-    :[['Gesamt',personal.ratings?.overall],['Lage',personal.ratings?.location],['Ruhe',personal.ratings?.quiet],['Sauberkeit',personal.ratings?.cleanliness],['Ausstattung',personal.ratings?.equipment],['Service / Gastgeber',personal.ratings?.service],['Preis-Leistung',personal.ratings?.value]];
-  const ratingRows=ratingLabels.map(([label,val])=>detailRow(label,val!=null?`${formatNumber(val,1)} / 5`:'' )).filter(Boolean).join('');
+  const ratingLabels=[['Lage',personal.ratings?.location],['Ruhe',personal.ratings?.quiet],['Sauberkeit',personal.ratings?.cleanliness],['Ausstattung',personal.ratings?.equipment],['Service / Gastgeber',personal.ratings?.service],['Preis-Leistung',personal.ratings?.value],['Erlebnis',personal.ratings?.experience],['Sehenswert',personal.ratings?.sightseeing]];
+  const ratingAverage=holidayPersonalRatingAverage(personal);
+  const ratingRows=ratingLabels.map(([label,val])=>detailRow(label,val!=null?`${formatNumber(val,1)} / 5`:'' )).filter(Boolean).join('')+(ratingAverage!=null?detailRow('Gesamtbewertung',`${formatNumber(ratingAverage,1)} / 5`):'');
   const visits=Array.isArray(e.visits)?e.visits:[];
   const visitRows=visits.length?`<div class="visit-history">${visits.map((v,index)=>{
     if(e.type==='reiseziel'){
@@ -1148,7 +1146,6 @@ function holidayDetailCards(e){
     return `<div class="visit-history-card"><div class="visit-history-head"><strong>Aufenthalt ${index+1}</strong><span>${escapeHtml(dateText)}</span></div>${meta?`<small>${escapeHtml(meta)}</small>`:''}${v.note?`<p>${escapeHtml(v.note).replace(/\n/g,'<br>')}</p>`:''}</div>`;
   }).join('')}</div>`:'';
   const personalRows=[detailRow('Status',[statusText,favoriteText].filter(Boolean).join(' · ')),e.why?`<div class="detail-note"><span>Warum gespeichert?</span><p>${escapeHtml(e.why).replace(/\n/g,'<br>')}</p></div>`:'',ratingRows,detailRow('Würde ich wiederkommen?',returnText),visits.length?`<div class="detail-note"><span>Besuchshistorie</span>${visitRows}</div>`:'',e.notes?`<div class="detail-note"><span>Persönliche Notizen</span><p>${escapeHtml(e.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
-  const ratingAverage=personalRatingAverage(personal);
   const personalSummary=[statusText,favoriteText,ratingAverage!=null?`${formatNumber(ratingAverage,1)} / 5`:'',visits.length?`${visits.length} ${visits.length===1?'Besuch':'Besuche'}`:''].filter(Boolean).slice(0,3).join(' · ')||'Persönlich';
   const personalCard=`<details class="detail-accordion"><summary><span><small>Persönlich</small><strong>${escapeHtml(personalSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${personalRows||'<div class="detail-empty">Noch keine persönlichen Angaben gespeichert.</div>'}</div></details>`;
   return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${priceCard}${personalCard}</div>`;
@@ -1214,12 +1211,9 @@ function addHolidayVisit(){
 function updateHolidayPersonalConditionalFields(){
   const type=document.getElementById('holidayEntryType')?.value||'hotel';
   const destination=type==='reiseziel';
-  const accommodationRatings=document.getElementById('holidayAccommodationRatings');
-  const destinationRatings=document.getElementById('holidayDestinationRatings');
-  if(accommodationRatings) accommodationRatings.hidden=destination;
-  if(destinationRatings) destinationRatings.hidden=!destination;
   const help=document.getElementById('holidayVisitHelp');
   if(help) help.textContent=destination?'Mehrere Besuche bleiben mit Datum und Notiz getrennt erhalten.':'Mehrere Aufenthalte bleiben getrennt erhalten.';
+  updateHolidayRatingAverage();
 }
 function updateHolidayPriceConditionalFields(){
   const type=document.getElementById('holidayEntryType')?.value||'hotel';
@@ -1291,8 +1285,7 @@ function openHolidayEditor(entry=null,pretype='hotel'){
   setField('holidayPersonalStatus',entry?.visited?'visited':entry?.wantToVisit?'want':'none');
   const holidayFavorite=document.getElementById('holidayPersonalFavorite'); if(holidayFavorite) holidayFavorite.checked=!!entry?.favorite;
   setField('holidayPersonalWhy',entry?.why||'');
-  setField('holidayRatingOverall',personal.ratings?.overall); setField('holidayRatingLocation',personal.ratings?.location); setField('holidayRatingQuiet',personal.ratings?.quiet); setField('holidayRatingCleanliness',personal.ratings?.cleanliness); setField('holidayRatingEquipment',personal.ratings?.equipment); setField('holidayRatingService',personal.ratings?.service); setField('holidayRatingValue',personal.ratings?.value);
-  setField('holidayDestinationRatingOverall',personal.ratings?.overall); setField('holidayRatingExperience',personal.ratings?.experience); setField('holidayDestinationRatingLocation',personal.ratings?.location); setField('holidayDestinationRatingValue',personal.ratings?.value);
+  setField('holidayRatingLocation',personal.ratings?.location); setField('holidayRatingQuiet',personal.ratings?.quiet); setField('holidayRatingCleanliness',personal.ratings?.cleanliness); setField('holidayRatingEquipment',personal.ratings?.equipment); setField('holidayRatingService',personal.ratings?.service); setField('holidayRatingValue',personal.ratings?.value); setField('holidayRatingExperience',personal.ratings?.experience); setField('holidayRatingSightseeing',personal.ratings?.sightseeing);
   setField('holidayPersonalReturn',personal.returnIntent||'unknown'); setField('holidayPersonalNotes',entry?.notes||'');
   updateHolidayBasicConditionalFields();
   renderHolidayVisitEditor(entry?.visits||[],type);
@@ -1363,8 +1356,7 @@ function saveHolidayBasic(ev){
   const personalStatus=document.getElementById('holidayPersonalStatus').value;
   entry.visited=personalStatus==='visited'; entry.wantToVisit=personalStatus==='want';
   entry.favorite=!!document.getElementById('holidayPersonalFavorite').checked; entry.why=document.getElementById('holidayPersonalWhy').value.trim();
-  if(selectedType==='reiseziel') personal.ratings={overall:ratingValue('holidayDestinationRatingOverall'),experience:ratingValue('holidayRatingExperience'),location:ratingValue('holidayDestinationRatingLocation'),value:ratingValue('holidayDestinationRatingValue')};
-  else personal.ratings={overall:ratingValue('holidayRatingOverall'),location:ratingValue('holidayRatingLocation'),quiet:ratingValue('holidayRatingQuiet'),cleanliness:ratingValue('holidayRatingCleanliness'),equipment:ratingValue('holidayRatingEquipment'),service:ratingValue('holidayRatingService'),value:ratingValue('holidayRatingValue')};
+  personal.ratings={location:ratingValue('holidayRatingLocation'),quiet:ratingValue('holidayRatingQuiet'),cleanliness:ratingValue('holidayRatingCleanliness'),equipment:ratingValue('holidayRatingEquipment'),service:ratingValue('holidayRatingService'),value:ratingValue('holidayRatingValue'),experience:ratingValue('holidayRatingExperience'),sightseeing:ratingValue('holidayRatingSightseeing')};
   personal.returnIntent=document.getElementById('holidayPersonalReturn').value||'unknown'; entry.visits=collectHolidayVisits(); entry.notes=document.getElementById('holidayPersonalNotes').value.trim();
   entry.geoTags=[entry.country,entry.region,entry.town,...entry.travelRegions].filter(Boolean);
   entry.updatedAt=new Date().toISOString();
@@ -1382,6 +1374,7 @@ document.getElementById('addHolidayVisit')?.addEventListener('click',addHolidayV
 document.getElementById('holidayHotelOccupancy')?.addEventListener('change',updateHolidayPriceConditionalFields);
 document.getElementById('holidayFreeCancellation')?.addEventListener('change',updateHolidayPriceConditionalFields);
 document.getElementById('holidayEditForm')?.addEventListener('submit',saveHolidayBasic);
+document.querySelectorAll('#holidayRatings select').forEach(select=>select.addEventListener('change',updateHolidayRatingAverage));
 
 function campingPdfActionHtml(){
   return `<div class="pdf-action-card">
@@ -1839,6 +1832,22 @@ function personalRatingAverage(personal){
     .map(Number);
   if(!values.length)return null;
   return values.reduce((a,b)=>a+b,0)/values.length;
+}
+function holidayPersonalRatingAverage(personal){
+  const r=personal?.ratings||{};
+  const keys=['location','quiet','cleanliness','equipment','service','value','experience','sightseeing'];
+  const values=keys.map(key=>r[key]).filter(v=>v!==null && v!==undefined && v!=='' && Number.isFinite(Number(v))).map(Number);
+  if(!values.length)return null;
+  return values.reduce((a,b)=>a+b,0)/values.length;
+}
+function updateHolidayRatingAverage(){
+  const ids=['holidayRatingLocation','holidayRatingQuiet','holidayRatingCleanliness','holidayRatingEquipment','holidayRatingService','holidayRatingValue','holidayRatingExperience','holidayRatingSightseeing'];
+  const values=ids.map(id=>ratingValue(id)).filter(v=>v!==null);
+  const target=document.getElementById('holidayRatingAverage');
+  if(!target)return;
+  if(!values.length){target.textContent='Noch keine Bewertung';return;}
+  const avg=values.reduce((a,b)=>a+b,0)/values.length;
+  target.textContent=`${formatNumber(avg,1)} / 5`;
 }
 function renderCampingVisitEditor(visits=[]){
   const list=document.getElementById('campingVisitList'); if(!list)return;

@@ -263,3 +263,7 @@ button{cursor:pointer}
 .edit-subsection{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
 .edit-section-head.compact{margin-bottom:2px}
 .edit-section-head.compact h4{margin:0;font-size:15px;color:var(--text)}
+
+.rating-summary{margin-top:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface-soft,#f7f8f8)}
+.rating-summary span{font-size:13px;font-weight:700;color:var(--muted)}
+.rating-summary strong{font-size:16px;color:var(--text);text-align:right}
