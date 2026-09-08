@@ -442,7 +442,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.31 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.32 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1241,6 +1241,24 @@ function holidayDetailCards(e){
     const summary=[plans.slice(0,2).join(' · '),status].filter(Boolean).join(' · ')||'Verpflegung';
     foodCard=`<details class="detail-accordion"><summary><span><small>Verpflegung</small><strong>${escapeHtml(summary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${rows||'<div class="detail-empty">Noch keine Angaben zur Verpflegung gespeichert.</div>'}</div></details>`;
   }
+  let holidayLeisureCard='';
+  if(isAccommodationHolidayType(e.type)){
+    const l=ensureHolidayLeisure(e);
+    const use=v=>({private:'Privat',shared:'Gemeinschaftlich'})[v]||'';
+    const pool=[];
+    if(l.outdoorPool==='yes')pool.push(`Außenpool${use(l.outdoorPoolUse)?` · ${use(l.outdoorPoolUse)}`:''}`);
+    if(l.indoorPool==='yes')pool.push(`Innenpool${use(l.indoorPoolUse)?` · ${use(l.indoorPoolUse)}`:''}`);
+    if((l.outdoorPool==='yes'||l.indoorPool==='yes')&&l.poolHeated)pool.push('Pool beheizt');
+    if((l.outdoorPool==='yes'||l.indoorPool==='yes')&&l.poolSeasonal)pool.push('Pool saisonal');
+    if(l.sauna==='yes')pool.push(`Sauna${use(l.saunaUse)?` · ${use(l.saunaUse)}`:''}`);
+    if(l.whirlpool==='yes')pool.push(`Whirlpool${use(l.whirlpoolUse)?` · ${use(l.whirlpoolUse)}`:''}`);
+    [['Wellness / Spa',l.wellness],['Massage / Anwendungen',l.massage],['Direkter Badezugang',l.bathingAccess],['Eigener Strand / Strandzugang',l.privateBeach]].forEach(([a,b])=>{if(b)pool.push(a)});
+    const sport=[]; [['Fitness',l.fitness],['Fahrradverleih',l.bikeRental],['E-Bike-Verleih',l.eBikeRental],['Tennis',l.tennis],['Tischtennis',l.tableTennis],['Minigolf',l.miniGolf],['Wassersport',l.waterSports],['Skiraum',l.skiRoom],['Ski-in / Ski-out',l.skiInOut]].forEach(([a,b])=>{if(b)sport.push(a)});
+    const family=[]; [['Spielplatz',l.playground],['Spielzimmer',l.playroom],['Kinderbetreuung',l.childcare],['Animation / Abendunterhaltung',l.entertainment],['Kinderprogramm',l.kidsProgram]].forEach(([a,b])=>{if(b)family.push(a)});
+    const rows=[detailRow('Wellness & Baden',pool.join(' · ')),detailRow('Sport & Aktiv',sport.join(' · ')),detailRow('Familie & Unterhaltung',family.join(' · ')),l.notes?`<div class="detail-note"><span>Besondere Angebote / Hinweise</span><p>${escapeHtml(l.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
+    const summary=[pool[0]||'',sport[0]||'',family[0]||''].filter(Boolean).slice(0,3).join(' · ')||'Freizeit & Angebote';
+    holidayLeisureCard=`<details class="detail-accordion"><summary><span><small>Freizeit &amp; Angebote</small><strong>${escapeHtml(summary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${rows||'<div class="detail-empty">Noch keine Freizeit- oder Angebotsangaben gespeichert.</div>'}</div></details>`;
+  }
   const personal=ensureHolidayPersonal(e);
   const statusText=e.visited?'Besucht':e.wantToVisit?'Möchte ich besuchen':'';
   const favoriteText=e.favorite?'Favorit':'';
@@ -1262,7 +1280,7 @@ function holidayDetailCards(e){
   const personalRows=[detailRow('Status',[statusText,favoriteText].filter(Boolean).join(' · ')),e.why?`<div class="detail-note"><span>Warum gespeichert?</span><p>${escapeHtml(e.why).replace(/\n/g,'<br>')}</p></div>`:'',ratingRows,detailRow('Würde ich wiederkommen?',returnText),visits.length?`<div class="detail-note"><span>Besuchshistorie</span>${visitRows}</div>`:'',e.notes?`<div class="detail-note"><span>Persönliche Notizen</span><p>${escapeHtml(e.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
   const personalSummary=[statusText,favoriteText,ratingAverage!=null?`${formatNumber(ratingAverage,1)} / 5`:'',visits.length?`${visits.length} ${visits.length===1?'Besuch':'Besuche'}`:''].filter(Boolean).slice(0,3).join(' · ')||'Persönlich';
   const personalCard=`<details class="detail-accordion"><summary><span><small>Persönlich</small><strong>${escapeHtml(personalSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${personalRows||'<div class="detail-empty">Noch keine persönlichen Angaben gespeichert.</div>'}</div></details>`;
-  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${accommodationCard}${priceCard}${stayCard}${foodCard}${personalCard}</div>`;
+  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${accommodationCard}${priceCard}${stayCard}${foodCard}${holidayLeisureCard}${personalCard}</div>`;
 }
 
 let holidayEditMode='create';
@@ -1285,6 +1303,11 @@ function ensureHolidayFood(e){
   const d=ensureHolidayDetails(e);
   if(!d.food||typeof d.food!=='object')d.food={};
   return d.food;
+}
+function ensureHolidayLeisure(e){
+  const d=ensureHolidayDetails(e);
+  if(!d.leisure||typeof d.leisure!=='object')d.leisure={};
+  return d.leisure;
 }
 function ensureHolidayAccommodation(e){
   const d=ensureHolidayDetails(e);
@@ -1390,6 +1413,20 @@ function updateHolidayFoodConditionalFields(){
   const status=document.getElementById('holidayFoodStatus')?.value||'unknown';
   const prices=document.getElementById('holidayFoodPriceFields'); if(prices)prices.hidden=!['optional','both'].includes(status);
 }
+function updateHolidayLeisureConditionalFields(){
+  const type=document.getElementById('holidayEntryType')?.value||'hotel';
+  const accommodation=isAccommodationHolidayType(type);
+  const section=document.getElementById('holidayLeisureSection'); if(section)section.hidden=!accommodation;
+  document.querySelectorAll('#holidayLeisureSection .holiday-hotel-only').forEach(el=>el.hidden=type!=='hotel');
+  const outdoor=document.getElementById('holidayLeisureOutdoorPool')?.value==='yes';
+  const indoor=document.getElementById('holidayLeisureIndoorPool')?.value==='yes';
+  const poolOptions=document.getElementById('holidayLeisurePoolOptions'); if(poolOptions)poolOptions.hidden=!(outdoor||indoor);
+  const poolRows=document.getElementById('holidayLeisurePoolUseRows'); if(poolRows)poolRows.hidden=!(outdoor||indoor);
+  const outdoorUse=document.getElementById('holidayLeisureOutdoorPoolUseWrap'); if(outdoorUse)outdoorUse.hidden=!outdoor;
+  const indoorUse=document.getElementById('holidayLeisureIndoorPoolUseWrap'); if(indoorUse)indoorUse.hidden=!indoor;
+  const sauna=document.getElementById('holidayLeisureSaunaUseWrap'); if(sauna)sauna.hidden=document.getElementById('holidayLeisureSauna')?.value!=='yes';
+  const whirl=document.getElementById('holidayLeisureWhirlpoolUseWrap'); if(whirl)whirl.hidden=document.getElementById('holidayLeisureWhirlpool')?.value!=='yes';
+}
 function updateHolidayBasicConditionalFields(){
   const type=document.getElementById('holidayEntryType')?.value||'hotel';
   const booking=document.getElementById('holidayBookingWrap');
@@ -1402,6 +1439,7 @@ function updateHolidayBasicConditionalFields(){
   updateHolidayPriceConditionalFields();
   updateHolidayStayConditionalFields();
   updateHolidayFoodConditionalFields();
+  updateHolidayLeisureConditionalFields();
   updateHolidayPersonalConditionalFields();
 }
 function openHolidayEditor(entry=null,pretype='hotel'){
@@ -1459,6 +1497,10 @@ function openHolidayEditor(entry=null,pretype='hotel'){
   const food=entry&&isAccommodationHolidayType(type)?ensureHolidayFood(entry):{};
   ['None','Breakfast','HalfBoard','FullBoard','AllInclusive','Restaurant','Bar','Cafe','BreakfastService','BreadService','FarmShop','Groceries','Regional'].forEach(k=>setChecked('holidayFood'+k,food[k.charAt(0).toLowerCase()+k.slice(1)]));
   setField('holidayFoodStatus',food.status||'unknown'); setField('holidayFoodBreakfastPrice',food.breakfastPrice); setField('holidayFoodHalfBoardPrice',food.halfBoardPrice); setField('holidayFoodFullBoardPrice',food.fullBoardPrice); setField('holidayFoodAllInclusivePrice',food.allInclusivePrice); setField('holidayFoodNotes',food.notes||'');
+  const leisure=entry&&isAccommodationHolidayType(type)?ensureHolidayLeisure(entry):{};
+  setField('holidayLeisureOutdoorPool',leisure.outdoorPool||'unknown'); setField('holidayLeisureOutdoorPoolUse',leisure.outdoorPoolUse||'unknown'); setField('holidayLeisureIndoorPool',leisure.indoorPool||'unknown'); setField('holidayLeisureIndoorPoolUse',leisure.indoorPoolUse||'unknown'); setField('holidayLeisureSauna',leisure.sauna||'unknown'); setField('holidayLeisureSaunaUse',leisure.saunaUse||'unknown'); setField('holidayLeisureWhirlpool',leisure.whirlpool||'unknown'); setField('holidayLeisureWhirlpoolUse',leisure.whirlpoolUse||'unknown');
+  ['PoolHeated','PoolSeasonal','Wellness','Massage','BathingAccess','PrivateBeach','Fitness','BikeRental','EBikeRental','Tennis','TableTennis','MiniGolf','WaterSports','SkiRoom','SkiInOut','Playground','Playroom','Childcare','Entertainment','KidsProgram'].forEach(k=>setChecked('holidayLeisure'+k,leisure[k.charAt(0).toLowerCase()+k.slice(1)]));
+  setField('holidayLeisureNotes',leisure.notes||'');
   const personal=entry?ensureHolidayPersonal(entry):{ratings:{},returnIntent:'unknown'};
   setField('holidayPersonalStatus',entry?.visited?'visited':entry?.wantToVisit?'want':'none');
   const holidayFavorite=document.getElementById('holidayPersonalFavorite'); if(holidayFavorite) holidayFavorite.checked=!!entry?.favorite;
@@ -1551,6 +1593,15 @@ function saveHolidayBasic(ev){
     food.status=document.getElementById('holidayFoodStatus').value||'unknown';
     const foodCanCost=['optional','both'].includes(food.status);
     food.breakfastPrice=foodCanCost?numericField('holidayFoodBreakfastPrice'):null; food.halfBoardPrice=foodCanCost?numericField('holidayFoodHalfBoardPrice'):null; food.fullBoardPrice=foodCanCost?numericField('holidayFoodFullBoardPrice'):null; food.allInclusivePrice=foodCanCost?numericField('holidayFoodAllInclusivePrice'):null; food.notes=document.getElementById('holidayFoodNotes').value.trim();
+    const leisure=ensureHolidayLeisure(entry);
+    leisure.outdoorPool=document.getElementById('holidayLeisureOutdoorPool').value||'unknown'; leisure.outdoorPoolUse=leisure.outdoorPool==='yes'?(document.getElementById('holidayLeisureOutdoorPoolUse').value||'unknown'):'unknown';
+    leisure.indoorPool=document.getElementById('holidayLeisureIndoorPool').value||'unknown'; leisure.indoorPoolUse=leisure.indoorPool==='yes'?(document.getElementById('holidayLeisureIndoorPoolUse').value||'unknown'):'unknown';
+    leisure.sauna=document.getElementById('holidayLeisureSauna').value||'unknown'; leisure.saunaUse=leisure.sauna==='yes'?(document.getElementById('holidayLeisureSaunaUse').value||'unknown'):'unknown';
+    leisure.whirlpool=document.getElementById('holidayLeisureWhirlpool').value||'unknown'; leisure.whirlpoolUse=leisure.whirlpool==='yes'?(document.getElementById('holidayLeisureWhirlpoolUse').value||'unknown'):'unknown';
+    ['PoolHeated','PoolSeasonal','Wellness','Massage','BathingAccess','PrivateBeach','Fitness','BikeRental','EBikeRental','Tennis','TableTennis','MiniGolf','WaterSports','SkiRoom','SkiInOut','Playground','Playroom','Childcare','Entertainment','KidsProgram'].forEach(k=>leisure[k.charAt(0).toLowerCase()+k.slice(1)]=!!document.getElementById('holidayLeisure'+k)?.checked);
+    if(leisure.outdoorPool!=='yes'&&leisure.indoorPool!=='yes'){leisure.poolHeated=false;leisure.poolSeasonal=false;}
+    if(selectedType!=='hotel'){leisure.entertainment=false;leisure.kidsProgram=false;}
+    leisure.notes=document.getElementById('holidayLeisureNotes').value.trim();
   }
   const personal=ensureHolidayPersonal(entry);
   const personalStatus=document.getElementById('holidayPersonalStatus').value;
@@ -1589,6 +1640,7 @@ document.getElementById('holidayStayParking')?.addEventListener('change',updateH
 document.getElementById('holidayStayParkingBilling')?.addEventListener('change',updateHolidayStayConditionalFields);
 document.getElementById('holidayStayDeposit')?.addEventListener('change',updateHolidayStayConditionalFields);
 document.getElementById('holidayFoodStatus')?.addEventListener('change',updateHolidayFoodConditionalFields);
+['OutdoorPool','IndoorPool','Sauna','Whirlpool'].forEach(k=>document.getElementById('holidayLeisure'+k)?.addEventListener('change',updateHolidayLeisureConditionalFields));
 document.getElementById('holidayAccWifi')?.addEventListener('change',updateHolidayAccommodationConditionalFields);
 document.getElementById('holidayAccWifiBilling')?.addEventListener('change',updateHolidayAccommodationConditionalFields);
 document.getElementById('holidayAccKitchen')?.addEventListener('change',updateHolidayAccommodationConditionalFields);

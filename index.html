@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.31-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.32-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -544,6 +544,75 @@
 
         <label>Hinweise zur Verpflegung
           <textarea id="holidayFoodNotes" rows="4" placeholder="z. B. Halbpension im benachbarten Hotel zubuchbar …"></textarea>
+        </label>
+      </section>
+
+      <section class="edit-section" id="holidayLeisureSection">
+        <div class="edit-section-head">
+          <h3>Freizeit &amp; Angebote</h3>
+          <p>Wellness, Baden, Sport und Familienangebote der Unterkunft oder Anlage.</p>
+        </div>
+
+        <div class="edit-subsection">
+          <div class="edit-section-head compact"><h4>Wellness &amp; Baden</h4></div>
+          <div class="grid-2">
+            <label>Außenpool<select id="holidayLeisureOutdoorPool"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+            <label>Innenpool<select id="holidayLeisureIndoorPool"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+          </div>
+          <div id="holidayLeisurePoolOptions" hidden>
+            <div class="option-grid">
+              <label class="check-option"><input id="holidayLeisurePoolHeated" type="checkbox" /> Pool beheizt</label>
+              <label class="check-option"><input id="holidayLeisurePoolSeasonal" type="checkbox" /> Pool saisonal</label>
+            </div>
+          </div>
+          <div class="grid-2">
+            <label>Sauna<select id="holidayLeisureSauna"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+            <label id="holidayLeisureSaunaUseWrap" hidden>Nutzung<select id="holidayLeisureSaunaUse"><option value="unknown">Unbekannt</option><option value="private">Privat</option><option value="shared">Gemeinschaftlich</option></select></label>
+          </div>
+          <div class="grid-2">
+            <label>Whirlpool / Hot Tub<select id="holidayLeisureWhirlpool"><option value="unknown">Unbekannt</option><option value="yes">Vorhanden</option><option value="no">Nicht vorhanden</option></select></label>
+            <label id="holidayLeisureWhirlpoolUseWrap" hidden>Nutzung<select id="holidayLeisureWhirlpoolUse"><option value="unknown">Unbekannt</option><option value="private">Privat</option><option value="shared">Gemeinschaftlich</option></select></label>
+          </div>
+          <div class="grid-2" id="holidayLeisurePoolUseRows" hidden>
+            <label id="holidayLeisureOutdoorPoolUseWrap" hidden>Außenpool – Nutzung<select id="holidayLeisureOutdoorPoolUse"><option value="unknown">Unbekannt</option><option value="private">Privat</option><option value="shared">Gemeinschaftlich</option></select></label>
+            <label id="holidayLeisureIndoorPoolUseWrap" hidden>Innenpool – Nutzung<select id="holidayLeisureIndoorPoolUse"><option value="unknown">Unbekannt</option><option value="private">Privat</option><option value="shared">Gemeinschaftlich</option></select></label>
+          </div>
+          <div class="option-grid">
+            <label class="check-option"><input id="holidayLeisureWellness" type="checkbox" /> Wellness / Spa</label>
+            <label class="check-option"><input id="holidayLeisureMassage" type="checkbox" /> Massage / Anwendungen</label>
+            <label class="check-option"><input id="holidayLeisureBathingAccess" type="checkbox" /> Direkter Badezugang</label>
+            <label class="check-option"><input id="holidayLeisurePrivateBeach" type="checkbox" /> Eigener Strand / Strandzugang</label>
+          </div>
+        </div>
+
+        <div class="edit-subsection">
+          <div class="edit-section-head compact"><h4>Sport &amp; Aktiv</h4></div>
+          <div class="option-grid">
+            <label class="check-option"><input id="holidayLeisureFitness" type="checkbox" /> Fitness</label>
+            <label class="check-option"><input id="holidayLeisureBikeRental" type="checkbox" /> Fahrradverleih</label>
+            <label class="check-option"><input id="holidayLeisureEBikeRental" type="checkbox" /> E-Bike-Verleih</label>
+            <label class="check-option"><input id="holidayLeisureTennis" type="checkbox" /> Tennis</label>
+            <label class="check-option"><input id="holidayLeisureTableTennis" type="checkbox" /> Tischtennis</label>
+            <label class="check-option"><input id="holidayLeisureMiniGolf" type="checkbox" /> Minigolf</label>
+            <label class="check-option"><input id="holidayLeisureWaterSports" type="checkbox" /> Wassersport</label>
+            <label class="check-option"><input id="holidayLeisureSkiRoom" type="checkbox" /> Skiraum</label>
+            <label class="check-option"><input id="holidayLeisureSkiInOut" type="checkbox" /> Ski-in / Ski-out</label>
+          </div>
+        </div>
+
+        <div class="edit-subsection">
+          <div class="edit-section-head compact"><h4>Familie &amp; Unterhaltung</h4></div>
+          <div class="option-grid">
+            <label class="check-option"><input id="holidayLeisurePlayground" type="checkbox" /> Spielplatz</label>
+            <label class="check-option"><input id="holidayLeisurePlayroom" type="checkbox" /> Spielzimmer</label>
+            <label class="check-option"><input id="holidayLeisureChildcare" type="checkbox" /> Kinderbetreuung</label>
+            <label class="check-option holiday-hotel-only"><input id="holidayLeisureEntertainment" type="checkbox" /> Animation / Abendunterhaltung</label>
+            <label class="check-option holiday-hotel-only"><input id="holidayLeisureKidsProgram" type="checkbox" /> Kinderprogramm</label>
+          </div>
+        </div>
+
+        <label>Besondere Angebote / Hinweise
+          <textarea id="holidayLeisureNotes" rows="4" placeholder="z. B. Sauna im benachbarten Hotel nutzbar, Pool nur im Sommer geöffnet …"></textarea>
         </label>
       </section>
 
@@ -2523,6 +2592,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.31-r1"></script>
+  <script src="app.js?v=0.3.32-r1"></script>
 </body>
 </html>
