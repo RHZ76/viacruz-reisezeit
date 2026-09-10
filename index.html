@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.41-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.42-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -347,6 +347,73 @@
         <label>Hinweise zu Preisen &amp; Tickets
           <textarea id="holidayDestinationCostNotes" rows="4" placeholder="z. B. online günstiger, Familienkarte lohnt sich, im Gästepass enthalten …"></textarea>
         </label>
+      </section>
+
+      <section class="edit-section" id="holidayDestinationArrivalSection" hidden>
+        <div class="edit-section-head">
+          <h3>Lage &amp; Anreise</h3>
+          <p>Anfahrt, Parkmöglichkeiten und öffentliche Verkehrsmittel zum Reiseziel festhalten.</p>
+        </div>
+
+        <div class="grid-2">
+          <label>Entfernung zur Autobahn (km)
+            <input id="holidayDestinationMotorwayDistance" type="number" min="0" step="0.1" inputmode="decimal" placeholder="z. B. 12" />
+          </label>
+          <label>Autobahn / Anschlussstelle
+            <input id="holidayDestinationMotorwayJunction" autocomplete="off" placeholder="z. B. A9 · AS 24" />
+          </label>
+        </div>
+
+        <label>Anfahrt
+          <select id="holidayDestinationAccess">
+            <option value="unknown">Unbekannt</option><option value="easy">Einfach</option><option value="restricted">Eingeschränkt</option>
+          </select>
+        </label>
+        <label id="holidayDestinationAccessNotesWrap" hidden>Hinweis zur eingeschränkten Anfahrt
+          <textarea id="holidayDestinationAccessNotes" rows="3" placeholder="z. B. enge Altstadt, Zufahrt nur bis 10 Uhr, Passstraße …"></textarea>
+        </label>
+
+        <label>Parkplatz vorhanden
+          <select id="holidayDestinationParkingAvailable">
+            <option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option>
+          </select>
+        </label>
+        <label id="holidayDestinationParkingNotesWrap" hidden>Parkplatz / Hinweis
+          <textarea id="holidayDestinationParkingNotes" rows="3" placeholder="z. B. Parkplatz P3, Parkhaus Altstadt, ca. 300 m vom Eingang …"></textarea>
+        </label>
+
+        <label>Wohnmobil-Parkmöglichkeit
+          <select id="holidayDestinationMotorhomeParking">
+            <option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option>
+          </select>
+        </label>
+        <label id="holidayDestinationMotorhomeNotesWrap" hidden>Hinweis Wohnmobil
+          <textarea id="holidayDestinationMotorhomeNotes" rows="3" placeholder="z. B. separater Bereich, nur Tagesparken, Höhenbegrenzung beachten …"></textarea>
+        </label>
+
+        <div class="field-group">
+          <div class="field-group-title">Öffentliche Verkehrsmittel &amp; weitere Anreise <span class="field-help-inline">Mehrfachauswahl</span></div>
+          <div class="option-grid" id="holidayDestinationTransport">
+            <label class="check-option"><input type="checkbox" value="bus" /> Bus</label>
+            <label class="check-option"><input type="checkbox" value="tram" /> Straßenbahn</label>
+            <label class="check-option"><input type="checkbox" value="subway" /> U-Bahn</label>
+            <label class="check-option"><input type="checkbox" value="train" /> Bahnhof / Zug</label>
+            <label class="check-option"><input type="checkbox" value="ferry" /> Fähre / Hafen</label>
+            <label class="check-option"><input type="checkbox" value="cable_car" /> Seilbahn / Bergbahn</label>
+          </div>
+        </div>
+
+        <label>Hinweise zu ÖPNV &amp; Anreise
+          <textarea id="holidayDestinationTransportNotes" rows="3" placeholder="z. B. Bushaltestelle 200 m, Linie 4 direkt ins Zentrum …"></textarea>
+        </label>
+
+        <div class="field-group">
+          <div class="field-group-title">Vom Parkplatz / Ankunftspunkt zum Ziel</div>
+          <div class="grid-2">
+            <label>Entfernung zu Fuß (m)<input id="holidayDestinationWalkDistance" type="number" min="0" step="1" inputmode="numeric" placeholder="z. B. 300" /></label>
+            <label>Gehzeit (Min.)<input id="holidayDestinationWalkMinutes" type="number" min="0" step="1" inputmode="numeric" placeholder="z. B. 5" /></label>
+          </div>
+        </div>
       </section>
 
       <section class="edit-section" id="holidayAccommodationSection">
@@ -2847,6 +2914,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.41-r1"></script>
+  <script src="app.js?v=0.3.42-r1"></script>
 </body>
 </html>
