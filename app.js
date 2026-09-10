@@ -1,6 +1,143 @@
 const STORE_KEY = 'viacruz-reisezeit-data-v1';
 const SETTINGS_KEY = 'viacruz-reisezeit-settings-v1';
 
+const MEDIA_DB_NAME = 'viacruz-reisezeit-media-v1';
+const MEDIA_DB_STORE = 'images';
+let mediaDbPromise = null;
+
+function openMediaDb(){
+  if(mediaDbPromise)return mediaDbPromise;
+  mediaDbPromise=new Promise((resolve,reject)=>{
+    if(!('indexedDB' in window)){reject(new Error('IndexedDB wird nicht unterstützt.'));return;}
+    const req=indexedDB.open(MEDIA_DB_NAME,1);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(MEDIA_DB_STORE))db.createObjectStore(MEDIA_DB_STORE,{keyPath:'id'});
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||new Error('Bildspeicher konnte nicht geöffnet werden.'));
+  });
+  return mediaDbPromise;
+}
+function dataUrlToBlob(dataUrl){
+  const parts=String(dataUrl||'').split(',');
+  const meta=parts[0]||'';
+  const mime=(meta.match(/data:([^;]+)/)||[])[1]||'image/jpeg';
+  const binary=atob(parts[1]||'');
+  const bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  return new Blob([bytes],{type:mime});
+}
+function blobToDataUrl(blob){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=()=>reject(reader.error||new Error('Bild konnte nicht gelesen werden.'));
+    reader.readAsDataURL(blob);
+  });
+}
+async function mediaDbPutDataUrl(id,dataUrl){
+  if(!id||!dataUrl)return;
+  const db=await openMediaDb();
+  const blob=dataUrlToBlob(dataUrl);
+  await new Promise((resolve,reject)=>{
+    const tx=db.transaction(MEDIA_DB_STORE,'readwrite');
+    tx.objectStore(MEDIA_DB_STORE).put({id,blob,updatedAt:new Date().toISOString()});
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error||new Error('Bild konnte nicht gespeichert werden.'));
+    tx.onabort=()=>reject(tx.error||new Error('Bildspeicherung wurde abgebrochen.'));
+  });
+}
+async function mediaDbGetDataUrl(id){
+  if(!id)return '';
+  const db=await openMediaDb();
+  const rec=await new Promise((resolve,reject)=>{
+    const tx=db.transaction(MEDIA_DB_STORE,'readonly');
+    const req=tx.objectStore(MEDIA_DB_STORE).get(id);
+    req.onsuccess=()=>resolve(req.result||null);
+    req.onerror=()=>reject(req.error||new Error('Bild konnte nicht geladen werden.'));
+  });
+  return rec?.blob?await blobToDataUrl(rec.blob):'';
+}
+async function mediaDbDelete(id){
+  if(!id)return;
+  const db=await openMediaDb();
+  await new Promise((resolve,reject)=>{
+    const tx=db.transaction(MEDIA_DB_STORE,'readwrite');
+    tx.objectStore(MEDIA_DB_STORE).delete(id);
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error||new Error('Bild konnte nicht gelöscht werden.'));
+  });
+}
+async function migrateLegacyMediaToIndexedDb(){
+  let migrated=false;
+  for(const entry of state.entries){
+    if(!Array.isArray(entry.media))continue;
+    for(const media of entry.media){
+      if(media?.id&&media?.dataUrl){
+        await mediaDbPutDataUrl(media.id,media.dataUrl);
+        migrated=true;
+      }
+    }
+  }
+  if(migrated)saveEntries();
+}
+async function hydrateAllEntryMedia(){
+  for(const entry of state.entries){
+    if(!Array.isArray(entry.media))continue;
+    for(const media of entry.media){
+      if(media?.id&&!media.dataUrl){
+        try{media.dataUrl=await mediaDbGetDataUrl(media.id);}catch(err){console.warn('Bild konnte nicht geladen werden:',media.id,err);}
+      }
+    }
+  }
+}
+async function pruneMediaStore(){
+  try{
+    const keep=new Set(state.entries.flatMap(e=>Array.isArray(e.media)?e.media.map(m=>m?.id).filter(Boolean):[]));
+    const db=await openMediaDb();
+    const ids=await new Promise((resolve,reject)=>{
+      const tx=db.transaction(MEDIA_DB_STORE,'readonly');
+      const req=tx.objectStore(MEDIA_DB_STORE).getAllKeys();
+      req.onsuccess=()=>resolve(req.result||[]);
+      req.onerror=()=>reject(req.error);
+    });
+    for(const id of ids)if(!keep.has(id))await mediaDbDelete(id);
+  }catch(err){console.warn('Bildspeicher konnte nicht bereinigt werden:',err);}
+}
+function entriesForLocalStorage(){
+  return state.entries.map(entry=>({
+    ...entry,
+    media:Array.isArray(entry.media)?entry.media.map(media=>{
+      const {dataUrl,...meta}=media||{};
+      return meta;
+    }):[]
+  }));
+}
+async function entriesForBackup(){
+  const out=[];
+  for(const entry of state.entries){
+    const copy={...entry,media:[]};
+    for(const media of (Array.isArray(entry.media)?entry.media:[])){
+      let dataUrl=media?.dataUrl||'';
+      if(!dataUrl&&media?.id){
+        try{dataUrl=await mediaDbGetDataUrl(media.id);}catch(_){}
+      }
+      copy.media.push({...media,dataUrl});
+    }
+    out.push(copy);
+  }
+  return out;
+}
+async function persistImportedMedia(entries){
+  for(const entry of entries){
+    if(!Array.isArray(entry.media))continue;
+    for(const media of entry.media){
+      if(media?.id&&media?.dataUrl)await mediaDbPutDataUrl(media.id,media.dataUrl);
+    }
+  }
+}
+
 function loadSettings(){
   try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; }
   catch { return {}; }
@@ -137,6 +274,7 @@ async function addCampingMediaFiles(files){
     for(const file of selected){
       const dataUrl=await imageFileToDataUrl(file);
       const item={id:uid(),kind:'image',name:file.name||'Bild',description:'',dataUrl,createdAt:new Date().toISOString()};
+      await mediaDbPutDataUrl(item.id,dataUrl);
       campingMediaDraft.push(item);
       if(!campingTitleImageDraft)campingTitleImageDraft=item.id;
     }
@@ -200,6 +338,7 @@ async function addStellplatzMediaFiles(files){
     for(const file of selected){
       const dataUrl=await imageFileToDataUrl(file);
       const item={id:uid(),kind:'image',name:file.name||'Bild',description:'',dataUrl,createdAt:new Date().toISOString()};
+      await mediaDbPutDataUrl(item.id,dataUrl);
       stellplatzMediaDraft.push(item);
       if(!stellplatzTitleImageDraft)stellplatzTitleImageDraft=item.id;
     }
@@ -305,6 +444,7 @@ async function addHolidayMediaFiles(files){
     for(const file of selected){
       const dataUrl=await holidayImageFileToDataUrl(file);
       const item={id:uid(),kind:'image',name:file.name||'Bild',description:'',dataUrl,createdAt:new Date().toISOString()};
+      await mediaDbPutDataUrl(item.id,dataUrl);
       holidayMediaDraft.push(item);
       if(!holidayTitleImageDraft)holidayTitleImageDraft=item.id;
     }
@@ -365,7 +505,9 @@ function loadEntries(){
   catch { return []; }
 }
 function saveEntries(){
-  localStorage.setItem(STORE_KEY, JSON.stringify({ dataVersion:1, updatedAt:new Date().toISOString(), entries:state.entries }));
+  const payload={dataVersion:1,updatedAt:new Date().toISOString(),entries:entriesForLocalStorage()};
+  localStorage.setItem(STORE_KEY,JSON.stringify(payload));
+  window.setTimeout(()=>pruneMediaStore(),0);
 }
 function escapeHtml(v=''){ return String(v).replace(/[&<>'"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m])); }
 function count(predicate){ return state.entries.filter(e => !e.deleted && predicate(e)).length; }
@@ -507,7 +649,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.39 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.40 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -2878,14 +3020,33 @@ document.getElementById('campingEditForm').addEventListener('submit',ev=>{
   e.updatedAt=new Date().toISOString(); saveEntries(); document.getElementById('campingEditDialog').close(); render(); openDetail(e.id);
 });
 
-function createBackup(){
-  const payload={app:'viacruz Reisezeit',dataVersion:1,createdAt:new Date().toISOString(),entries:state.entries,settings:JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')};
-  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`viacruz-Reisezeit-Backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
+async function createBackup(){
+  try{
+    const entries=await entriesForBackup();
+    const payload={app:'viacruz Reisezeit',dataVersion:1,createdAt:new Date().toISOString(),entries,settings:JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`viacruz-Reisezeit-Backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
+  }catch(err){console.error('Datensicherung fehlgeschlagen:',err);alert('Die Datensicherung konnte nicht erstellt werden.');}
 }
 async function restoreBackup(){
   const input=document.getElementById('restoreFile'); const file=input?.files?.[0]; if(!file){alert('Bitte zuerst eine Datensicherungsdatei auswählen.');return;}
-  try{const data=JSON.parse(await file.text()); if(data.app!=='viacruz Reisezeit'||!Array.isArray(data.entries))throw new Error('Ungültige Datei'); if(!confirm(`Datensicherung mit ${data.entries.length} Einträgen wiederherstellen? Die aktuellen lokalen Daten werden ersetzt.`))return; state.entries=data.entries;saveEntries();render();alert('Datensicherung wurde wiederhergestellt.');}catch(err){alert('Die Datei konnte nicht als gültige Reisezeit-Datensicherung gelesen werden.');}
+  try{
+    const data=JSON.parse(await file.text());
+    if(data.app!=='viacruz Reisezeit'||!Array.isArray(data.entries))throw new Error('Ungültige Datei');
+    if(!confirm(`Datensicherung mit ${data.entries.length} Einträgen wiederherstellen? Die aktuellen lokalen Daten werden ersetzt.`))return;
+    await persistImportedMedia(data.entries);
+    state.entries=data.entries;
+    saveEntries();
+    render();
+    alert('Datensicherung wurde wiederhergestellt.');
+  }catch(err){console.error('Wiederherstellung fehlgeschlagen:',err);alert('Die Datei konnte nicht als gültige Reisezeit-Datensicherung gelesen werden.');}
 }
 
+async function initApp(){
+  try{
+    await migrateLegacyMediaToIndexedDb();
+    await hydrateAllEntryMedia();
+  }catch(err){console.error('Bildspeicher konnte nicht initialisiert werden:',err);}
+  render();
+}
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));}
-render();
+initApp();

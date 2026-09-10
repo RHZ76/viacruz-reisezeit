@@ -20,3 +20,6 @@ Noch nicht Bestandteil dieser Ausbaustufe:
 - erweiterte Filter
 
 Technik: Cache-Aktualisierung für GitHub Pages/PWA gehärtet (v0.2.1-r2).
+
+
+v0.3.40: Bilder werden getrennt in IndexedDB gespeichert. Bestehende Base64-Bilder werden beim Start automatisch migriert; localStorage enthält danach nur Bildmetadaten. Backup/Restore schließt Bilddaten weiterhin ein.
