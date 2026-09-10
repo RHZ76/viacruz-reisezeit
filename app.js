@@ -147,6 +147,53 @@ function updateSetting(key,value){
   settings[key]=value;
   localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));
 }
+function navigationPreference(){
+  const value=loadSettings().navigationPreference;
+  return ['ask','apple','google'].includes(value)?value:'ask';
+}
+function isAppleDevice(){
+  const ua=navigator.userAgent||'';
+  const platform=navigator.platform||'';
+  return /iPad|iPhone|iPod|Macintosh|MacIntel/i.test(`${ua} ${platform}`);
+}
+function navigationUrl(provider,loc){
+  if(!loc)return '';
+  const destination=`${loc.lat},${loc.lng}`;
+  if(provider==='apple')return `https://maps.apple.com/?daddr=${encodeURIComponent(destination)}&dirflg=d`;
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+}
+function launchNavigationProvider(e,provider){
+  const loc=entryMapLocation(e);
+  if(!loc){alert('Für diesen Eintrag ist noch keine Kartenposition gespeichert. Bitte lege zuerst einen Standort fest.');return;}
+  const resolved=provider==='apple'&&isAppleDevice()?'apple':'google';
+  const url=navigationUrl(resolved,loc);
+  if(url)window.open(url,'_blank','noopener,noreferrer');
+}
+function openNavigationChoice(e){
+  const loc=entryMapLocation(e);
+  if(!loc){alert('Für diesen Eintrag ist noch keine Kartenposition gespeichert. Bitte lege zuerst einen Standort fest.');return;}
+  const existing=document.getElementById('navigationChoiceDialog');
+  if(existing)existing.remove();
+  const dlg=document.createElement('dialog');
+  dlg.id='navigationChoiceDialog';
+  dlg.className='navigation-choice-dialog';
+  const apple=isAppleDevice();
+  dlg.innerHTML=`<div class="navigation-choice-card"><div class="navigation-choice-head"><div><div class="eyebrow">Navigation</div><h3>${escapeHtml(e.name||'Ziel')}</h3></div><button type="button" class="icon-btn close" data-nav-choice-close>×</button></div><p>Womit möchtest du die Navigation starten?</p><div class="navigation-choice-actions">${apple?'<button type="button" class="btn secondary" data-nav-provider="apple">Apple Karten</button>':''}<button type="button" class="btn primary" data-nav-provider="google">Google Maps</button></div></div>`;
+  dlg.addEventListener('cancel',ev=>{ev.preventDefault();dlg.close();});
+  dlg.addEventListener('close',()=>dlg.remove(),{once:true});
+  dlg.addEventListener('click',ev=>{if(ev.target===dlg)dlg.close();});
+  dlg.querySelector('[data-nav-choice-close]').onclick=()=>dlg.close();
+  dlg.querySelectorAll('[data-nav-provider]').forEach(btn=>btn.onclick=()=>{const provider=btn.dataset.navProvider;dlg.close();launchNavigationProvider(e,provider);});
+  document.body.appendChild(dlg);
+  dlg.showModal();
+}
+function startEntryNavigation(e){
+  const loc=entryMapLocation(e);
+  if(!loc){alert('Für diesen Eintrag ist noch keine Kartenposition gespeichert. Bitte lege zuerst einen Standort fest.');return;}
+  const pref=navigationPreference();
+  if(pref==='ask')openNavigationChoice(e);
+  else launchNavigationProvider(e,pref);
+}
 
 const typeLabels = {
   camping: 'Campingplatz', stellplatz: 'Stellplatz', hotel: 'Hotel',
@@ -867,7 +914,7 @@ function searchMapMarkerHtml(e){
 function searchMapPopupHtml(e){
   const titleMedia=imageById(e,e.titleImageId);
   const image=titleMedia?.dataUrl?`<img src="${titleMedia.dataUrl}" alt="">`:`<span>${escapeHtml(typeIcons[e.type]||'●')}</span>`;
-  return `<div class="search-map-popup"><div class="search-map-popup-image ${titleMedia?.dataUrl?'has-image':''}">${image}</div><div class="search-map-popup-copy"><strong>${escapeHtml(e.name||'Ohne Namen')}</strong><small>${escapeHtml(typeLabels[e.type]||e.type)}${locationText(e)?` · ${escapeHtml(locationText(e))}`:''}</small><button type="button" data-search-map-detail="${escapeHtml(e.id)}">Details öffnen</button></div></div>`;
+  return `<div class="search-map-popup"><div class="search-map-popup-image ${titleMedia?.dataUrl?'has-image':''}">${image}</div><div class="search-map-popup-copy"><strong>${escapeHtml(e.name||'Ohne Namen')}</strong><small>${escapeHtml(typeLabels[e.type]||e.type)}${locationText(e)?` · ${escapeHtml(locationText(e))}`:''}</small><div class="search-map-popup-actions"><button type="button" data-search-map-detail="${escapeHtml(e.id)}">Details öffnen</button><button type="button" data-search-map-navigation="${escapeHtml(e.id)}">Navigation starten</button></div></div></div>`;
 }
 let searchResultsMap=null;
 function destroySearchResultsMap(){
@@ -898,6 +945,8 @@ function initSearchResultsMap(){
     marker.on('popupopen',()=>{
       const btn=document.querySelector(`[data-search-map-detail="${CSS.escape(e.id)}"]`);
       if(btn)btn.onclick=()=>openDetail(e.id);
+      const navBtn=document.querySelector(`[data-search-map-navigation="${CSS.escape(e.id)}"]`);
+      if(navBtn)navBtn.onclick=()=>startEntryNavigation(e);
     });
     bounds.push([loc.lat,loc.lng]);
   });
@@ -951,8 +1000,8 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung erstellen</h3><p>Exportiert deine lokalen Reisezeit-Daten als JSON-Datei. Die Struktur ist bereits versioniert.</p><button class="btn primary" data-action="backup">Datensicherung erstellen</button></div>
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
-    <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.54 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>Navigation</h3><p>Lege fest, welche Karten-App beim Start einer Navigation verwendet werden soll.</p><label class="setting-field">Standard-Navigationsapp<select id="navigationPreference"><option value="ask" ${navigationPreference()==='ask'?'selected':''}>Immer fragen</option><option value="apple" ${navigationPreference()==='apple'?'selected':''}>Apple Karten</option><option value="google" ${navigationPreference()==='google'?'selected':''}>Google Maps</option></select></label><small class="setting-note">Auf Geräten ohne Apple Karten wird bei Auswahl von Apple Karten automatisch Google Maps verwendet.</small></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.55 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -966,6 +1015,7 @@ function wireViewEvents(){
   document.querySelectorAll('.route-search').forEach(i=>i.oninput=()=>{state.searchBrowseMap=false;state.query=i.value;render(); const next=document.querySelector('.route-search'); if(next){next.focus();next.setSelectionRange(next.value.length,next.value.length)}});
   document.querySelectorAll('[data-action="clear-search"]').forEach(b=>b.onclick=()=>{state.query='';state.searchFilters=emptySearchFilters();render();});
   document.getElementById('searchSort')?.addEventListener('change',ev=>{state.searchSort=ev.target.value||'relevance';render();});
+  document.getElementById('navigationPreference')?.addEventListener('change',ev=>{updateSetting('navigationPreference',ev.target.value||'ask');});
   document.querySelectorAll('[data-search-view]').forEach(b=>b.onclick=()=>{state.searchBrowseMap=false;state.searchViewMode=b.dataset.searchView==='map'?'map':'list';render();});
   document.querySelector('[data-home-map]')?.addEventListener('click',()=>{state.route='search';state.query='';state.searchBrowseMap=true;render();});
   document.querySelector('[data-search-all-map]')?.addEventListener('click',()=>{state.searchBrowseMap=true;render();});
@@ -1692,7 +1742,7 @@ function mapLocationCard(e){
   const loc=entryMapLocation(e);
   const preview=loc?`<div class="location-map-preview"><iframe title="Kartenposition von ${escapeHtml(e.name||'Eintrag')}" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=${loc.lng-0.008}%2C${loc.lat-0.005}%2C${loc.lng+0.008}%2C${loc.lat+0.005}&layer=mapnik&marker=${loc.lat}%2C${loc.lng}"></iframe></div>`:'';
   const saved=loc?`<div class="location-saved"><span>📍</span><div><strong>Standort gespeichert</strong><small>${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}</small></div></div>`:`<div class="detail-empty">Noch keine Kartenposition festgelegt.</div>`;
-  return `<details class="detail-accordion map-navigation-card"><summary><span><small>Karte &amp; Navigation</small><strong>${escapeHtml(mapLocationSummary(e))}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${saved}${preview}<div class="location-actions"><button type="button" class="btn secondary" data-map-action="address">📍 Adresse übernehmen</button><button type="button" class="btn secondary" data-map-action="current">◎ Aktuelle Position verwenden</button><button type="button" class="btn secondary" data-map-action="pick">🗺 Position auf Karte festlegen</button>${loc?'<button type="button" class="btn danger" data-map-action="remove">Standort löschen</button>':''}</div><p class="field-help location-help">Die Kartenposition gehört nur zu diesem Eintrag. Adresse und übrige Daten bleiben unverändert.</p></div></details>`;
+  return `<details class="detail-accordion map-navigation-card"><summary><span><small>Karte &amp; Navigation</small><strong>${escapeHtml(mapLocationSummary(e))}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${saved}${preview}<button type="button" class="btn primary location-navigation-btn" data-map-action="navigate" ${loc?'':'disabled'}>Navigation starten</button><div class="location-actions"><button type="button" class="btn secondary" data-map-action="address">📍 Adresse übernehmen</button><button type="button" class="btn secondary" data-map-action="current">◎ Aktuelle Position verwenden</button><button type="button" class="btn secondary" data-map-action="pick">🗺 Position auf Karte festlegen</button>${loc?'<button type="button" class="btn danger" data-map-action="remove">Standort löschen</button>':''}</div>${loc?'':'<p class="field-help location-navigation-help">Lege zuerst einen Standort fest, um die Navigation zu starten.</p>'}<p class="field-help location-help">Die Kartenposition gehört nur zu diesem Eintrag. Adresse und übrige Daten bleiben unverändert.</p></div></details>`;
 }
 function insertMapCardAfterBasic(html,e){
   const card=mapLocationCard(e);
@@ -3157,7 +3207,8 @@ function openDetail(id){
   });
   content.querySelectorAll('[data-map-action]').forEach(button=>button.onclick=()=>{
     const action=button.dataset.mapAction;
-    if(action==='address')geocodeEntryAddress(e);
+    if(action==='navigate')startEntryNavigation(e);
+    else if(action==='address')geocodeEntryAddress(e);
     else if(action==='current')useCurrentEntryPosition(e);
     else if(action==='pick')openLocationPicker(e);
     else if(action==='remove'&&confirm('Nur die gespeicherte Kartenposition dieses Eintrags löschen?')){e.location=null;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id);}
