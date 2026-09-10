@@ -396,3 +396,10 @@ button{cursor:pointer}
 /* v0.3.59 Papierkorb */
 .trash-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:16px}.trash-toolbar strong{font-size:14px}.trash-list{display:grid;gap:10px}.trash-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px}.trash-card-main{display:grid;grid-template-columns:68px minmax(0,1fr);align-items:center;gap:13px}.trash-card-text{min-width:0}.trash-card-text strong{display:block;font-size:16px}.trash-card-text span,.trash-card-text small{display:block;color:var(--muted);font-size:13px;margin-top:3px}.trash-card-text small{font-size:12px}.trash-card-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 @media(max-width:560px){.trash-toolbar{align-items:stretch;flex-direction:column}.trash-toolbar .btn{width:100%}.trash-card-actions{grid-template-columns:1fr}.trash-card-main{grid-template-columns:58px minmax(0,1fr)}.trash-card-main .place-thumb{width:58px;height:58px}}
+
+/* v0.3.60 – iPhone/Touch: Listenkarte nach links wischen → Papierkorb */
+.swipe-row{position:relative;overflow:hidden;border-radius:16px;touch-action:pan-y;background:#f7dddd}
+.swipe-row .swipe-card{position:relative;z-index:2;transition:transform .2s ease;will-change:transform}
+.swipe-row.is-open .swipe-card{transform:translateX(-92px)}
+.swipe-delete-action{position:absolute;z-index:1;top:0;right:0;bottom:0;width:92px;border:0;border-radius:0;background:#b84b4b;color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;padding:0}
+@media (hover:hover) and (pointer:fine){.swipe-row{background:transparent}.swipe-delete-action{display:none}.swipe-row.is-open .swipe-card{transform:none}}

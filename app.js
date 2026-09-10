@@ -674,12 +674,15 @@ function placeCard(e){
   const thumb=titleMedia?.dataUrl
     ? `<img src="${titleMedia.dataUrl}" alt="" />`
     : `${typeIcons[e.type] || '●'}`;
-  return `<button class="place-card" data-detail="${e.id}">
-    <div class="place-thumb ${titleMedia?.dataUrl?'has-image':''}">${thumb}</div>
-    <div class="place-main"><strong>${escapeHtml(e.name)}</strong><span>${escapeHtml(locationText(e))}</span>
-      <div class="badge-row"><span class="badge">${typeLabels[e.type]}</span>${e.favorite?'<span class="badge">★ Favorit</span>':''}${e.remembered?'<span class="badge">Gemerkt</span>':''}${e.wantToVisit?'<span class="badge">Möchte ich besuchen</span>':''}</div>
-    </div><div class="chev">›</div>
-  </button>`;
+  return `<div class="swipe-row" data-swipe-row data-entry-id="${escapeHtml(e.id)}">
+    <button type="button" class="swipe-delete-action" data-swipe-delete="${escapeHtml(e.id)}" aria-label="${escapeHtml(e.name)} löschen">Löschen</button>
+    <button class="place-card swipe-card" data-detail="${e.id}">
+      <div class="place-thumb ${titleMedia?.dataUrl?'has-image':''}">${thumb}</div>
+      <div class="place-main"><strong>${escapeHtml(e.name)}</strong><span>${escapeHtml(locationText(e))}</span>
+        <div class="badge-row"><span class="badge">${typeLabels[e.type]}</span>${e.favorite?'<span class="badge">★ Favorit</span>':''}${e.remembered?'<span class="badge">Gemerkt</span>':''}${e.wantToVisit?'<span class="badge">Möchte ich besuchen</span>':''}</div>
+      </div><div class="chev">›</div>
+    </button>
+  </div>`;
 }
 
 function listView(type,title){
@@ -870,13 +873,16 @@ function searchResultCard(result){
   if(result.doc.stars!=null)meta.push(`${formatNumber(result.doc.stars,1)} ★`);
   if(result.doc.rating!=null)meta.push(`Bewertung ${formatNumber(result.doc.rating,1)} / 5`);
   const reasonBadges=result.reasons.map(v=>`<span class="search-match-badge">${escapeHtml(v)}</span>`).join('');
-  return `<button class="place-card search-result-card" data-detail="${e.id}">
-    <div class="place-thumb ${titleMedia?.dataUrl?'has-image':''}">${thumb}</div>
-    <div class="place-main"><strong>${escapeHtml(e.name)}</strong><span>${escapeHtml(locationText(e))}</span>
-      <div class="badge-row"><span class="badge">${escapeHtml(typeLabels[e.type]||e.type)}</span>${meta.map(v=>`<span class="badge">${escapeHtml(v)}</span>`).join('')}${e.favorite?'<span class="badge">★ Favorit</span>':''}${e.remembered?'<span class="badge">Gemerkt</span>':''}${e.wantToVisit?'<span class="badge">Möchte ich besuchen</span>':''}${e.visited?'<span class="badge">✓ Besucht</span>':''}</div>
-      ${reasonBadges?`<div class="search-match-row"><small>Passt zu deiner Suche:</small>${reasonBadges}</div>`:''}
-    </div><div class="chev">›</div>
-  </button>`;
+  return `<div class="swipe-row" data-swipe-row data-entry-id="${escapeHtml(e.id)}">
+    <button type="button" class="swipe-delete-action" data-swipe-delete="${escapeHtml(e.id)}" aria-label="${escapeHtml(e.name)} löschen">Löschen</button>
+    <button class="place-card search-result-card swipe-card" data-detail="${e.id}">
+      <div class="place-thumb ${titleMedia?.dataUrl?'has-image':''}">${thumb}</div>
+      <div class="place-main"><strong>${escapeHtml(e.name)}</strong><span>${escapeHtml(locationText(e))}</span>
+        <div class="badge-row"><span class="badge">${escapeHtml(typeLabels[e.type]||e.type)}</span>${meta.map(v=>`<span class="badge">${escapeHtml(v)}</span>`).join('')}${e.favorite?'<span class="badge">★ Favorit</span>':''}${e.remembered?'<span class="badge">Gemerkt</span>':''}${e.wantToVisit?'<span class="badge">Möchte ich besuchen</span>':''}${e.visited?'<span class="badge">✓ Besucht</span>':''}</div>
+        ${reasonBadges?`<div class="search-match-row"><small>Passt zu deiner Suche:</small>${reasonBadges}</div>`:''}
+      </div><div class="chev">›</div>
+    </button>
+  </div>`;
 }
 function currentSearchResults(){
   const hasQuery=!!state.query.trim();
@@ -1023,7 +1029,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} ${trash===1?'gelöschter Eintrag':'gelöschte Einträge'}. Gelöschte Orte bleiben erhalten, bis du sie wiederherstellst oder endgültig löschst.</p><button class="btn secondary" data-route-go="trash">Papierkorb öffnen${trash?` · ${trash}`:''}</button></div>
     <div class="setting-card"><h3>Navigation</h3><p>Lege fest, welche Karten-App beim Start einer Navigation verwendet werden soll.</p><label class="setting-field">Standard-Navigationsapp<select id="navigationPreference"><option value="ask" ${navigationPreference()==='ask'?'selected':''}>Immer fragen</option><option value="apple" ${navigationPreference()==='apple'?'selected':''}>Apple Karten</option><option value="google" ${navigationPreference()==='google'?'selected':''}>Google Maps</option></select></label><small class="setting-note">Auf Geräten ohne Apple Karten wird bei Auswahl von Apple Karten automatisch Google Maps verwendet.</small></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.59 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.60 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1088,6 +1094,60 @@ ${items.length} ${items.length===1?'Eintrag wird':'Einträge werden'} einschlie�
   render();
 }
 
+function moveEntryToTrash(id){
+  const e=state.entries.find(item=>item.id===id&&!item.deleted);
+  if(!e)return;
+  const now=new Date().toISOString();
+  e.deleted=true;e.deletedAt=now;e.updatedAt=now;
+  saveEntries();
+  render();
+}
+function wireSwipeDelete(){
+  const rows=[...document.querySelectorAll('[data-swipe-row]')];
+  let openRow=null;
+  const closeRow=row=>{if(!row)return;row.classList.remove('is-open');row.querySelector('.swipe-card')?.style.removeProperty('transform');if(openRow===row)openRow=null;};
+  rows.forEach(row=>{
+    const card=row.querySelector('.swipe-card');
+    if(!card)return;
+    let startX=0,startY=0,dx=0,tracking=false,horizontal=false,moved=false;
+    card.addEventListener('touchstart',ev=>{
+      if(ev.touches.length!==1)return;
+      if(openRow&&openRow!==row)closeRow(openRow);
+      startX=ev.touches[0].clientX;startY=ev.touches[0].clientY;dx=0;tracking=true;horizontal=false;moved=false;
+    },{passive:true});
+    card.addEventListener('touchmove',ev=>{
+      if(!tracking||ev.touches.length!==1)return;
+      const x=ev.touches[0].clientX,y=ev.touches[0].clientY;dx=x-startX;const dy=y-startY;
+      if(!horizontal&&Math.max(Math.abs(dx),Math.abs(dy))>8){
+        if(Math.abs(dy)>=Math.abs(dx)){tracking=false;return;}
+        horizontal=true;
+      }
+      if(!horizontal)return;
+      ev.preventDefault();moved=true;
+      const base=row.classList.contains('is-open')?-92:0;
+      const translate=Math.max(-92,Math.min(0,base+dx));
+      card.style.transform=`translateX(${translate}px)`;
+    },{passive:false});
+    card.addEventListener('touchend',()=>{
+      if(!horizontal){tracking=false;return;}
+      card.style.removeProperty('transform');
+      const wasOpen=row.classList.contains('is-open');
+      const shouldOpen=wasOpen?dx>-35:dx<-42;
+      if(shouldOpen){row.classList.add('is-open');openRow=row;}else closeRow(row);
+      tracking=false;
+      if(moved)setTimeout(()=>{moved=false;},0);
+    },{passive:true});
+    card.addEventListener('click',ev=>{
+      if(row.classList.contains('is-open')){ev.preventDefault();ev.stopImmediatePropagation();closeRow(row);}
+    },true);
+  });
+  document.querySelectorAll('[data-swipe-delete]').forEach(btn=>btn.addEventListener('click',ev=>{
+    ev.preventDefault();ev.stopPropagation();
+    const id=btn.dataset.swipeDelete;
+    if(confirm('Diesen Eintrag in den Papierkorb verschieben?'))moveEntryToTrash(id);
+  }));
+}
+
 function wireViewEvents(){
   document.querySelectorAll('[data-route-go]').forEach(b=>b.onclick=()=>{state.route=b.dataset.routeGo;state.query='';state.searchBrowseMap=false;render();});
   document.querySelectorAll('[data-action="new"]').forEach(b=>b.onclick=()=>{
@@ -1125,6 +1185,7 @@ function wireViewEvents(){
     b.setAttribute('aria-expanded',String(willOpen));
     updateSetting('homeRecentOpen',willOpen);
   });
+  wireSwipeDelete();
   document.querySelectorAll('[data-action="backup"]').forEach(b=>b.onclick=createBackup);
   document.querySelectorAll('[data-action="restore"]').forEach(b=>b.onclick=restoreBackup);
   document.querySelectorAll('[data-trash-restore]').forEach(b=>b.onclick=()=>restoreTrashEntry(b.dataset.trashRestore));
