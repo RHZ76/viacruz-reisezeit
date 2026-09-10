@@ -1022,7 +1022,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Lege fest, welche Karten-App beim Start einer Navigation verwendet werden soll.</p><label class="setting-field">Standard-Navigationsapp<select id="navigationPreference"><option value="ask" ${navigationPreference()==='ask'?'selected':''}>Immer fragen</option><option value="apple" ${navigationPreference()==='apple'?'selected':''}>Apple Karten</option><option value="google" ${navigationPreference()==='google'?'selected':''}>Google Maps</option></select></label><small class="setting-note">Auf Geräten ohne Apple Karten wird bei Auswahl von Apple Karten automatisch Google Maps verwendet.</small></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.57 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.58 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -2564,6 +2564,44 @@ function updateHolidayBasicConditionalFields(){
   updateHolidayDogConditionalFields();
   updateHolidayPersonalConditionalFields();
 }
+
+// v0.3.58: Alle Hauptkarten der Bearbeitungsmasken sind unabhängig klappbar.
+function setupEditSectionAccordions(){
+  document.querySelectorAll('#campingEditForm > .edit-section, #stellplatzEditForm > .edit-section, #holidayEditForm > .edit-section').forEach((section,index)=>{
+    if(section.classList.contains('is-collapsible')) return;
+    const head=section.querySelector(':scope > .edit-section-head');
+    if(!head) return;
+    section.classList.add('is-collapsible','is-collapsed');
+    const title=head.querySelector('h3')?.textContent?.trim()||`Bereich ${index+1}`;
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='edit-section-toggle';
+    btn.setAttribute('aria-label',`${title} ausklappen`);
+    btn.setAttribute('aria-expanded','false');
+    btn.innerHTML='<span class="chevron" aria-hidden="true">⌄</span>';
+    const toggle=()=>{
+      const collapsed=section.classList.toggle('is-collapsed');
+      btn.setAttribute('aria-expanded',String(!collapsed));
+      btn.setAttribute('aria-label',`${title} ${collapsed?'ausklappen':'einklappen'}`);
+    };
+    btn.addEventListener('click',ev=>{ev.stopPropagation();toggle();});
+    head.addEventListener('click',ev=>{if(!ev.target.closest('button,a,input,select,textarea,label')) toggle();});
+    head.appendChild(btn);
+  });
+}
+function collapseAllEditSections(formId){
+  setupEditSectionAccordions();
+  document.querySelectorAll(`#${formId} > .edit-section.is-collapsible`).forEach(section=>{
+    section.classList.add('is-collapsed');
+    const btn=section.querySelector(':scope > .edit-section-head .edit-section-toggle');
+    if(btn){
+      const title=section.querySelector(':scope > .edit-section-head h3')?.textContent?.trim()||'Bereich';
+      btn.setAttribute('aria-expanded','false');
+      btn.setAttribute('aria-label',`${title} ausklappen`);
+    }
+  });
+}
+
 function openHolidayEditor(entry=null,pretype='hotel'){
   const dlg=document.getElementById('holidayEditDialog');
   const form=document.getElementById('holidayEditForm');
@@ -2694,8 +2732,9 @@ function openHolidayEditor(entry=null,pretype='hotel'){
   renderHolidayVisitEditor(entry?.visits||[],type);
   const detail=document.getElementById('detailDialog');
   if(detail?.open)detail.close();
+  collapseAllEditSections('holidayEditForm');
   dlg.showModal();
-  setTimeout(()=>document.getElementById('holidayName')?.focus(),80);
+  setTimeout(()=>dlg.querySelector('.sticky-sheet-head')?.scrollIntoView({block:'start'}),0);
 }
 function closeHolidayEditor(){
   const dlg=document.getElementById('holidayEditDialog');
@@ -3370,6 +3409,7 @@ function openStellplatzEditor(e){
   setCheckboxGroup('stellplatzLeisureCharacter',leisure.character||[]);setField('stellplatzLeisureSize',leisure.size||'unknown');setField('stellplatzLeisurePitchCount',leisure.pitchCount);
   updateStellplatzLeisureConditionalFields();
   const dog=ensureStellplatzDog(e);setField('stellplatzDogAllowed',dog.allowed||'unknown');setField('stellplatzDogMaxCount',dog.maxCount);setField('stellplatzDogFeeType',dog.feeType||'unknown');setField('stellplatzDogFee',dog.fee);setField('stellplatzDogLeash',dog.leash||'unknown');setField('stellplatzDogRestricted',dog.restricted||'unknown');setField('stellplatzDogRun',dog.run||'unknown');setField('stellplatzDogBeach',dog.beach||'unknown');setField('stellplatzDogSwimming',dog.swimming||'unknown');setField('stellplatzDogShower',dog.shower||'unknown');setField('stellplatzDogRestaurant',dog.restaurant||'unknown');setField('stellplatzDogNotes',dog.notes||'');updateStellplatzDogConditionalFields();
+  collapseAllEditSections('stellplatzEditForm');
   document.getElementById('stellplatzEditDialog').showModal();
 }
 function closeStellplatzEditor(){
@@ -3792,6 +3832,7 @@ function openCampingEditor(e){
   toggleSeasonDateFields();
   togglePitchConditionalFields();
   toggleFacilitiesConditionalFields();
+  collapseAllEditSections('campingEditForm');
   document.getElementById('campingEditDialog').showModal();
 }
 
