@@ -251,6 +251,40 @@ function renderHolidayMediaEditor(){
     };
   });
 }
+async function holidayImageFileToDataUrl(file){
+  const raw=await new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+  const img=await new Promise((resolve,reject)=>{
+    const image=new Image();
+    image.onload=()=>resolve(image);
+    image.onerror=reject;
+    image.src=raw;
+  });
+  // Urlaub-Bilder werden bewusst kompakter gespeichert. Die App speichert lokal;
+  // große Kamera-/Screenshot-Dateien können sonst das localStorage-Limit sprengen.
+  let maxSide=1400;
+  let quality=0.78;
+  let result='';
+  for(let attempt=0;attempt<7;attempt++){
+    const scale=Math.min(1,maxSide/Math.max(img.width,img.height));
+    const w=Math.max(1,Math.round(img.width*scale));
+    const h=Math.max(1,Math.round(img.height*scale));
+    const canvas=document.createElement('canvas');
+    canvas.width=w; canvas.height=h;
+    const ctx=canvas.getContext('2d');
+    ctx.drawImage(img,0,0,w,h);
+    result=canvas.toDataURL('image/jpeg',quality);
+    // ca. 300 KB Data-URL als Ziel: ausreichend für Titelbild/Galerie, aber robust lokal speicherbar.
+    if(result.length<=410000)break;
+    if(quality>0.58)quality-=0.08;
+    else maxSide=Math.max(800,Math.round(maxSide*0.82));
+  }
+  return result;
+}
 async function addHolidayMediaFiles(files){
   const selected=[...files].filter(f=>f.type.startsWith('image/'));
   if(!selected.length)return;
@@ -258,13 +292,14 @@ async function addHolidayMediaFiles(files){
   if(button){button.disabled=true;button.textContent='Bilder werden vorbereitet …';}
   try{
     for(const file of selected){
-      const dataUrl=await imageFileToDataUrl(file);
+      const dataUrl=await holidayImageFileToDataUrl(file);
       const item={id:uid(),kind:'image',name:file.name||'Bild',description:'',dataUrl,createdAt:new Date().toISOString()};
       holidayMediaDraft.push(item);
       if(!holidayTitleImageDraft)holidayTitleImageDraft=item.id;
     }
     renderHolidayMediaEditor();
   }catch(err){
+    console.error('Urlaub-Bild konnte nicht verarbeitet werden:',err);
     alert('Mindestens ein Bild konnte nicht verarbeitet werden.');
   }finally{
     if(button){button.disabled=false;button.textContent='+ Bilder auswählen';}
@@ -461,7 +496,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.36 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.37 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1715,6 +1750,7 @@ function saveHolidayBasic(ev){
   ev?.preventDefault?.();
   const id=document.getElementById('holidayEditId')?.value||'';
   const existing=holidayEditMode==='edit'?state.entries.find(x=>x.id===id):null;
+  const existingSnapshot=existing?JSON.parse(JSON.stringify(existing)):null;
   const selectedType=document.getElementById('holidayEntryType')?.value||'';
   const nameField=document.getElementById('holidayName');
   if(!selectedType || !nameField?.value.trim()){
@@ -1833,7 +1869,25 @@ function saveHolidayBasic(ev){
   entry.geoTags=[entry.country,entry.region,entry.town,...entry.travelRegions].filter(Boolean);
   entry.updatedAt=new Date().toISOString();
   if(!existing)state.entries.push(entry);
-  saveEntries();
+  try{
+    saveEntries();
+  }catch(err){
+    // Bei vollem lokalen Speicher darf die Bearbeitung nicht kommentarlos abbrechen
+    // und ein bestehender Eintrag darf nicht halb verändert im Arbeitsspeicher bleiben.
+    if(existing&&existingSnapshot){
+      const pos=state.entries.findIndex(x=>x.id===existing.id);
+      if(pos>=0)state.entries[pos]=existingSnapshot;
+    }else{
+      state.entries=state.entries.filter(x=>x!==entry);
+    }
+    if(err?.name==='QuotaExceededError'||err?.name==='NS_ERROR_DOM_QUOTA_REACHED'){
+      alert('Der lokale Speicher ist für dieses Bild zu voll. Bitte ein Bild entfernen oder ein kleineres Bild verwenden. Deine bisherigen Daten bleiben erhalten.');
+    }else{
+      console.error('Urlaub konnte nicht gespeichert werden:',err);
+      alert('Der Eintrag konnte nicht gespeichert werden. Bitte versuche es erneut.');
+    }
+    return;
+  }
   closeHolidayEditor();
   render();
   openDetail(entry.id);
