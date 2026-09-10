@@ -668,7 +668,7 @@ function placeCard(e){
   return `<button class="place-card" data-detail="${e.id}">
     <div class="place-thumb ${titleMedia?.dataUrl?'has-image':''}">${thumb}</div>
     <div class="place-main"><strong>${escapeHtml(e.name)}</strong><span>${escapeHtml(locationText(e))}</span>
-      <div class="badge-row"><span class="badge">${typeLabels[e.type]}</span>${e.favorite?'<span class="badge">★ Favorit</span>':''}${e.wantToVisit?'<span class="badge">Möchte ich besuchen</span>':''}</div>
+      <div class="badge-row"><span class="badge">${typeLabels[e.type]}</span>${e.favorite?'<span class="badge">★ Favorit</span>':''}${e.remembered?'<span class="badge">Gemerkt</span>':''}${e.wantToVisit?'<span class="badge">Möchte ich besuchen</span>':''}</div>
     </div><div class="chev">›</div>
   </button>`;
 }
@@ -815,7 +815,7 @@ function entryMatchesSearchFilters(e){
   if(f.sauna&&!flags.sauna)return false;
   if(f.dog&&!flags.dog)return false;
   if(f.statuses.length){
-    const statusMatch=f.statuses.some(v=>v==='favorite'?!!e.favorite:v==='want'?!!e.wantToVisit:v==='visited'?!!e.visited:false);
+    const statusMatch=f.statuses.some(v=>v==='favorite'?!!e.favorite:v==='remembered'?!!e.remembered:v==='want'?!!e.wantToVisit:v==='visited'?!!e.visited:false);
     if(!statusMatch)return false;
   }
   return true;
@@ -837,13 +837,13 @@ function searchFilterChipData(){
   if(f.minStars)chips.push({key:'minStars',label:`ab ${formatNumber(Number(f.minStars),1)} Sterne`});
   if(f.minRating)chips.push({key:'minRating',label:`Bewertung ab ${formatNumber(Number(f.minRating),1)}`});
   [['pool','Pool'],['wellness','Wellness'],['sauna','Sauna'],['dog','Hund erlaubt']].forEach(([key,label])=>{if(f[key])chips.push({key,label});});
-  f.statuses.forEach(v=>chips.push({key:`status:${v}`,label:v==='favorite'?'Favorit':v==='want'?'Möchte ich besuchen':'Besucht'}));
+  f.statuses.forEach(v=>chips.push({key:`status:${v}`,label:v==='favorite'?'Favorit':v==='remembered'?'Gemerkt':v==='want'?'Möchte ich besuchen':'Besucht'}));
   return chips;
 }
 function searchFilterPanel(){
   const f=normalizedSearchFilters(), opts=searchFilterOptions();
   const typeChoices=searchTypeFilterChoices().map(v=>`<label class="search-filter-choice"><input type="checkbox" data-search-type="${v}" ${f.types.includes(v)?'checked':''}><span>${escapeHtml(typeLabels[v]||v)}</span></label>`).join('');
-  const statusChoices=[['favorite','Favorit'],['want','Möchte ich besuchen'],['visited','Besucht']].map(([v,label])=>`<label class="search-filter-choice"><input type="checkbox" data-search-status="${v}" ${f.statuses.includes(v)?'checked':''}><span>${label}</span></label>`).join('');
+  const statusChoices=[['favorite','Favorit'],['remembered','Gemerkt'],['want','Möchte ich besuchen'],['visited','Besucht']].map(([v,label])=>`<label class="search-filter-choice"><input type="checkbox" data-search-status="${v}" ${f.statuses.includes(v)?'checked':''}><span>${label}</span></label>`).join('');
   return `<details class="search-filter-panel" id="searchFilterPanel" ${state.searchFiltersOpen?'open':''}><summary><span><strong>Filter</strong><small>${searchFilterActive()?`${searchFilterChipData().length} aktiv`:'Typ, Ort, Qualität und Ausstattung'}</small></span><span class="accordion-chevron">⌄</span></summary><div class="search-filter-body">
     <div class="search-filter-group"><h3>Art / Typ</h3><div class="search-filter-choices">${typeChoices}</div></div>
     <div class="search-filter-group"><h3>Wo</h3><div class="search-filter-grid"><label>Land<select id="searchFilterCountry"><option value="">Alle Länder</option>${opts.countries.map(v=>`<option value="${escapeHtml(v)}" ${f.country===v?'selected':''}>${escapeHtml(v)}</option>`).join('')}</select></label><label>Region / Reiseregion<select id="searchFilterRegion"><option value="">Alle Regionen</option>${opts.regions.map(v=>`<option value="${escapeHtml(v)}" ${f.region===v?'selected':''}>${escapeHtml(v)}</option>`).join('')}</select></label></div></div>
@@ -864,7 +864,7 @@ function searchResultCard(result){
   return `<button class="place-card search-result-card" data-detail="${e.id}">
     <div class="place-thumb ${titleMedia?.dataUrl?'has-image':''}">${thumb}</div>
     <div class="place-main"><strong>${escapeHtml(e.name)}</strong><span>${escapeHtml(locationText(e))}</span>
-      <div class="badge-row"><span class="badge">${escapeHtml(typeLabels[e.type]||e.type)}</span>${meta.map(v=>`<span class="badge">${escapeHtml(v)}</span>`).join('')}${e.favorite?'<span class="badge">★ Favorit</span>':''}${e.wantToVisit?'<span class="badge">Möchte ich besuchen</span>':''}${e.visited?'<span class="badge">✓ Besucht</span>':''}</div>
+      <div class="badge-row"><span class="badge">${escapeHtml(typeLabels[e.type]||e.type)}</span>${meta.map(v=>`<span class="badge">${escapeHtml(v)}</span>`).join('')}${e.favorite?'<span class="badge">★ Favorit</span>':''}${e.remembered?'<span class="badge">Gemerkt</span>':''}${e.wantToVisit?'<span class="badge">Möchte ich besuchen</span>':''}${e.visited?'<span class="badge">✓ Besucht</span>':''}</div>
       ${reasonBadges?`<div class="search-match-row"><small>Passt zu deiner Suche:</small>${reasonBadges}</div>`:''}
     </div><div class="chev">›</div>
   </button>`;
@@ -885,18 +885,19 @@ function currentSearchResults(){
 function mapStatusKey(e){
   if(e.wantToVisit && e.favorite)return 'wantFavorite';
   if(e.visited && e.favorite)return 'visitedFavorite';
+  if(e.remembered)return 'remembered';
   if(e.wantToVisit)return 'want';
   if(e.visited)return 'visited';
   return 'neutral';
 }
 function mapStatusLabel(key){
-  return ({want:'Möchte ich besuchen',visited:'Besucht',wantFavorite:'Wunsch-Favorit',visitedFavorite:'Besuchs-Favorit',neutral:'Ohne Status'})[key]||'';
+  return ({remembered:'Gemerkt',want:'Möchte ich besuchen',visited:'Besucht',wantFavorite:'Wunsch-Favorit',visitedFavorite:'Besuchs-Favorit',neutral:'Ohne Status'})[key]||'';
 }
 function mapStatusFilterBar(){
   const selected=Array.isArray(state.mapStatusSelection)?state.mapStatusSelection:[];
   const all=selected.length===0;
-  const choices=[['want','Möchte ich besuchen'],['visited','Besucht'],['wantFavorite','Wunsch-Favoriten'],['visitedFavorite','Besuchs-Favoriten']];
-  return `<div class="map-status-filter"><span class="map-status-filter-label">Anzeigen</span><div class="map-status-filter-buttons"><button type="button" class="map-status-filter-btn ${all?'active':''}" data-map-status="all">Alle</button>${choices.map(([key,label])=>`<button type="button" class="map-status-filter-btn ${selected.includes(key)?'active':''}" data-map-status="${key}">${label}</button>`).join('')}</div><div class="map-status-legend"><span><i class="legend-pin want"></i>Möchte ich besuchen</span><span><i class="legend-pin visited"></i>Besucht</span><span><i class="legend-heart want">♥</i>Wunsch-Favorit</span><span><i class="legend-heart visited">♥</i>Besuchs-Favorit</span></div></div>`;
+  const choices=[['remembered','Gemerkt'],['want','Möchte ich besuchen'],['visited','Besucht'],['wantFavorite','Wunsch-Favoriten'],['visitedFavorite','Besuchs-Favoriten']];
+  return `<div class="map-status-filter"><span class="map-status-filter-label">Anzeigen</span><div class="map-status-filter-buttons"><button type="button" class="map-status-filter-btn ${all?'active':''}" data-map-status="all">Alle</button>${choices.map(([key,label])=>`<button type="button" class="map-status-filter-btn ${selected.includes(key)?'active':''}" data-map-status="${key}">${label}</button>`).join('')}</div><div class="map-status-legend"><span><i class="legend-pin remembered"></i>Gemerkt</span><span><i class="legend-pin want"></i>Möchte ich besuchen</span><span><i class="legend-pin visited"></i>Besucht</span><span><i class="legend-heart want">♥</i>Wunsch-Favorit</span><span><i class="legend-heart visited">♥</i>Besuchs-Favorit</span></div></div>`;
 }
 function mapEntryVisibleByStatus(e){
   const selected=Array.isArray(state.mapStatusSelection)?state.mapStatusSelection:[];
@@ -907,6 +908,7 @@ function searchMapMarkerHtml(e){
   const key=mapStatusKey(e);
   if(key==='wantFavorite')return `<div class="search-map-heart want" title="Wunsch-Favorit">♥</div>`;
   if(key==='visitedFavorite')return `<div class="search-map-heart visited" title="Besuchs-Favorit">♥</div>`;
+  if(key==='remembered')return `<div class="search-map-marker status-remembered" title="Gemerkt">${escapeHtml(typeIcons[e.type]||'●')}</div>`;
   if(key==='want')return `<div class="search-map-marker status-want" title="Möchte ich besuchen">${escapeHtml(typeIcons[e.type]||'●')}</div>`;
   if(key==='visited')return `<div class="search-map-marker status-visited" title="Besucht">${escapeHtml(typeIcons[e.type]||'●')}</div>`;
   return `<div class="search-map-marker status-neutral" title="Ohne Status">${escapeHtml(typeIcons[e.type]||'●')}</div>`;
@@ -1001,7 +1003,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Lege fest, welche Karten-App beim Start einer Navigation verwendet werden soll.</p><label class="setting-field">Standard-Navigationsapp<select id="navigationPreference"><option value="ask" ${navigationPreference()==='ask'?'selected':''}>Immer fragen</option><option value="apple" ${navigationPreference()==='apple'?'selected':''}>Apple Karten</option><option value="google" ${navigationPreference()==='google'?'selected':''}>Google Maps</option></select></label><small class="setting-note">Auf Geräten ohne Apple Karten wird bei Auswahl von Apple Karten automatisch Google Maps verwendet.</small></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.55 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.56 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1159,7 +1161,7 @@ document.getElementById('entryForm').addEventListener('submit', e=>{
   }
   const entry={
     id:uid(), type:newType, name:entryName.value.trim(), country:entryCountry.value.trim(), region:entryRegion.value.trim(), source:'', sourceType:entrySourceType.value, sourceUrl:normalizeExternalUrl(entrySourceUrl.value) || entrySourceUrl.value.trim(),
-    geoTags:[entryCountry.value.trim(),entryRegion.value.trim()].filter(Boolean), tags:[], favorite:false, wantToVisit:false, visited:false, deleted:false,
+    geoTags:[entryCountry.value.trim(),entryRegion.value.trim()].filter(Boolean), tags:[], favorite:false, remembered:false, wantToVisit:false, visited:false, deleted:false,
     createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), location:null, accessPoint:null, visits:[], media:[], details:{}
   };
   if(!entry.name) return;
@@ -1371,7 +1373,7 @@ function campingDetailCards(e){
   ].filter(Boolean).join('');
   const priceSummary=[priceRange,prices.approxTotal!=null?`ca. ${formatNumber(prices.approxTotal)} € / Nacht`:'',prices.year!=null?`Preisstand ${prices.year}`:'',electricityCost==='Strom inklusive'?'Strom inklusive':''].filter(Boolean).slice(0,2).join(' · ') || 'Preise & Gebühren';
 
-  const statusText=e.visited?'Besucht':e.wantToVisit?'Möchte ich besuchen':'';
+  const statusText=e.visited?'Besucht':e.wantToVisit?'Möchte ich besuchen':e.remembered?'Gemerkt':'';
   const favoriteText=e.favorite?'★ Favorit':'';
   const returnText=valueLabel(personal.returnIntent,{unknown:'',yes:'Ja',maybe:'Vielleicht',no:'Nein'},'');
   const ratingLabels=[
@@ -1647,7 +1649,7 @@ function stellplatzDetailCards(e){
   const priceRows=[detailRow('Preisstand / Jahr',p.year!=null?String(p.year):''),detailRow('Stellplatzgebühr',feeStatus),detailRow('Preis',p.feeStatus==='paid'?mainFee:''),seasonRows,detailRow('Kurtaxe / Tourismusabgabe',tax),detailRow('Reservierungsgebühr',euroValue(p.reservationFee)),detailRow(p.otherLabel||'Sonstige Gebühr',euroValue(p.otherAmount)),p.included?`<div class="detail-note"><span>Im Stellplatzpreis enthalten</span><p>${escapeHtml(p.included).replace(/\n/g,'<br>')}</p></div>`:'',p.notes?`<div class="detail-note"><span>Hinweise zu Preisen</span><p>${escapeHtml(p.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
   const priceSummary=[mainFee,p.year!=null?`Preisstand ${p.year}`:''].filter(Boolean).join(' · ')||'Preise & Gebühren';
   const personal=e.details?.stellplatz?.personal||{};
-  const statusText=e.visited?'Besucht':e.wantToVisit?'Möchte ich besuchen':'';
+  const statusText=e.visited?'Besucht':e.wantToVisit?'Möchte ich besuchen':e.remembered?'Gemerkt':'';
   const favoriteText=e.favorite?'★ Favorit':'';
   const returnText=valueLabel(personal.returnIntent,{unknown:'',yes:'Ja',maybe:'Vielleicht',no:'Nein'},'');
   const ratingLabels=[['Gesamt',personal.ratings?.overall],['Lage',personal.ratings?.location],['Ruhe',personal.ratings?.quiet],['Sauberkeit',personal.ratings?.cleanliness],['Sanitär',personal.ratings?.sanitary],['Preis-Leistung',personal.ratings?.value]];
@@ -2083,7 +2085,7 @@ function holidayDetailCards(e){
     destinationNotesCard=`<details class="detail-accordion"><summary><span><small>Hinweise</small><strong>${escapeHtml(summary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${rows||'<div class="detail-empty">Noch keine Hinweise gespeichert.</div>'}</div></details>`;
   }
   const personal=ensureHolidayPersonal(e);
-  const statusText=e.visited?'Besucht':e.wantToVisit?'Möchte ich besuchen':'';
+  const statusText=e.visited?'Besucht':e.wantToVisit?'Möchte ich besuchen':e.remembered?'Gemerkt':'';
   const favoriteText=e.favorite?'Favorit':'';
   const returnText=holidayReturnLabel(personal.returnIntent);
   const ratingLabels=[['Lage',personal.ratings?.location],['Ruhe',personal.ratings?.quiet],['Sauberkeit',personal.ratings?.cleanliness],['Ausstattung',personal.ratings?.equipment],['Service / Gastgeber',personal.ratings?.service],['Preis-Leistung',personal.ratings?.value],['Erlebnis',personal.ratings?.experience],['Sehenswert',personal.ratings?.sightseeing]];
@@ -2660,7 +2662,7 @@ function openHolidayEditor(entry=null,pretype='hotel'){
   const dog=entry&&isAccommodationHolidayType(type)?ensureHolidayDog(entry):{};
   setField('holidayDogAllowed',dog.allowed||'unknown'); setField('holidayDogMaxCount',dog.maxCount); setField('holidayDogFeeType',dog.feeType||'unknown'); setField('holidayDogFee',dog.fee); setField('holidayDogSizeWeight',dog.sizeWeight||''); setField('holidayDogRestrictedUnits',dog.restrictedUnits||'unknown'); setField('holidayDogLeash',dog.leash||'unknown'); setField('holidayDogAlone',dog.alone||'unknown'); setField('holidayDogAloneNotes',dog.aloneNotes||''); setField('holidayDogRun',dog.run||'unknown'); setField('holidayDogBeach',dog.beach||'unknown'); setField('holidayDogSwimming',dog.swimming||'unknown'); setField('holidayDogShower',dog.shower||'unknown'); setField('holidayDogRestaurant',dog.restaurant||'unknown'); setField('holidayDogNotes',dog.notes||'');
   const personal=entry?ensureHolidayPersonal(entry):{ratings:{},returnIntent:'unknown'};
-  setField('holidayPersonalStatus',entry?.visited?'visited':entry?.wantToVisit?'want':'none');
+  setField('holidayPersonalStatus',entry?.visited?'visited':entry?.wantToVisit?'want':entry?.remembered?'remembered':'none');
   const holidayFavorite=document.getElementById('holidayPersonalFavorite'); if(holidayFavorite) holidayFavorite.checked=!!entry?.favorite;
   setField('holidayPersonalWhy',entry?.why||'');
   setField('holidayRatingLocation',personal.ratings?.location); setField('holidayRatingQuiet',personal.ratings?.quiet); setField('holidayRatingCleanliness',personal.ratings?.cleanliness); setField('holidayRatingEquipment',personal.ratings?.equipment); setField('holidayRatingService',personal.ratings?.service); setField('holidayRatingValue',personal.ratings?.value); setField('holidayRatingExperience',personal.ratings?.experience); setField('holidayRatingSightseeing',personal.ratings?.sightseeing);
@@ -2699,7 +2701,7 @@ function saveHolidayBasic(ev){
   if(existing && !convertEntryType(existing,selectedType)) return;
   const entry=existing||{
     id:uid(), type:selectedType, name:'', country:'', region:'', source:'', sourceType:'', sourceUrl:'',
-    geoTags:[], tags:[], favorite:false, wantToVisit:false, visited:false, deleted:false,
+    geoTags:[], tags:[], favorite:false, remembered:false, wantToVisit:false, visited:false, deleted:false,
     createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), location:null, accessPoint:null, visits:[], media:[], details:{}
   };
   entry.type=selectedType;
@@ -2843,7 +2845,7 @@ function saveHolidayBasic(ev){
   }
   const personal=ensureHolidayPersonal(entry);
   const personalStatus=document.getElementById('holidayPersonalStatus').value;
-  entry.visited=personalStatus==='visited'; entry.wantToVisit=personalStatus==='want';
+  entry.visited=personalStatus==='visited'; entry.wantToVisit=personalStatus==='want'; entry.remembered=personalStatus==='remembered';
   entry.favorite=!!document.getElementById('holidayPersonalFavorite').checked; entry.why=document.getElementById('holidayPersonalWhy').value.trim();
   personal.ratings={location:ratingValue('holidayRatingLocation'),quiet:ratingValue('holidayRatingQuiet'),cleanliness:ratingValue('holidayRatingCleanliness'),equipment:ratingValue('holidayRatingEquipment'),service:ratingValue('holidayRatingService'),value:ratingValue('holidayRatingValue'),experience:ratingValue('holidayRatingExperience'),sightseeing:ratingValue('holidayRatingSightseeing')};
   personal.returnIntent=document.getElementById('holidayPersonalReturn').value||'unknown'; entry.visits=collectHolidayVisits(); entry.notes=document.getElementById('holidayPersonalNotes').value.trim();
@@ -3171,6 +3173,7 @@ function openDetail(id){
   const statusParts=[];
   if(e.visited) statusParts.push('Besucht');
   else if(e.wantToVisit) statusParts.push('Möchte ich besuchen');
+  else if(e.remembered) statusParts.push('Gemerkt');
   if(e.favorite) statusParts.push('★ Favorit');
   const srcLabel=sourceLabel(e);
   const srcUrl=sourceUrl(e);
@@ -3185,8 +3188,9 @@ function openDetail(id){
   ${infoCards.length?`<div class="detail-grid">${infoCards.join('')}</div>`:''}
   ${entryTypeDetailCards(e)}
   ${e.type==='camping'?campingGalleryHtml(e):e.type==='stellplatz'?stellplatzGalleryHtml(e):isHolidayType(e.type)?holidayGalleryHtml(e):''}
-  <div class="detail-actions status-actions"><button class="btn secondary" id="favoriteDetail">${e.favorite?'★ Favorit entfernen':'☆ Als Favorit'}</button><button class="btn secondary" id="wantDetail">${e.wantToVisit?'Wunsch entfernen':'♡ Möchte ich besuchen'}</button></div>
-  <div class="detail-actions"><button class="btn secondary" id="visitedDetail">${e.visited?'Besucht ✓':'Als besucht markieren'}</button><button class="btn secondary" id="editBasic">${e.type==='camping'?'Campingplatz bearbeiten':e.type==='stellplatz'?'Stellplatz bearbeiten':isHolidayType(e.type)?'Urlaub bearbeiten':'Grunddaten bearbeiten'}</button></div>
+  <div class="detail-actions status-actions"><button class="btn secondary" id="favoriteDetail">${e.favorite?'★ Favorit entfernen':'☆ Als Favorit'}</button><button class="btn secondary" id="rememberedDetail">${e.remembered?'Gemerkt ✓':'Als gemerkt markieren'}</button></div>
+  <div class="detail-actions status-actions"><button class="btn secondary" id="wantDetail">${e.wantToVisit?'Wunsch entfernen':'♡ Möchte ich besuchen'}</button><button class="btn secondary" id="visitedDetail">${e.visited?'Besucht ✓':'Als besucht markieren'}</button></div>
+  <div class="detail-actions"><button class="btn secondary" id="editBasic">${e.type==='camping'?'Campingplatz bearbeiten':e.type==='stellplatz'?'Stellplatz bearbeiten':isHolidayType(e.type)?'Urlaub bearbeiten':'Grunddaten bearbeiten'}</button></div>
   <div class="detail-actions single-action"><button class="btn danger" id="trashDetail">In Papierkorb</button></div>`;
   const dlg=document.getElementById('detailDialog'); dlg.showModal();
   document.getElementById('closeDetail').onclick=()=>dlg.close();
@@ -3194,8 +3198,9 @@ function openDetail(id){
   if(e.type==='stellplatz'){const pdfButton=document.getElementById('stellplatzPdfDetail');if(pdfButton)pdfButton.onclick=()=>openStellplatzPrint(e);}
   if(isHolidayType(e.type)){const pdfButton=document.getElementById('holidayPdfDetail');if(pdfButton)pdfButton.onclick=()=>openHolidayPrint(e);}
   document.getElementById('favoriteDetail').onclick=()=>{e.favorite=!e.favorite;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
-  document.getElementById('wantDetail').onclick=()=>{e.wantToVisit=!e.wantToVisit;if(e.wantToVisit)e.visited=false;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
-  document.getElementById('visitedDetail').onclick=()=>{e.visited=!e.visited;if(e.visited)e.wantToVisit=false;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
+  document.getElementById('rememberedDetail').onclick=()=>{e.remembered=!e.remembered;if(e.remembered){e.wantToVisit=false;e.visited=false;}e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
+  document.getElementById('wantDetail').onclick=()=>{e.wantToVisit=!e.wantToVisit;if(e.wantToVisit){e.visited=false;e.remembered=false;}e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
+  document.getElementById('visitedDetail').onclick=()=>{e.visited=!e.visited;if(e.visited){e.wantToVisit=false;e.remembered=false;}e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
   document.getElementById('trashDetail').onclick=()=>{if(confirm('Diesen Eintrag in den Papierkorb verschieben?')){e.deleted=true;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();}};
   document.getElementById('editBasic').onclick=()=>e.type==='camping'?openCampingEditor(e):e.type==='stellplatz'?openStellplatzEditor(e):isHolidayType(e.type)?openHolidayEditor(e):editBasic(e);
   content.querySelectorAll('.gallery-item img').forEach(img=>img.onclick=()=>openImageViewer(img.src,img.alt||'Gespeichertes Bild'));
@@ -3260,7 +3265,7 @@ function openStellplatzEditor(e){
   stellplatzSeasonPriceDraft=Array.isArray(prices.seasonPrices)?structuredClone(prices.seasonPrices):[];
   renderStellplatzSeasonPrices();updateStellplatzPaidFields();
   const personal=ensureStellplatzPersonal(e);
-  setField('stellplatzPersonalStatus',e.visited?'visited':e.wantToVisit?'want':'none');
+  setField('stellplatzPersonalStatus',e.visited?'visited':e.wantToVisit?'want':e.remembered?'remembered':'none');
   const favoriteEl=document.getElementById('stellplatzPersonalFavorite'); if(favoriteEl) favoriteEl.checked=!!e.favorite;
   setField('stellplatzPersonalWhy',e.why||'');
   setField('stellplatzRatingOverall',personal.ratings?.overall);setField('stellplatzRatingLocation',personal.ratings?.location);setField('stellplatzRatingQuiet',personal.ratings?.quiet);setField('stellplatzRatingCleanliness',personal.ratings?.cleanliness);setField('stellplatzRatingSanitary',personal.ratings?.sanitary);setField('stellplatzRatingValue',personal.ratings?.value);
@@ -3427,7 +3432,7 @@ document.getElementById('stellplatzEditForm').addEventListener('submit',ev=>{
   const prices=ensureStellplatzPrices(e);
   prices.year=numericField('stellplatzPriceYear');prices.feeStatus=document.getElementById('stellplatzFeeStatus').value;prices.billing=prices.feeStatus==='paid'?document.getElementById('stellplatzFeeBilling').value:'unknown';prices.amount=prices.feeStatus==='paid'?numericField('stellplatzFeeAmount'):null;prices.seasonPrices=collectStellplatzSeasonPrices();prices.touristTax=numericField('stellplatzTouristTax');prices.touristTaxBilling=document.getElementById('stellplatzTouristTaxBilling').value;prices.reservationFee=numericField('stellplatzReservationFee');prices.otherLabel=document.getElementById('stellplatzOtherLabel').value.trim();prices.otherAmount=numericField('stellplatzOtherAmount');prices.included=document.getElementById('stellplatzPriceIncluded').value.trim();prices.notes=document.getElementById('stellplatzPriceNotes').value.trim();
   const personal=ensureStellplatzPersonal(e);
-  const personalStatus=document.getElementById('stellplatzPersonalStatus').value;e.visited=personalStatus==='visited';e.wantToVisit=personalStatus==='want';e.favorite=!!document.getElementById('stellplatzPersonalFavorite').checked;e.why=document.getElementById('stellplatzPersonalWhy').value.trim();
+  const personalStatus=document.getElementById('stellplatzPersonalStatus').value;e.visited=personalStatus==='visited';e.wantToVisit=personalStatus==='want';e.remembered=personalStatus==='remembered';e.favorite=!!document.getElementById('stellplatzPersonalFavorite').checked;e.why=document.getElementById('stellplatzPersonalWhy').value.trim();
   personal.ratings={overall:ratingValue('stellplatzRatingOverall'),location:ratingValue('stellplatzRatingLocation'),quiet:ratingValue('stellplatzRatingQuiet'),cleanliness:ratingValue('stellplatzRatingCleanliness'),sanitary:ratingValue('stellplatzRatingSanitary'),value:ratingValue('stellplatzRatingValue')};
   personal.returnIntent=document.getElementById('stellplatzPersonalReturn').value;e.visits=collectStellplatzVisits();e.notes=document.getElementById('stellplatzPersonalNotes').value.trim();
   const usage=ensureStellplatzUsage(e);
@@ -3751,7 +3756,7 @@ function openCampingEditor(e){
   const dog=ensureCampingDog(e);setField('campingDogAllowed',dog.allowed||'unknown');setField('campingDogMaxCount',dog.maxCount);setField('campingDogFeeType',dog.feeType||'unknown');setField('campingDogFee',dog.fee);setField('campingDogLeash',dog.leash||'unknown');setField('campingDogRestricted',dog.restricted||'unknown');setField('campingDogRun',dog.run||'unknown');setField('campingDogBeach',dog.beach||'unknown');setField('campingDogSwimming',dog.swimming||'unknown');setField('campingDogShower',dog.shower||'unknown');setField('campingDogRestaurant',dog.restaurant||'unknown');setField('campingDogNotes',dog.notes);updateDogConditionalFields();
   const prices=ensureCampingPrices(e);
   setField('campingPriceYear',prices.year);setField('campingPriceApproxTotal',prices.approxTotal);setField('campingPriceFrom',prices.from);setField('campingPriceTo',prices.to);setField('campingPriceBase',prices.base);setField('campingPriceBasePersons',prices.basePersons);setField('campingPriceExtraPerson',prices.extraPerson);setField('campingPriceChild',prices.child);setField('campingPriceTouristTax',prices.touristTax);setField('campingPriceReservationFee',prices.reservationFee);setField('campingPriceOtherLabel',prices.otherLabel);setField('campingPriceOtherAmount',prices.otherAmount);setField('campingPriceIncluded',prices.included);setField('campingPriceNotes',prices.notes);
-  setField('campingPersonalStatus',e.visited?'visited':e.wantToVisit?'want':'none');
+  setField('campingPersonalStatus',e.visited?'visited':e.wantToVisit?'want':e.remembered?'remembered':'none');
   const favoriteEl=document.getElementById('campingPersonalFavorite'); if(favoriteEl) favoriteEl.checked=!!e.favorite;
   setField('campingPersonalWhy',e.why||'');
   setField('campingRatingOverall',personal.ratings?.overall);
@@ -3891,6 +3896,7 @@ document.getElementById('campingEditForm').addEventListener('submit',ev=>{
   const personalStatus=document.getElementById('campingPersonalStatus').value;
   e.visited=personalStatus==='visited';
   e.wantToVisit=personalStatus==='want';
+  e.remembered=personalStatus==='remembered';
   e.favorite=!!document.getElementById('campingPersonalFavorite').checked;
   e.why=document.getElementById('campingPersonalWhy').value.trim();
   personal.ratings={
