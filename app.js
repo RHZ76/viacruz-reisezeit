@@ -186,6 +186,7 @@ const state = {
   route: 'home',
   holidayFilter: 'all',
   query: '',
+  searchSort: 'relevance',
   entries: loadEntries()
 };
 
@@ -635,11 +636,128 @@ function holidayView(){
   ${items.length?`<div class="place-list">${items.map(placeCard).join('')}</div>`:`<div class="empty">Keine passenden Einträge vorhanden.</div>`}<div class="footer-brand">powered by viacruz</div></section>`;
 }
 
+function normalizeSearchText(value=''){
+  return String(value||'').toLowerCase().replace(/ß/g,'ss').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
+}
+function searchTokens(value=''){return normalizeSearchText(value).split(' ').filter(Boolean);}
+function safeHolidayDetails(e){return e?.details?.[e.type]||{};}
+function entryRatingAverage(e){
+  if(e.type==='camping')return personalRatingAverage(e.details?.camping?.personal||{});
+  if(e.type==='stellplatz')return personalRatingAverage(e.details?.stellplatz?.personal||{});
+  if(['hotel','ferienwohnung','ferienhaus','ferien','besonders','reiseziel'].includes(e.type))return holidayPersonalRatingAverage(safeHolidayDetails(e).personal||{});
+  return null;
+}
+function entryStars(e){
+  if(e.type!=='hotel')return null;
+  const value=safeHolidayDetails(e).accommodation?.hotelStars;
+  return value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value))?Number(value):null;
+}
+function collectSearchStrings(value,out,path='',depth=0){
+  if(depth>7||value===null||value===undefined)return;
+  if(typeof value==='string'){
+    const key=path.split('.').pop()||'';
+    if(!['id','entryId','titleImageId','createdAt','updatedAt','deletedAt','dataUrl'].includes(key)&&!/^https?:/i.test(value))out.push(value);
+    return;
+  }
+  if(Array.isArray(value)){value.forEach((item,i)=>collectSearchStrings(item,out,`${path}.${i}`,depth+1));return;}
+  if(typeof value==='object')Object.entries(value).forEach(([key,item])=>collectSearchStrings(item,out,path?`${path}.${key}`:key,depth+1));
+}
+function truthyFeature(value){return value===true||value==='yes'||value==='available'||value==='included'||value==='free'||value==='paid';}
+function featureSearchLabels(e){
+  const labels=[];
+  const add=(condition,...values)=>{if(condition)values.forEach(v=>v&&!labels.includes(v)&&labels.push(v));};
+  const camp=e.details?.camping||{};
+  const stell=e.details?.stellplatz||{};
+  const holiday=safeHolidayDetails(e);
+  const cbw=camp.leisure?.bathingWellness||{};
+  const sbw=stell.leisure?.bathingWellness||{};
+  const hl=holiday.leisure||{};
+  add(cbw.outdoorPool==='yes'||cbw.indoorPool==='yes'||sbw.outdoorPool==='yes'||sbw.indoorPool==='yes'||hl.outdoorPool==='yes'||hl.indoorPool==='yes','Pool','Schwimmbad');
+  add(cbw.outdoorPool==='yes'||sbw.outdoorPool==='yes'||hl.outdoorPool==='yes','Außenpool','Freibad');
+  add(cbw.indoorPool==='yes'||sbw.indoorPool==='yes'||hl.indoorPool==='yes','Innenpool','Hallenbad');
+  add(cbw.sauna==='yes'||sbw.sauna==='yes'||hl.sauna==='yes','Sauna');
+  add(cbw.wellness==='yes'||sbw.wellness==='yes'||truthyFeature(hl.wellness),'Wellness','Spa');
+  add(hl.whirlpool==='yes','Whirlpool');
+  add(truthyFeature(hl.massage),'Massage','Anwendungen');
+  add(truthyFeature(hl.bathingAccess)||cbw.swimmingAccess==='yes'||sbw.swimmingAccess==='yes','Baden','Bademöglichkeit');
+  add(truthyFeature(hl.privateBeach)||cbw.beach==='yes'||sbw.beach==='yes','Strand');
+  add(truthyFeature(hl.fitness)||stell.leisure?.sport?.fitness==='yes'||camp.leisure?.sport?.fitness==='yes','Fitness');
+  add(truthyFeature(hl.bikeRental)||truthyFeature(hl.eBikeRental)||stell.leisure?.sport?.bikeRental==='yes'||camp.leisure?.sport?.bikeRental==='yes','Fahrrad','Radfahren','Fahrradverleih');
+  add((camp.dog?.allowed==='yes')||(stell.dog?.allowed==='yes')||(holiday.dog?.allowed==='yes'),'Hund','Hunde erlaubt','Hundefreundlich');
+  const facilities=[camp.facilities||{},stell.facilities||{},holiday.accommodation||{}];
+  const hasKey=(keys)=>facilities.some(obj=>keys.some(k=>truthyFeature(obj?.[k])))||keys.some(k=>truthyFeature(holiday.accommodation?.[k]));
+  add(hasKey(['wifi','wlan']),'WLAN','WiFi','Internet');
+  add(hasKey(['washingMachine','washer']),'Waschmaschine');
+  add(hasKey(['dryer']),'Trockner');
+  add(hasKey(['dishwasher']),'Geschirrspüler');
+  add(hasKey(['kitchen'])||holiday.accommodation?.kitchen==='yes','Küche');
+  if(e.type==='reiseziel'){
+    const d=holiday.destination||{};
+    (d.categories||[]).map(v=>holidayDestinationChoiceLabel(v,'category')).filter(Boolean).forEach(v=>add(true,v));
+    (d.characters||[]).map(v=>holidayDestinationChoiceLabel(v,'character')).filter(Boolean).forEach(v=>add(true,v));
+    add(!!HOLIDAY_DESTINATION_SCOPE_LABELS[d.scope],HOLIDAY_DESTINATION_SCOPE_LABELS[d.scope]);
+    (holiday.highlights?.activities||[]).map(holidayDestinationActivityLabel).filter(Boolean).forEach(v=>add(true,v));
+  }
+  return labels;
+}
+function buildSearchDocument(e){
+  const generic=[]; collectSearchStrings(e,generic);
+  const type=typeLabels[e.type]||e.type||'';
+  const location=[e.country,e.region,...(e.travelRegions||[]),e.town].filter(Boolean);
+  const features=featureSearchLabels(e);
+  const stars=entryStars(e);
+  const rating=entryRatingAverage(e);
+  const starText=stars!=null?[`${formatNumber(stars,1)} Sterne`,`${Math.round(stars)} Sterne`]:[];
+  const ratingText=rating!=null?[`${formatNumber(rating,1)} Bewertung`,`${formatNumber(rating,1)} von 5`]:[];
+  const groups={name:[e.name||''],type:[type,e.type||''],location,features,stars:starText,rating:ratingText,generic};
+  const normalized={}; Object.entries(groups).forEach(([key,vals])=>normalized[key]=normalizeSearchText(vals.join(' ')));
+  const fullText=Object.values(normalized).join(' ');
+  return {groups,normalized,fullText,features,stars,rating};
+}
+function smartSearchMatch(e,q){
+  const terms=searchTokens(q); const doc=buildSearchDocument(e);
+  if(!terms.length)return {match:true,score:0,reasons:[],doc};
+  if(!terms.every(term=>doc.fullText.includes(term)))return {match:false,score:0,reasons:[],doc};
+  let score=0;
+  const weights={name:12,type:9,location:7,features:6,stars:4,rating:3,generic:1};
+  terms.forEach(term=>Object.entries(doc.normalized).forEach(([key,text])=>{if(text.includes(term))score+=weights[key]||1;}));
+  const phrase=normalizeSearchText(q);
+  if(phrase&&doc.normalized.name.includes(phrase))score+=25;
+  else if(phrase&&doc.fullText.includes(phrase))score+=5;
+  const reasons=[];
+  const addReason=v=>{if(v&&!reasons.includes(v)&&reasons.length<4)reasons.push(v);};
+  if(terms.some(t=>doc.normalized.type.includes(t)))addReason(typeLabels[e.type]||e.type);
+  doc.groups.location.forEach(v=>{const n=normalizeSearchText(v);if(terms.some(t=>n.includes(t)))addReason(v);});
+  doc.features.forEach(v=>{const n=normalizeSearchText(v);if(terms.some(t=>n.includes(t)))addReason(v);});
+  if(doc.stars!=null&&terms.some(t=>doc.normalized.stars.includes(t)))addReason(`${formatNumber(doc.stars,1)} Sterne`);
+  return {match:true,score,reasons,doc};
+}
+function searchResultCard(result){
+  const e=result.entry;
+  const titleMedia=imageById(e,e.titleImageId);
+  const thumb=titleMedia?.dataUrl?`<img src="${titleMedia.dataUrl}" alt="" />`:`${typeIcons[e.type]||'●'}`;
+  const meta=[];
+  if(result.doc.stars!=null)meta.push(`${formatNumber(result.doc.stars,1)} ★`);
+  if(result.doc.rating!=null)meta.push(`Bewertung ${formatNumber(result.doc.rating,1)} / 5`);
+  const reasonBadges=result.reasons.map(v=>`<span class="search-match-badge">${escapeHtml(v)}</span>`).join('');
+  return `<button class="place-card search-result-card" data-detail="${e.id}">
+    <div class="place-thumb ${titleMedia?.dataUrl?'has-image':''}">${thumb}</div>
+    <div class="place-main"><strong>${escapeHtml(e.name)}</strong><span>${escapeHtml(locationText(e))}</span>
+      <div class="badge-row"><span class="badge">${escapeHtml(typeLabels[e.type]||e.type)}</span>${meta.map(v=>`<span class="badge">${escapeHtml(v)}</span>`).join('')}${e.favorite?'<span class="badge">★ Favorit</span>':''}${e.wantToVisit?'<span class="badge">Möchte ich besuchen</span>':''}${e.visited?'<span class="badge">✓ Besucht</span>':''}</div>
+      ${reasonBadges?`<div class="search-match-row"><small>Passt zu deiner Suche:</small>${reasonBadges}</div>`:''}
+    </div><div class="chev">›</div>
+  </button>`;
+}
 function searchView(){
-  const items = state.entries.filter(e=>!e.deleted && matchesQuery(e,state.query));
-  return `<section><div class="section-head"><div><div class="eyebrow">Alle Einträge</div><h2>Suche</h2><p>Die freie Suche berücksichtigt Name, Land, Region, Quelle und eigene Tags.</p></div></div>
-  <div class="toolbar"><input class="searchbox route-search" value="${escapeHtml(state.query)}" placeholder="z. B. Südtirol, Gardasee, Wochenende …"><button class="btn secondary" data-action="clear-search">Löschen</button></div>
-  ${items.length?`<div class="place-list">${items.map(placeCard).join('')}</div>`:`<div class="empty">${state.query?'Keine Treffer für diese Suche.':'Noch keine Orte gespeichert.'}</div>`}
+  const results=state.entries.filter(e=>!e.deleted).map(entry=>({entry,...smartSearchMatch(entry,state.query)})).filter(r=>r.match);
+  if(state.searchSort==='rating')results.sort((a,b)=>(b.doc.rating??-1)-(a.doc.rating??-1)||(a.entry.name||'').localeCompare(b.entry.name||'','de'));
+  else if(state.searchSort==='name')results.sort((a,b)=>(a.entry.name||'').localeCompare(b.entry.name||'','de'));
+  else if(state.query.trim())results.sort((a,b)=>b.score-a.score||(a.entry.name||'').localeCompare(b.entry.name||'','de'));
+  const countLabel=`${results.length} ${results.length===1?'Treffer':'Treffer'}`;
+  return `<section><div class="section-head"><div><div class="eyebrow">Alle Einträge</div><h2>Suche</h2><p>Mehrere Wörter werden kombiniert. Beispiel: Campingplatz Bayern Wellness.</p></div></div>
+  <div class="toolbar search-toolbar"><input class="searchbox route-search" value="${escapeHtml(state.query)}" placeholder="z. B. Campingplatz Bayern Wellness …"><button class="btn secondary" data-action="clear-search">Zurücksetzen</button></div>
+  <div class="search-result-head"><strong>${countLabel}</strong><label>Sortierung<select id="searchSort"><option value="relevance" ${state.searchSort==='relevance'?'selected':''}>Relevanz</option><option value="rating" ${state.searchSort==='rating'?'selected':''}>Bewertung</option><option value="name" ${state.searchSort==='name'?'selected':''}>Name</option></select></label></div>
+  ${results.length?`<div class="place-list">${results.map(searchResultCard).join('')}</div>`:`<div class="empty">${state.query?'Keine Treffer. Prüfe die Schreibweise oder verwende weniger Suchbegriffe.':'Noch keine Orte gespeichert.'}</div>`}
   <div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -657,7 +775,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.46 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.47 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -670,6 +788,7 @@ function wireViewEvents(){
   document.querySelectorAll('[data-detail]').forEach(b=>b.onclick=()=>openDetail(b.dataset.detail));
   document.querySelectorAll('.route-search').forEach(i=>i.oninput=()=>{state.query=i.value;render(); const next=document.querySelector('.route-search'); if(next){next.focus();next.setSelectionRange(next.value.length,next.value.length)}});
   document.querySelectorAll('[data-action="clear-search"]').forEach(b=>b.onclick=()=>{state.query='';render();});
+  document.getElementById('searchSort')?.addEventListener('change',ev=>{state.searchSort=ev.target.value||'relevance';render();});
   document.querySelectorAll('[data-holiday]').forEach(b=>b.onclick=()=>{state.holidayFilter=b.dataset.holiday;render();});
   document.querySelectorAll('[data-special="favorite"]').forEach(b=>b.onclick=()=>{state.route='search';state.query='';renderSpecial('favorite')});
   document.querySelectorAll('[data-special="want"]').forEach(b=>b.onclick=()=>{state.route='search';state.query='';renderSpecial('want')});

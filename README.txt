@@ -30,3 +30,10 @@ v0.3.41: Reiseziel/Ausflugsziel erhält die Karte „Eintritt & Kosten“ mit be
 v0.3.46:
 - Urlaub: Grunddaten in der Detailansicht standardmäßig eingeklappt
 - Urlaub: Aktionskarte Drucken · Speichern · Teilen mit PDF-Ausgabe für Unterkunft und Reiseziel/Ausflugsziel
+
+
+v0.3.47:
+- Intelligente Freitextsuche über Typ, Ort/Region/Land, Kategorien, Aktivitäten und relevante Ausstattungsmerkmale.
+- Mehrere Suchwörter werden mit UND-Logik kombiniert.
+- Trefferansicht mit Suchgründen, Bewertung/Sternen und Sortierung nach Relevanz, Bewertung oder Name.
+- Noch keine Schnellfilter; diese folgen als separater Ausbauschritt.
