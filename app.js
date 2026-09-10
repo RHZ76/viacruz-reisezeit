@@ -595,7 +595,7 @@ function homeView(){
         <button class="quick-btn" data-special="favorite">★ Favoriten<span>${count(e=>e.favorite)} Einträge</span></button>
         <button class="quick-btn" data-special="want">♡ Möchte ich besuchen<span>${count(e=>e.wantToVisit)} Einträge</span></button>
         <button class="quick-btn" data-special="visited">✓ Besucht<span>${count(e=>e.visited)} Einträge</span></button>
-        <button class="quick-btn" data-route-go="search">⌕ Suche<span>Liste und Filter</span></button>
+        <button class="quick-btn" data-home-map>🗺️ Karte<span>Alle Orte auf Karte</span></button>
       </div>
     </section>
 
@@ -925,7 +925,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.52 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.53 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -940,6 +940,7 @@ function wireViewEvents(){
   document.querySelectorAll('[data-action="clear-search"]').forEach(b=>b.onclick=()=>{state.query='';state.searchFilters=emptySearchFilters();render();});
   document.getElementById('searchSort')?.addEventListener('change',ev=>{state.searchSort=ev.target.value||'relevance';render();});
   document.querySelectorAll('[data-search-view]').forEach(b=>b.onclick=()=>{state.searchBrowseMap=false;state.searchViewMode=b.dataset.searchView==='map'?'map':'list';render();});
+  document.querySelector('[data-home-map]')?.addEventListener('click',()=>{state.route='search';state.query='';state.searchBrowseMap=true;render();});
   document.querySelector('[data-search-all-map]')?.addEventListener('click',()=>{state.searchBrowseMap=true;render();});
   document.querySelector('[data-search-map-back]')?.addEventListener('click',()=>{state.searchBrowseMap=false;render();});
   const filterPanel=document.getElementById('searchFilterPanel'); if(filterPanel)filterPanel.addEventListener('toggle',()=>{state.searchFiltersOpen=filterPanel.open;});
