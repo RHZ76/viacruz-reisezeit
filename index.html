@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.42-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.43-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -414,6 +414,31 @@
             <label>Gehzeit (Min.)<input id="holidayDestinationWalkMinutes" type="number" min="0" step="1" inputmode="numeric" placeholder="z. B. 5" /></label>
           </div>
         </div>
+      </section>
+
+      <section class="edit-section" id="holidayDestinationHighlightsSection" hidden>
+        <div class="edit-section-head">
+          <h3>Highlights &amp; Aktivitäten</h3>
+          <p>Aktivitäten, besondere Highlights und persönliche Pläne für das Reiseziel festhalten.</p>
+        </div>
+
+        <div class="field-group">
+          <div class="field-group-title">Aktivitäten &amp; Möglichkeiten <span class="field-help-inline">Mehrfachauswahl</span></div>
+          <div id="holidayDestinationActivityOptions" class="option-grid destination-choice-grid"></div>
+          <div class="destination-add-row">
+            <input id="holidayDestinationNewActivity" autocomplete="off" placeholder="Eigene Aktivität, z. B. Klettern" />
+            <button type="button" class="btn secondary compact-btn" id="addHolidayDestinationActivity">+ Hinzufügen</button>
+          </div>
+          <span class="field-help">Eigene Aktivitäten bleiben dauerhaft verfügbar. Verwendete Aktivitäten sind beim Löschen geschützt.</span>
+        </div>
+
+        <label>Highlights – Was möchte ich sehen?
+          <textarea id="holidayDestinationHighlights" rows="4" placeholder="z. B. Schloss besichtigen, Aussicht vom Turm, historische Altstadt …"></textarea>
+        </label>
+
+        <label>Was möchte ich dort machen?
+          <textarea id="holidayDestinationPlans" rows="4" placeholder="z. B. Schifffahrt machen, Rundweg laufen, abends zum Weihnachtsmarkt …"></textarea>
+        </label>
       </section>
 
       <section class="edit-section" id="holidayAccommodationSection">
@@ -2914,6 +2939,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.42-r1"></script>
+  <script src="app.js?v=0.3.43-r1"></script>
 </body>
 </html>
