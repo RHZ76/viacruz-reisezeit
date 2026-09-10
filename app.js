@@ -187,6 +187,7 @@ const state = {
   holidayFilter: 'all',
   query: '',
   searchSort: 'relevance',
+  searchViewMode: 'list',
   searchFiltersOpen: false,
   searchFilters: {types:[], country:'', region:'', minStars:'', minRating:'', pool:false, wellness:false, sauna:false, dog:false, statuses:[]},
   entries: loadEntries()
@@ -561,6 +562,7 @@ function render(){
   else if(state.route==='search') app.innerHTML = searchView();
   else if(state.route==='settings') app.innerHTML = settingsView();
   wireViewEvents();
+  if(state.route==='search' && state.searchViewMode==='map') requestAnimationFrame(initSearchResultsMap);
 }
 
 function homeView(){
@@ -818,7 +820,7 @@ function searchResultCard(result){
     </div><div class="chev">›</div>
   </button>`;
 }
-function searchView(){
+function currentSearchResults(){
   const hasQuery=!!state.query.trim();
   const hasFilters=searchFilterActive();
   const isActive=hasQuery||hasFilters;
@@ -829,15 +831,70 @@ function searchView(){
   else if(state.searchSort==='name')results.sort((a,b)=>(a.entry.name||'').localeCompare(b.entry.name||'','de'));
   else if(hasQuery)results.sort((a,b)=>b.score-a.score||(a.entry.name||'').localeCompare(b.entry.name||'','de'));
   else results.sort((a,b)=>(a.entry.name||'').localeCompare(b.entry.name||'','de'));
-  const countLabel=`${results.length} Treffer`;
+  return {hasQuery,hasFilters,isActive,results};
+}
+function searchMapMarkerClass(type){
+  if(type==='camping')return 'camping';
+  if(type==='stellplatz')return 'stellplatz';
+  if(type==='reiseziel')return 'reiseziel';
+  return 'unterkunft';
+}
+function searchMapPopupHtml(e){
+  const titleMedia=imageById(e,e.titleImageId);
+  const image=titleMedia?.dataUrl?`<img src="${titleMedia.dataUrl}" alt="">`:`<span>${escapeHtml(typeIcons[e.type]||'●')}</span>`;
+  return `<div class="search-map-popup"><div class="search-map-popup-image ${titleMedia?.dataUrl?'has-image':''}">${image}</div><div class="search-map-popup-copy"><strong>${escapeHtml(e.name||'Ohne Namen')}</strong><small>${escapeHtml(typeLabels[e.type]||e.type)}${locationText(e)?` · ${escapeHtml(locationText(e))}`:''}</small><button type="button" data-search-map-detail="${escapeHtml(e.id)}">Details öffnen</button></div></div>`;
+}
+let searchResultsMap=null;
+function destroySearchResultsMap(){
+  if(searchResultsMap){searchResultsMap.remove();searchResultsMap=null;}
+}
+function initSearchResultsMap(){
+  const el=document.getElementById('searchResultsMap');
+  if(!el)return;
+  destroySearchResultsMap();
+  if(typeof L==='undefined'){
+    el.innerHTML='<div class="search-map-message">Die Online-Karte konnte nicht geladen werden. Bitte prüfe deine Internetverbindung.</div>';
+    return;
+  }
+  const {results}=currentSearchResults();
+  const mapped=results.map(r=>({r,loc:entryMapLocation(r.entry)})).filter(x=>x.loc);
+  searchResultsMap=L.map(el,{zoomControl:true});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap-Mitwirkende'}).addTo(searchResultsMap);
+  const bounds=[];
+  mapped.forEach(({r,loc})=>{
+    const e=r.entry;
+    const cls=searchMapMarkerClass(e.type);
+    const icon=L.divIcon({className:'search-map-div-icon',html:`<div class="search-map-marker ${cls}" title="${escapeHtml(typeLabels[e.type]||e.type)}">${escapeHtml(typeIcons[e.type]||'●')}</div>`,iconSize:[36,36],iconAnchor:[18,34],popupAnchor:[0,-30]});
+    const marker=L.marker([loc.lat,loc.lng],{icon}).addTo(searchResultsMap).bindPopup(searchMapPopupHtml(e),{maxWidth:300,minWidth:230});
+    marker.on('popupopen',()=>{
+      const btn=document.querySelector(`[data-search-map-detail="${CSS.escape(e.id)}"]`);
+      if(btn)btn.onclick=()=>openDetail(e.id);
+    });
+    bounds.push([loc.lat,loc.lng]);
+  });
+  if(bounds.length===1)searchResultsMap.setView(bounds[0],14);
+  else if(bounds.length>1)searchResultsMap.fitBounds(bounds,{padding:[30,30],maxZoom:14});
+  else searchResultsMap.setView([51.1657,10.4515],6);
+  setTimeout(()=>searchResultsMap?.invalidateSize(),60);
+}
+function searchView(){
+  const {isActive,results}=currentSearchResults();
+  const mappedCount=results.filter(r=>entryMapLocation(r.entry)).length;
+  const countLabel=state.searchViewMode==='map'?`${results.length} Treffer · ${mappedCount} auf Karte`:`${results.length} Treffer`;
   const chips=searchFilterChipData();
   const chipRow=chips.length?`<div class="search-active-filters"><span>Aktive Filter</span><div>${chips.map(c=>`<button type="button" class="search-filter-chip" data-remove-search-filter="${escapeHtml(c.key)}">${escapeHtml(c.label)} <b>×</b></button>`).join('')}</div></div>`:'';
+  const modeSwitch=isActive?`<div class="search-view-switch" role="group" aria-label="Trefferansicht"><button type="button" data-search-view="list" class="${state.searchViewMode==='list'?'active':''}">Liste</button><button type="button" data-search-view="map" class="${state.searchViewMode==='map'?'active':''}">Karte</button></div>`:'';
+  const resultBody=!isActive
+    ? `<div class="empty">Wonach möchtest du suchen?<br>Gib einen Suchbegriff ein oder wähle einen Filter.</div>`
+    : state.searchViewMode==='map'
+      ? `<div class="search-map-shell"><div id="searchResultsMap" class="search-results-map" aria-label="Karte der Suchtreffer"></div>${mappedCount===0?`<div class="search-map-note">Für diese Treffer ist noch keine Kartenposition gespeichert.</div>`:mappedCount<results.length?`<div class="search-map-note">${results.length-mappedCount} ${results.length-mappedCount===1?'Treffer hat':'Treffer haben'} noch keine Kartenposition und ${results.length-mappedCount===1?'wird':'werden'} deshalb nicht auf der Karte angezeigt.</div>`:''}</div>`
+      : results.length?`<div class="place-list">${results.map(searchResultCard).join('')}</div>`:`<div class="empty">Keine Treffer. Prüfe deine Suchbegriffe oder Filter.</div>`;
   return `<section><div class="section-head"><div><div class="eyebrow">Alle Einträge</div><h2>Suche</h2><p>Mehrere Wörter werden kombiniert. Beispiel: Campingplatz Bayern Wellness.</p></div></div>
   <div class="toolbar search-toolbar"><input class="searchbox route-search" value="${escapeHtml(state.query)}" placeholder="z. B. Campingplatz Bayern Wellness …"><button class="btn secondary" data-action="clear-search">Zurücksetzen</button></div>
   ${searchFilterPanel()}
   ${chipRow}
-  ${isActive?`<div class="search-result-head"><strong>${countLabel}</strong><label>Sortierung<select id="searchSort"><option value="relevance" ${state.searchSort==='relevance'?'selected':''}>Relevanz</option><option value="rating" ${state.searchSort==='rating'?'selected':''}>Bewertung</option><option value="name" ${state.searchSort==='name'?'selected':''}>Name</option></select></label></div>`:''}
-  ${isActive?(results.length?`<div class="place-list">${results.map(searchResultCard).join('')}</div>`:`<div class="empty">Keine Treffer. Prüfe deine Suchbegriffe oder Filter.</div>`):`<div class="empty">Wonach möchtest du suchen?<br>Gib einen Suchbegriff ein oder wähle einen Filter.</div>`}
+  ${isActive?`<div class="search-result-toolbar"><div class="search-result-head"><strong>${countLabel}</strong><label>Sortierung<select id="searchSort"><option value="relevance" ${state.searchSort==='relevance'?'selected':''}>Relevanz</option><option value="rating" ${state.searchSort==='rating'?'selected':''}>Bewertung</option><option value="name" ${state.searchSort==='name'?'selected':''}>Name</option></select></label></div>${modeSwitch}</div>`:''}
+  ${resultBody}
   <div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -855,7 +912,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.50 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.51 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -869,6 +926,7 @@ function wireViewEvents(){
   document.querySelectorAll('.route-search').forEach(i=>i.oninput=()=>{state.query=i.value;render(); const next=document.querySelector('.route-search'); if(next){next.focus();next.setSelectionRange(next.value.length,next.value.length)}});
   document.querySelectorAll('[data-action="clear-search"]').forEach(b=>b.onclick=()=>{state.query='';state.searchFilters=emptySearchFilters();render();});
   document.getElementById('searchSort')?.addEventListener('change',ev=>{state.searchSort=ev.target.value||'relevance';render();});
+  document.querySelectorAll('[data-search-view]').forEach(b=>b.onclick=()=>{state.searchViewMode=b.dataset.searchView==='map'?'map':'list';render();});
   const filterPanel=document.getElementById('searchFilterPanel'); if(filterPanel)filterPanel.addEventListener('toggle',()=>{state.searchFiltersOpen=filterPanel.open;});
   document.querySelectorAll('[data-search-type]').forEach(el=>el.onchange=()=>{const f=normalizedSearchFilters(),v=el.dataset.searchType;f.types=el.checked?[...new Set([...f.types,v])]:f.types.filter(x=>x!==v);state.searchFilters=f;render();});
   document.querySelectorAll('[data-search-status]').forEach(el=>el.onchange=()=>{const f=normalizedSearchFilters(),v=el.dataset.searchStatus;f.statuses=el.checked?[...new Set([...f.statuses,v])]:f.statuses.filter(x=>x!==v);state.searchFilters=f;render();});
