@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.40-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.41-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -303,6 +303,49 @@
 
         <label>Hinweise zum Besuch
           <textarea id="holidayVisitNotes" rows="4" placeholder="z. B. früh kommen, Zeitfenster beachten, saisonale Besonderheiten …"></textarea>
+        </label>
+      </section>
+
+      <section class="edit-section" id="holidayDestinationCostsSection" hidden>
+        <div class="edit-section-head">
+          <h3>Eintritt &amp; Kosten</h3>
+          <p>Eintrittspreise, Parkkosten und weitere Gebühren festhalten.</p>
+        </div>
+
+        <label>Eintritt
+          <select id="holidayDestinationAdmission">
+            <option value="unknown">Unbekannt</option><option value="free">Kostenlos</option><option value="paid">Kostenpflichtig</option>
+          </select>
+        </label>
+
+        <div id="holidayDestinationAdmissionPrices" hidden>
+          <div class="grid-2">
+            <label>Erwachsene (€)<input id="holidayDestinationAdultPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="z. B. 15,00" /></label>
+            <label>Kinder (€)<input id="holidayDestinationChildPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="z. B. 8,00" /></label>
+            <label>Familie (€)<input id="holidayDestinationFamilyPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="z. B. 35,00" /></label>
+            <label>Ermäßigt (€)<input id="holidayDestinationReducedPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="z. B. 12,00" /></label>
+          </div>
+        </div>
+
+        <label>Parken
+          <select id="holidayDestinationParkingCost">
+            <option value="unknown">Unbekannt</option><option value="free">Kostenlos</option><option value="paid">Kostenpflichtig</option>
+          </select>
+        </label>
+        <label id="holidayDestinationParkingPriceWrap" hidden>Parkgebühr (€)
+          <input id="holidayDestinationParkingPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="z. B. 5,00" />
+        </label>
+
+        <label>Weitere Kosten / Gebühren
+          <textarea id="holidayDestinationOtherCosts" rows="3" placeholder="z. B. Führung, Seilbahn, Sonderausstellung oder Schließfach …"></textarea>
+        </label>
+
+        <label>Preisjahr
+          <input id="holidayDestinationPriceYear" type="number" min="2000" max="2100" step="1" inputmode="numeric" placeholder="z. B. 2026" />
+        </label>
+
+        <label>Hinweise zu Preisen &amp; Tickets
+          <textarea id="holidayDestinationCostNotes" rows="4" placeholder="z. B. online günstiger, Familienkarte lohnt sich, im Gästepass enthalten …"></textarea>
         </label>
       </section>
 
@@ -2804,6 +2847,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.40-r1"></script>
+  <script src="app.js?v=0.3.41-r1"></script>
 </body>
 </html>
