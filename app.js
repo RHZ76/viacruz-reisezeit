@@ -657,7 +657,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.45 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.46 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1648,7 +1648,7 @@ function holidayDetailCards(e){
   const personalRows=[detailRow('Status',[statusText,favoriteText].filter(Boolean).join(' · ')),e.why?`<div class="detail-note"><span>Warum gespeichert?</span><p>${escapeHtml(e.why).replace(/\n/g,'<br>')}</p></div>`:'',ratingRows,detailRow('Würde ich wiederkommen?',returnText),visits.length?`<div class="detail-note"><span>Besuchshistorie</span>${visitRows}</div>`:'',e.notes?`<div class="detail-note"><span>Persönliche Notizen</span><p>${escapeHtml(e.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
   const personalSummary=[statusText,favoriteText,ratingAverage!=null?`${formatNumber(ratingAverage,1)} / 5`:'',visits.length?`${visits.length} ${visits.length===1?'Besuch':'Besuche'}`:''].filter(Boolean).slice(0,3).join(' · ')||'Persönlich';
   const personalCard=`<details class="detail-accordion"><summary><span><small>Persönlich</small><strong>${escapeHtml(personalSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${personalRows||'<div class="detail-empty">Noch keine persönlichen Angaben gespeichert.</div>'}</div></details>`;
-  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${destinationCard}${visitPlanningCard}${destinationCostsCard}${destinationArrivalCard}${destinationHighlightsCard}${destinationLinksCard}${destinationNotesCard}${accommodationCard}${priceCard}${stayCard}${foodCard}${holidayLeisureCard}${holidayLocationCard}${holidayDogCard}${personalCard}</div>`;
+  return `<div class="detail-accordions"><details class="detail-accordion"><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${destinationCard}${visitPlanningCard}${destinationCostsCard}${destinationArrivalCard}${destinationHighlightsCard}${destinationLinksCard}${destinationNotesCard}${accommodationCard}${priceCard}${stayCard}${foodCard}${holidayLeisureCard}${holidayLocationCard}${holidayDogCard}${personalCard}</div>`;
 }
 
 let holidayEditMode='create';
@@ -2625,6 +2625,91 @@ function openStellplatzPrint(e){
   window.setTimeout(()=>{try{printWindow.print()}catch(_){}},550);
 }
 
+
+function holidayPdfTypeLabel(e){
+  return typeLabels[e?.type] || 'Urlaub';
+}
+function holidayPdfActionHtml(e){
+  const label=holidayPdfTypeLabel(e);
+  return `<div class="pdf-action-card">
+    <div class="pdf-action-copy"><small>${escapeHtml(label)} als PDF</small><strong>Drucken · Speichern · Teilen</strong><span>Erstellt eine übersichtliche A4-Zusammenfassung aller gespeicherten Angaben.</span></div>
+    <button class="btn primary pdf-action-btn" id="holidayPdfDetail">PDF erstellen</button>
+  </div>`;
+}
+function holidayPrintSectionsHtml(e){
+  const holder=document.createElement('div');
+  holder.innerHTML=holidayDetailCards(e);
+  holder.querySelectorAll('.detail-empty').forEach(node=>node.remove());
+  holder.querySelectorAll('details.detail-accordion').forEach(section=>{
+    const body=section.querySelector('.accordion-body');
+    if(!body || !body.textContent.trim()){
+      section.remove();
+      return;
+    }
+    section.setAttribute('open','');
+    const summary=section.querySelector('summary');
+    const label=summary?.querySelector('small')?.textContent?.trim() || '';
+    if(summary) summary.innerHTML=`<h2>${escapeHtml(label)}</h2>`;
+    section.querySelectorAll('.accordion-chevron').forEach(node=>node.remove());
+  });
+  // Verknüpfte Unterkünfte bleiben im PDF lesbar, ohne wie Bedienelemente zu wirken.
+  holder.querySelectorAll('button[data-open-entry-id]').forEach(button=>{
+    const replacement=document.createElement('div');
+    replacement.className='linked-entry-print';
+    replacement.innerHTML=button.innerHTML;
+    button.replaceWith(replacement);
+  });
+  holder.querySelectorAll('.linked-entry-arrow').forEach(node=>node.remove());
+  return holder.innerHTML;
+}
+function holidayPrintGalleryHtml(e){
+  const media=(Array.isArray(e.media)?e.media:[]).filter(m=>m.kind==='image'&&m.dataUrl&&m.id!==e.titleImageId).slice(0,4);
+  if(!media.length)return '';
+  const label=holidayPdfTypeLabel(e);
+  return `<section class="print-gallery-section"><h2>Weitere Bilder</h2><div class="print-gallery">${media.map(m=>`<figure><img src="${m.dataUrl}" alt="${escapeHtml(m.description||label+'-Bild')}" />${m.description?`<figcaption>${escapeHtml(m.description)}</figcaption>`:''}</figure>`).join('')}</div></section>`;
+}
+function openHolidayPrint(e){
+  if(!e || !isHolidayType(e.type))return;
+  const printWindow=window.open('','_blank');
+  if(!printWindow){
+    alert('Die PDF-Ansicht konnte nicht geöffnet werden. Bitte Pop-ups für diese Seite erlauben.');
+    return;
+  }
+  const label=holidayPdfTypeLabel(e);
+  const title=imageById(e,e.titleImageId);
+  const hero=title?.dataUrl?`<div class="print-hero"><img src="${title.dataUrl}" alt="${escapeHtml(title.description||e.name||label)}" /></div>`:'';
+  const sections=holidayPrintSectionsHtml(e);
+  const gallery=holidayPrintGalleryHtml(e);
+  const docTitle=`${e.name||label} - viacruz Reisezeit`;
+  const generated=new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+  printWindow.document.open();
+  printWindow.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(docTitle)}</title><style>
+    :root{--text:#173126;--muted:#66756e;--line:#dce5dd;--soft:#f6f9f5;--accent:#2f6a4f}
+    *{box-sizing:border-box}html,body{margin:0;padding:0;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#eef2ee}body{padding:20px}
+    .toolbar{max-width:210mm;margin:0 auto 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:white;border:1px solid var(--line);border-radius:14px;padding:12px 14px}.toolbar div{min-width:0}.toolbar strong{display:block;font-size:14px}.toolbar span{display:block;margin-top:2px;color:var(--muted);font-size:12px}.toolbar button{border:0;border-radius:11px;background:var(--accent);color:white;font-weight:800;padding:11px 15px;white-space:nowrap;cursor:pointer}.toolbar-actions{display:flex;gap:8px;align-items:center}.toolbar .back-button{background:#eef3ef;color:var(--text);border:1px solid var(--line)}
+    .print-page{width:min(210mm,100%);margin:0 auto;background:white;padding:14mm 15mm 13mm;box-shadow:0 10px 40px rgba(17,45,31,.12)}
+    .print-hero{height:62mm;margin:-14mm -15mm 10mm;overflow:hidden}.print-hero img{width:100%;height:100%;object-fit:cover;display:block}
+    .print-kicker{font-size:10px;font-weight:850;letter-spacing:.11em;text-transform:uppercase;color:var(--accent)}h1{font-size:27px;line-height:1.08;margin:3px 0 4px}.print-location{font-size:13px;color:var(--muted);margin-bottom:8mm}.print-meta{font-size:9px;color:var(--muted);text-align:right;margin-bottom:4mm}
+    .detail-accordions{display:block}.detail-accordion{display:block;border:1px solid var(--line);border-radius:10px;margin:0 0 5mm;overflow:hidden;break-inside:auto;page-break-inside:auto}.detail-accordion summary{display:block;list-style:none;padding:4mm 4.5mm 3.2mm;background:var(--soft);border-bottom:1px solid var(--line);break-after:avoid;page-break-after:avoid}.detail-accordion summary::-webkit-details-marker{display:none}.detail-accordion summary h2,.print-gallery-section h2{font-size:14px;line-height:1.2;margin:0}.accordion-body{padding:2mm 4.5mm 3mm}.detail-row{display:grid;grid-template-columns:minmax(46mm,42%) 1fr;gap:5mm;padding:2.2mm 0;border-bottom:1px solid #edf1ed;align-items:start}.detail-row:last-child{border-bottom:0}.detail-row{break-inside:avoid;page-break-inside:avoid}.detail-row span{font-size:9.4px;color:var(--muted)}.detail-row strong{font-size:9.8px;line-height:1.35;text-align:right;overflow-wrap:anywhere}.detail-row a,.inline-link,.contact-link{color:var(--accent);text-decoration:none}
+    .detail-note{padding:2.8mm 0;border-bottom:1px solid #edf1ed;break-inside:avoid;page-break-inside:avoid}.detail-note:last-child{border-bottom:0}.detail-note>span{display:block;font-size:9.4px;color:var(--muted);margin-bottom:1mm}.detail-note p{font-size:9.8px;line-height:1.45;margin:0;white-space:normal}.visit-history{display:grid;gap:2.2mm;margin-top:2mm}.visit-history-card{border:1px solid var(--line);border-radius:7px;padding:2.5mm;break-inside:avoid;page-break-inside:avoid}.visit-history-head{display:flex;justify-content:space-between;gap:5mm;font-size:9.5px}.visit-history-card small{display:block;color:var(--muted);font-size:8.8px;margin-top:1mm}.visit-history-card p{margin-top:1.5mm}
+    .linked-entry-detail{border:1px solid var(--line);border-radius:8px;padding:2.5mm;margin:0 0 2.5mm;break-inside:avoid}.linked-entry-detail:last-child{margin-bottom:0}.linked-entry-print{display:flex;align-items:center;gap:3mm}.linked-entry-image{width:14mm;height:14mm;border-radius:6px;overflow:hidden;background:var(--soft);display:flex;align-items:center;justify-content:center;flex:0 0 auto}.linked-entry-image img{width:100%;height:100%;object-fit:cover}.linked-entry-copy{display:block;min-width:0}.linked-entry-copy strong{display:block;font-size:9.8px}.linked-entry-copy small{display:block;color:var(--muted);font-size:8.8px;margin-top:1mm}.linked-entry-detail>p{font-size:9.2px;line-height:1.4;margin:2mm 0 0}
+    .print-gallery-section{border:1px solid var(--line);border-radius:10px;padding:4mm 4.5mm;margin-top:5mm;break-inside:avoid-page}.print-gallery{display:grid;grid-template-columns:1fr 1fr;gap:3mm;margin-top:3mm}.print-gallery figure{margin:0;break-inside:avoid}.print-gallery img{width:100%;height:47mm;object-fit:cover;display:block;border-radius:7px}.print-gallery figcaption{font-size:8.7px;line-height:1.3;color:var(--muted);padding-top:1.2mm}
+    .print-footer{margin-top:8mm;padding-top:3mm;border-top:1px solid var(--line);font-size:8.7px;color:var(--muted);display:flex;justify-content:space-between;gap:10mm}.brand{font-weight:800;color:#53675c}.print-empty{padding:8mm;text-align:center;color:var(--muted);font-size:10px}
+    @page{size:A4;margin:11mm 0 10mm}@media print{body{background:white;padding:0}.toolbar{display:none!important}.print-page{width:100%;margin:0;box-shadow:none;padding:8mm 15mm 3mm}.print-hero{margin:-8mm -15mm 8mm;height:58mm}.detail-accordion{break-inside:auto;page-break-inside:auto}.print-gallery-section{break-inside:avoid-page;page-break-inside:avoid}.print-footer{position:relative}.print-meta{margin-bottom:3mm}}
+    @media(max-width:640px){body{padding:8px}.toolbar{align-items:stretch;flex-direction:column}.toolbar-actions{display:grid;grid-template-columns:1fr}.toolbar button{width:100%}.print-page{padding:10mm 7mm}.print-hero{margin:-10mm -7mm 8mm;height:54mm}.detail-row{grid-template-columns:1fr;gap:1mm}.detail-row strong{text-align:left}.print-gallery{grid-template-columns:1fr}}
+  </style></head><body><div class="toolbar"><div><strong>${escapeHtml(label)} als PDF</strong><span>Drucken, als PDF sichern oder über die Systemfunktionen teilen.</span></div><div class="toolbar-actions"><button class="back-button" id="backToApp">← Zurück zur App</button><button id="printNow">Drucken / PDF speichern</button></div></div><main class="print-page">${hero}<div class="print-kicker">${escapeHtml(label)}</div><h1>${escapeHtml(e.name||label)}</h1><div class="print-location">${escapeHtml(locationText(e))}</div><div class="print-meta">Erstellt am ${escapeHtml(generated)}</div>${sections||'<div class="print-empty">Keine weiteren Angaben gespeichert.</div>'}${gallery}<footer class="print-footer"><span>Deine persönliche ${escapeHtml(label)}-Zusammenfassung</span><span class="brand">powered by viacruz</span></footer></main><script>
+    document.getElementById('printNow').addEventListener('click',()=>window.print());
+    document.getElementById('backToApp').addEventListener('click',()=>{
+      if(window.opener && !window.opener.closed){window.opener.focus();window.close();return;}
+      if(history.length>1){history.back();return;}
+      window.close();
+    });
+  <\/script></body></html>`);
+  printWindow.document.close();
+  printWindow.focus();
+  window.setTimeout(()=>{try{printWindow.print()}catch(_){}},550);
+}
+
 function openDetail(id){
   const e=state.entries.find(x=>x.id===id); if(!e)return;
   const content=document.getElementById('detailContent');
@@ -2641,7 +2726,7 @@ function openDetail(id){
     infoCards.push(`<div class="info-card source-card"><small>Quelle</small><strong>${escapeHtml(sourceText)}</strong>${srcUrl?`<a class="source-link" href="${escapeHtml(srcUrl)}" target="_blank" rel="noopener noreferrer">Quelle öffnen ↗</a>`:''}</div>`);
   }
   content.innerHTML=`${e.type==='camping'?campingHeroHtml(e):e.type==='stellplatz'?stellplatzHeroHtml(e):isHolidayType(e.type)?holidayHeroHtml(e):''}<div class="sheet-head"><div><div class="eyebrow">${typeLabels[e.type]}</div><h2>${escapeHtml(e.name)}</h2><div class="detail-meta">${escapeHtml(locationText(e))}</div></div><button class="icon-btn close" id="closeDetail">×</button></div>
-  ${e.type==='camping'?campingPdfActionHtml():e.type==='stellplatz'?stellplatzPdfActionHtml():''}
+  ${e.type==='camping'?campingPdfActionHtml():e.type==='stellplatz'?stellplatzPdfActionHtml():isHolidayType(e.type)?holidayPdfActionHtml(e):''}
   ${infoCards.length?`<div class="detail-grid">${infoCards.join('')}</div>`:''}
   ${entryTypeDetailCards(e)}
   ${e.type==='camping'?campingGalleryHtml(e):e.type==='stellplatz'?stellplatzGalleryHtml(e):isHolidayType(e.type)?holidayGalleryHtml(e):''}
@@ -2652,6 +2737,7 @@ function openDetail(id){
   document.getElementById('closeDetail').onclick=()=>dlg.close();
   if(e.type==='camping'){const pdfButton=document.getElementById('campingPdfDetail');if(pdfButton)pdfButton.onclick=()=>openCampingPrint(e);}
   if(e.type==='stellplatz'){const pdfButton=document.getElementById('stellplatzPdfDetail');if(pdfButton)pdfButton.onclick=()=>openStellplatzPrint(e);}
+  if(isHolidayType(e.type)){const pdfButton=document.getElementById('holidayPdfDetail');if(pdfButton)pdfButton.onclick=()=>openHolidayPrint(e);}
   document.getElementById('favoriteDetail').onclick=()=>{e.favorite=!e.favorite;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
   document.getElementById('wantDetail').onclick=()=>{e.wantToVisit=!e.wantToVisit;if(e.wantToVisit)e.visited=false;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
   document.getElementById('visitedDetail').onclick=()=>{e.visited=!e.visited;if(e.visited)e.wantToVisit=false;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
