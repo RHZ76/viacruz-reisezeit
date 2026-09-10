@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.43-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.44-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -439,6 +439,30 @@
         <label>Was möchte ich dort machen?
           <textarea id="holidayDestinationPlans" rows="4" placeholder="z. B. Schifffahrt machen, Rundweg laufen, abends zum Weihnachtsmarkt …"></textarea>
         </label>
+      </section>
+
+      <section class="edit-section" id="holidayDestinationLinksSection" hidden>
+        <div class="edit-section-head">
+          <h3>Unterkunft &amp; Verknüpfungen</h3>
+          <p>Bereits gespeicherte Unterkünfte mit diesem Reiseziel verbinden. Die Unterkunft selbst wird nicht kopiert.</p>
+        </div>
+
+        <div class="destination-link-add">
+          <label>Unterkunft verknüpfen
+            <select id="holidayDestinationLinkSelect">
+              <option value="">Unterkunft auswählen …</option>
+            </select>
+          </label>
+          <button type="button" class="btn secondary" id="addHolidayDestinationLink">+ Unterkunft verknüpfen</button>
+        </div>
+        <span class="field-help" id="holidayDestinationLinkHelp">Es werden nur bereits gespeicherte Unterkünfte angeboten.</span>
+
+        <div class="field-group destination-linked-group">
+          <div class="field-group-title">Verknüpfte Unterkünfte</div>
+          <div id="holidayDestinationLinkedList" class="destination-linked-list">
+            <div class="visit-editor-empty">Noch keine Unterkunft verknüpft.</div>
+          </div>
+        </div>
       </section>
 
       <section class="edit-section" id="holidayAccommodationSection">
@@ -2939,6 +2963,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.43-r1"></script>
+  <script src="app.js?v=0.3.44-r1"></script>
 </body>
 </html>

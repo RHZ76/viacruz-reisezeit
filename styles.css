@@ -292,3 +292,43 @@ button{cursor:pointer}
 .destination-delete-choice{border:1px solid var(--line);background:var(--surface);border-radius:10px;min-width:38px;min-height:42px;font-size:20px;line-height:1;cursor:pointer;color:var(--muted)}
 .destination-delete-choice:hover{background:var(--surface-2)}
 @media(max-width:520px){.destination-add-row{grid-template-columns:1fr}.destination-add-row .btn{width:100%}}
+
+
+/* v0.3.44 · Reiseziel: Unterkunft & Verknüpfungen */
+.destination-link-add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end}
+.destination-link-add>label{margin:0}
+.destination-link-add>.btn{min-height:46px;white-space:nowrap}
+.destination-linked-group{margin-top:18px}
+.destination-linked-list{display:grid;gap:12px}
+.destination-link-editor-card{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--card, #fff);display:grid;gap:12px}
+.destination-link-editor-card.missing{opacity:.82}
+.destination-link-editor-main{display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:12px;align-items:center}
+.destination-link-thumb{width:58px;height:58px;border-radius:11px;object-fit:cover;display:block;background:#edf2ee}
+.destination-link-thumb.placeholder{display:grid;place-items:center;font-size:22px;font-weight:800;color:var(--muted)}
+.destination-link-editor-text{min-width:0;display:grid;gap:3px}
+.destination-link-editor-text strong{font-size:14px;line-height:1.25;overflow-wrap:anywhere}
+.destination-link-editor-text small{font-size:12px;line-height:1.35;color:var(--muted);overflow-wrap:anywhere}
+.destination-link-remove{border:1px solid var(--line);background:transparent;border-radius:9px;min-height:38px;padding:0 10px;color:var(--danger, #9d302d);font:inherit;font-size:12px;font-weight:750;cursor:pointer}
+.destination-link-editor-card>label{margin:0}
+.linked-entry-detail{padding:8px 0;border-bottom:1px solid var(--line)}
+.linked-entry-detail:last-child{border-bottom:0}
+.linked-entry-open{width:100%;display:grid;grid-template-columns:54px minmax(0,1fr) auto;gap:11px;align-items:center;border:0;background:transparent;padding:4px 0;text-align:left;color:inherit;font:inherit;cursor:pointer}
+.linked-entry-image{width:54px;height:54px;border-radius:10px;overflow:hidden;background:#edf2ee;display:grid;place-items:center}
+.linked-entry-image img{width:100%;height:100%;object-fit:cover;display:block}
+.linked-entry-placeholder{font-size:21px;font-weight:800;color:var(--muted)}
+.linked-entry-copy{display:grid;gap:3px;min-width:0}
+.linked-entry-copy strong{font-size:14px;line-height:1.25;overflow-wrap:anywhere}
+.linked-entry-copy small{font-size:12px;line-height:1.35;color:var(--muted);overflow-wrap:anywhere}
+.linked-entry-arrow{font-size:26px;line-height:1;color:var(--muted)}
+.linked-entry-detail>p{margin:8px 0 2px 65px;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.linked-destinations-accordions{margin-top:12px}
+@media(max-width:640px){
+  .destination-link-add{grid-template-columns:1fr}
+  .destination-link-add>.btn{width:100%}
+  .destination-link-editor-main{grid-template-columns:50px minmax(0,1fr);align-items:start}
+  .destination-link-thumb{width:50px;height:50px}
+  .destination-link-remove{grid-column:1/-1;width:100%}
+  .linked-entry-open{grid-template-columns:48px minmax(0,1fr) auto}
+  .linked-entry-image{width:48px;height:48px}
+  .linked-entry-detail>p{margin-left:59px}
+}
