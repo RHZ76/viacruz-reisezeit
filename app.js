@@ -264,24 +264,35 @@ async function holidayImageFileToDataUrl(file){
     image.onerror=reject;
     image.src=raw;
   });
-  // Urlaub-Bilder werden bewusst kompakter gespeichert. Die App speichert lokal;
-  // große Kamera-/Screenshot-Dateien können sonst das localStorage-Limit sprengen.
-  let maxSide=1400;
-  let quality=0.78;
+
+  // Die App optimiert Urlaub-/Reisezielbilder automatisch für den lokalen Speicher.
+  // Ziel: gute Darstellung in Titelbild/Galerie, ohne dass der Nutzer Bilder selbst
+  // verkleinern muss. Wir reduzieren Auflösung und JPEG-Qualität schrittweise,
+  // bis eine robuste Zielgröße erreicht ist.
+  const targetChars=180000; // ca. 135 KB Binärdaten pro Bild als Data-URL
+  let maxSide=1200;
+  let quality=0.76;
   let result='';
-  for(let attempt=0;attempt<7;attempt++){
+
+  for(let attempt=0;attempt<14;attempt++){
     const scale=Math.min(1,maxSide/Math.max(img.width,img.height));
     const w=Math.max(1,Math.round(img.width*scale));
     const h=Math.max(1,Math.round(img.height*scale));
     const canvas=document.createElement('canvas');
     canvas.width=w; canvas.height=h;
-    const ctx=canvas.getContext('2d');
+    const ctx=canvas.getContext('2d',{alpha:false});
+    ctx.fillStyle='#fff';
+    ctx.fillRect(0,0,w,h);
     ctx.drawImage(img,0,0,w,h);
     result=canvas.toDataURL('image/jpeg',quality);
-    // ca. 300 KB Data-URL als Ziel: ausreichend für Titelbild/Galerie, aber robust lokal speicherbar.
-    if(result.length<=410000)break;
-    if(quality>0.58)quality-=0.08;
-    else maxSide=Math.max(800,Math.round(maxSide*0.82));
+    if(result.length<=targetChars)break;
+
+    if(quality>0.48){
+      quality=Math.max(0.48,quality-0.07);
+    }else{
+      maxSide=Math.max(640,Math.round(maxSide*0.82));
+      quality=0.62;
+    }
   }
   return result;
 }
@@ -496,7 +507,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.37 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.38 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1881,7 +1892,7 @@ function saveHolidayBasic(ev){
       state.entries=state.entries.filter(x=>x!==entry);
     }
     if(err?.name==='QuotaExceededError'||err?.name==='NS_ERROR_DOM_QUOTA_REACHED'){
-      alert('Der lokale Speicher ist für dieses Bild zu voll. Bitte ein Bild entfernen oder ein kleineres Bild verwenden. Deine bisherigen Daten bleiben erhalten.');
+      alert('Der lokale Speicher ist für dieses Bild zu voll. Der lokale Speicher ist voll. Die App hat die Bilder bereits automatisch verkleinert. Bitte entferne ein nicht benötigtes Bild oder einen alten Eintrag. Deine bisherigen Daten bleiben erhalten.');
     }else{
       console.error('Urlaub konnte nicht gespeichert werden:',err);
       alert('Der Eintrag konnte nicht gespeichert werden. Bitte versuche es erneut.');
