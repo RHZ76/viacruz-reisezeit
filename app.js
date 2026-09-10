@@ -187,6 +187,8 @@ const state = {
   holidayFilter: 'all',
   query: '',
   searchSort: 'relevance',
+  searchFiltersOpen: false,
+  searchFilters: {types:[], country:'', region:'', minStars:'', minRating:'', pool:false, wellness:false, sauna:false, dog:false, statuses:[]},
   entries: loadEntries()
 };
 
@@ -732,6 +734,74 @@ function smartSearchMatch(e,q){
   if(doc.stars!=null&&terms.some(t=>doc.normalized.stars.includes(t)))addReason(`${formatNumber(doc.stars,1)} Sterne`);
   return {match:true,score,reasons,doc};
 }
+function emptySearchFilters(){return {types:[],country:'',region:'',minStars:'',minRating:'',pool:false,wellness:false,sauna:false,dog:false,statuses:[]};}
+function normalizedSearchFilters(){
+  const base=emptySearchFilters(); const f=state.searchFilters||{};
+  return {...base,...f,types:Array.isArray(f.types)?f.types:[],statuses:Array.isArray(f.statuses)?f.statuses:[]};
+}
+function searchFilterActive(){
+  const f=normalizedSearchFilters();
+  return !!(f.types.length||f.country||f.region||f.minStars||f.minRating||f.pool||f.wellness||f.sauna||f.dog||f.statuses.length);
+}
+function entryFeatureFlags(e){
+  const normalized=featureSearchLabels(e).map(normalizeSearchText);
+  const has=(term)=>normalized.some(v=>v===normalizeSearchText(term)||v.includes(normalizeSearchText(term)));
+  return {pool:has('Pool'),wellness:has('Wellness'),sauna:has('Sauna'),dog:has('Hunde erlaubt')||has('Hundefreundlich')};
+}
+function entryMatchesSearchFilters(e){
+  const f=normalizedSearchFilters();
+  if(f.types.length&&!f.types.includes(e.type))return false;
+  if(f.country&&normalizeSearchText(e.country)!==normalizeSearchText(f.country))return false;
+  if(f.region){
+    const regions=[e.region,...(e.travelRegions||[])].filter(Boolean).map(normalizeSearchText);
+    if(!regions.includes(normalizeSearchText(f.region)))return false;
+  }
+  if(f.minStars){const stars=entryStars(e);if(stars==null||stars<Number(f.minStars))return false;}
+  if(f.minRating){const rating=entryRatingAverage(e);if(rating==null||rating<Number(f.minRating))return false;}
+  const flags=entryFeatureFlags(e);
+  if(f.pool&&!flags.pool)return false;
+  if(f.wellness&&!flags.wellness)return false;
+  if(f.sauna&&!flags.sauna)return false;
+  if(f.dog&&!flags.dog)return false;
+  if(f.statuses.length){
+    const statusMatch=f.statuses.some(v=>v==='favorite'?!!e.favorite:v==='want'?!!e.wantToVisit:v==='visited'?!!e.visited:false);
+    if(!statusMatch)return false;
+  }
+  return true;
+}
+function searchFilterOptions(){
+  const entries=state.entries.filter(e=>!e.deleted);
+  const countries=[...new Set(entries.map(e=>String(e.country||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'de'));
+  const f=normalizedSearchFilters();
+  const source=f.country?entries.filter(e=>normalizeSearchText(e.country)===normalizeSearchText(f.country)):entries;
+  const regions=[...new Set(source.flatMap(e=>[e.region,...(e.travelRegions||[])].map(v=>String(v||'').trim()).filter(Boolean)))].sort((a,b)=>a.localeCompare(b,'de'));
+  return {countries,regions};
+}
+function searchTypeFilterChoices(){return ['camping','stellplatz','hotel','ferienwohnung','ferienhaus','besonders','reiseziel'];}
+function searchFilterChipData(){
+  const f=normalizedSearchFilters(); const chips=[];
+  f.types.forEach(v=>chips.push({key:`type:${v}`,label:typeLabels[v]||v}));
+  if(f.country)chips.push({key:'country',label:f.country});
+  if(f.region)chips.push({key:'region',label:f.region});
+  if(f.minStars)chips.push({key:'minStars',label:`ab ${formatNumber(Number(f.minStars),1)} Sterne`});
+  if(f.minRating)chips.push({key:'minRating',label:`Bewertung ab ${formatNumber(Number(f.minRating),1)}`});
+  [['pool','Pool'],['wellness','Wellness'],['sauna','Sauna'],['dog','Hund erlaubt']].forEach(([key,label])=>{if(f[key])chips.push({key,label});});
+  f.statuses.forEach(v=>chips.push({key:`status:${v}`,label:v==='favorite'?'Favorit':v==='want'?'Möchte ich besuchen':'Besucht'}));
+  return chips;
+}
+function searchFilterPanel(){
+  const f=normalizedSearchFilters(), opts=searchFilterOptions();
+  const typeChoices=searchTypeFilterChoices().map(v=>`<label class="search-filter-choice"><input type="checkbox" data-search-type="${v}" ${f.types.includes(v)?'checked':''}><span>${escapeHtml(typeLabels[v]||v)}</span></label>`).join('');
+  const statusChoices=[['favorite','Favorit'],['want','Möchte ich besuchen'],['visited','Besucht']].map(([v,label])=>`<label class="search-filter-choice"><input type="checkbox" data-search-status="${v}" ${f.statuses.includes(v)?'checked':''}><span>${label}</span></label>`).join('');
+  return `<details class="search-filter-panel" id="searchFilterPanel" ${state.searchFiltersOpen?'open':''}><summary><span><strong>Filter</strong><small>${searchFilterActive()?`${searchFilterChipData().length} aktiv`:'Typ, Ort, Qualität und Ausstattung'}</small></span><span class="accordion-chevron">⌄</span></summary><div class="search-filter-body">
+    <div class="search-filter-group"><h3>Art / Typ</h3><div class="search-filter-choices">${typeChoices}</div></div>
+    <div class="search-filter-group"><h3>Wo</h3><div class="search-filter-grid"><label>Land<select id="searchFilterCountry"><option value="">Alle Länder</option>${opts.countries.map(v=>`<option value="${escapeHtml(v)}" ${f.country===v?'selected':''}>${escapeHtml(v)}</option>`).join('')}</select></label><label>Region / Reiseregion<select id="searchFilterRegion"><option value="">Alle Regionen</option>${opts.regions.map(v=>`<option value="${escapeHtml(v)}" ${f.region===v?'selected':''}>${escapeHtml(v)}</option>`).join('')}</select></label></div></div>
+    <div class="search-filter-group"><h3>Qualität</h3><div class="search-filter-grid"><label>Sternekategorie<select id="searchFilterStars"><option value="">Alle</option>${[1,2,3,4,5].map(v=>`<option value="${v}" ${String(f.minStars)===String(v)?'selected':''}>ab ${v} Sterne</option>`).join('')}</select></label><label>Persönliche Bewertung<select id="searchFilterRating"><option value="">Alle</option>${[3,3.5,4,4.5,5].map(v=>`<option value="${v}" ${String(f.minRating)===String(v)?'selected':''}>ab ${String(v).replace('.',',')}</option>`).join('')}</select></label></div></div>
+    <div class="search-filter-group"><h3>Ausstattung</h3><div class="search-filter-choices search-filter-feature-choices">${[['pool','Pool'],['wellness','Wellness'],['sauna','Sauna'],['dog','Hund erlaubt']].map(([key,label])=>`<label class="search-filter-choice"><input type="checkbox" data-search-feature="${key}" ${f[key]?'checked':''}><span>${label}</span></label>`).join('')}</div></div>
+    <div class="search-filter-group"><h3>Status</h3><div class="search-filter-choices">${statusChoices}</div></div>
+  </div></details>`;
+}
+
 function searchResultCard(result){
   const e=result.entry;
   const titleMedia=imageById(e,e.titleImageId);
@@ -750,17 +820,24 @@ function searchResultCard(result){
 }
 function searchView(){
   const hasQuery=!!state.query.trim();
-  const results=hasQuery
-    ? state.entries.filter(e=>!e.deleted).map(entry=>({entry,...smartSearchMatch(entry,state.query)})).filter(r=>r.match)
+  const hasFilters=searchFilterActive();
+  const isActive=hasQuery||hasFilters;
+  const results=isActive
+    ? state.entries.filter(e=>!e.deleted&&entryMatchesSearchFilters(e)).map(entry=>({entry,...smartSearchMatch(entry,state.query)})).filter(r=>r.match)
     : [];
   if(state.searchSort==='rating')results.sort((a,b)=>(b.doc.rating??-1)-(a.doc.rating??-1)||(a.entry.name||'').localeCompare(b.entry.name||'','de'));
   else if(state.searchSort==='name')results.sort((a,b)=>(a.entry.name||'').localeCompare(b.entry.name||'','de'));
   else if(hasQuery)results.sort((a,b)=>b.score-a.score||(a.entry.name||'').localeCompare(b.entry.name||'','de'));
-  const countLabel=`${results.length} ${results.length===1?'Treffer':'Treffer'}`;
+  else results.sort((a,b)=>(a.entry.name||'').localeCompare(b.entry.name||'','de'));
+  const countLabel=`${results.length} Treffer`;
+  const chips=searchFilterChipData();
+  const chipRow=chips.length?`<div class="search-active-filters"><span>Aktive Filter</span><div>${chips.map(c=>`<button type="button" class="search-filter-chip" data-remove-search-filter="${escapeHtml(c.key)}">${escapeHtml(c.label)} <b>×</b></button>`).join('')}</div></div>`:'';
   return `<section><div class="section-head"><div><div class="eyebrow">Alle Einträge</div><h2>Suche</h2><p>Mehrere Wörter werden kombiniert. Beispiel: Campingplatz Bayern Wellness.</p></div></div>
   <div class="toolbar search-toolbar"><input class="searchbox route-search" value="${escapeHtml(state.query)}" placeholder="z. B. Campingplatz Bayern Wellness …"><button class="btn secondary" data-action="clear-search">Zurücksetzen</button></div>
-  ${hasQuery?`<div class="search-result-head"><strong>${countLabel}</strong><label>Sortierung<select id="searchSort"><option value="relevance" ${state.searchSort==='relevance'?'selected':''}>Relevanz</option><option value="rating" ${state.searchSort==='rating'?'selected':''}>Bewertung</option><option value="name" ${state.searchSort==='name'?'selected':''}>Name</option></select></label></div>`:''}
-  ${hasQuery?(results.length?`<div class="place-list">${results.map(searchResultCard).join('')}</div>`:`<div class="empty">Keine Treffer. Prüfe die Schreibweise oder verwende weniger Suchbegriffe.</div>`):`<div class="empty">Wonach möchtest du suchen?<br>Gib einen Suchbegriff ein.</div>`}
+  ${searchFilterPanel()}
+  ${chipRow}
+  ${isActive?`<div class="search-result-head"><strong>${countLabel}</strong><label>Sortierung<select id="searchSort"><option value="relevance" ${state.searchSort==='relevance'?'selected':''}>Relevanz</option><option value="rating" ${state.searchSort==='rating'?'selected':''}>Bewertung</option><option value="name" ${state.searchSort==='name'?'selected':''}>Name</option></select></label></div>`:''}
+  ${isActive?(results.length?`<div class="place-list">${results.map(searchResultCard).join('')}</div>`:`<div class="empty">Keine Treffer. Prüfe deine Suchbegriffe oder Filter.</div>`):`<div class="empty">Wonach möchtest du suchen?<br>Gib einen Suchbegriff ein oder wähle einen Filter.</div>`}
   <div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -778,7 +855,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.48 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.49 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -790,8 +867,17 @@ function wireViewEvents(){
   });
   document.querySelectorAll('[data-detail]').forEach(b=>b.onclick=()=>openDetail(b.dataset.detail));
   document.querySelectorAll('.route-search').forEach(i=>i.oninput=()=>{state.query=i.value;render(); const next=document.querySelector('.route-search'); if(next){next.focus();next.setSelectionRange(next.value.length,next.value.length)}});
-  document.querySelectorAll('[data-action="clear-search"]').forEach(b=>b.onclick=()=>{state.query='';render();});
+  document.querySelectorAll('[data-action="clear-search"]').forEach(b=>b.onclick=()=>{state.query='';state.searchFilters=emptySearchFilters();render();});
   document.getElementById('searchSort')?.addEventListener('change',ev=>{state.searchSort=ev.target.value||'relevance';render();});
+  const filterPanel=document.getElementById('searchFilterPanel'); if(filterPanel)filterPanel.addEventListener('toggle',()=>{state.searchFiltersOpen=filterPanel.open;});
+  document.querySelectorAll('[data-search-type]').forEach(el=>el.onchange=()=>{const f=normalizedSearchFilters(),v=el.dataset.searchType;f.types=el.checked?[...new Set([...f.types,v])]:f.types.filter(x=>x!==v);state.searchFilters=f;render();});
+  document.querySelectorAll('[data-search-status]').forEach(el=>el.onchange=()=>{const f=normalizedSearchFilters(),v=el.dataset.searchStatus;f.statuses=el.checked?[...new Set([...f.statuses,v])]:f.statuses.filter(x=>x!==v);state.searchFilters=f;render();});
+  document.querySelectorAll('[data-search-feature]').forEach(el=>el.onchange=()=>{const f=normalizedSearchFilters();f[el.dataset.searchFeature]=el.checked;state.searchFilters=f;render();});
+  document.getElementById('searchFilterCountry')?.addEventListener('change',ev=>{const f=normalizedSearchFilters();f.country=ev.target.value||'';f.region='';state.searchFilters=f;render();});
+  document.getElementById('searchFilterRegion')?.addEventListener('change',ev=>{const f=normalizedSearchFilters();f.region=ev.target.value||'';state.searchFilters=f;render();});
+  document.getElementById('searchFilterStars')?.addEventListener('change',ev=>{const f=normalizedSearchFilters();f.minStars=ev.target.value||'';state.searchFilters=f;render();});
+  document.getElementById('searchFilterRating')?.addEventListener('change',ev=>{const f=normalizedSearchFilters();f.minRating=ev.target.value||'';state.searchFilters=f;render();});
+  document.querySelectorAll('[data-remove-search-filter]').forEach(b=>b.onclick=()=>{const f=normalizedSearchFilters(),key=b.dataset.removeSearchFilter;if(key.startsWith('type:'))f.types=f.types.filter(v=>v!==key.slice(5));else if(key.startsWith('status:'))f.statuses=f.statuses.filter(v=>v!==key.slice(7));else if(['pool','wellness','sauna','dog'].includes(key))f[key]=false;else if(key==='country'){f.country='';f.region='';}else if(key==='region')f.region='';else if(key==='minStars')f.minStars='';else if(key==='minRating')f.minRating='';state.searchFilters=f;render();});
   document.querySelectorAll('[data-holiday]').forEach(b=>b.onclick=()=>{state.holidayFilter=b.dataset.holiday;render();});
   document.querySelectorAll('[data-special="favorite"]').forEach(b=>b.onclick=()=>{state.route='search';state.query='';renderSpecial('favorite')});
   document.querySelectorAll('[data-special="want"]').forEach(b=>b.onclick=()=>{state.route='search';state.query='';renderSpecial('want')});

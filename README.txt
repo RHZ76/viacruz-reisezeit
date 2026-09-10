@@ -39,6 +39,6 @@ v0.3.47:
 - Noch keine Schnellfilter; diese folgen als separater Ausbauschritt.
 
 
-v0.3.48:
+v0.3.49:
 - Suche startet mit leerer Trefferfläche.
 - Treffer und Sortierung erscheinen erst nach Eingabe eines Suchbegriffs.
