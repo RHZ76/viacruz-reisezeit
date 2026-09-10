@@ -749,15 +749,18 @@ function searchResultCard(result){
   </button>`;
 }
 function searchView(){
-  const results=state.entries.filter(e=>!e.deleted).map(entry=>({entry,...smartSearchMatch(entry,state.query)})).filter(r=>r.match);
+  const hasQuery=!!state.query.trim();
+  const results=hasQuery
+    ? state.entries.filter(e=>!e.deleted).map(entry=>({entry,...smartSearchMatch(entry,state.query)})).filter(r=>r.match)
+    : [];
   if(state.searchSort==='rating')results.sort((a,b)=>(b.doc.rating??-1)-(a.doc.rating??-1)||(a.entry.name||'').localeCompare(b.entry.name||'','de'));
   else if(state.searchSort==='name')results.sort((a,b)=>(a.entry.name||'').localeCompare(b.entry.name||'','de'));
-  else if(state.query.trim())results.sort((a,b)=>b.score-a.score||(a.entry.name||'').localeCompare(b.entry.name||'','de'));
+  else if(hasQuery)results.sort((a,b)=>b.score-a.score||(a.entry.name||'').localeCompare(b.entry.name||'','de'));
   const countLabel=`${results.length} ${results.length===1?'Treffer':'Treffer'}`;
   return `<section><div class="section-head"><div><div class="eyebrow">Alle Einträge</div><h2>Suche</h2><p>Mehrere Wörter werden kombiniert. Beispiel: Campingplatz Bayern Wellness.</p></div></div>
   <div class="toolbar search-toolbar"><input class="searchbox route-search" value="${escapeHtml(state.query)}" placeholder="z. B. Campingplatz Bayern Wellness …"><button class="btn secondary" data-action="clear-search">Zurücksetzen</button></div>
-  <div class="search-result-head"><strong>${countLabel}</strong><label>Sortierung<select id="searchSort"><option value="relevance" ${state.searchSort==='relevance'?'selected':''}>Relevanz</option><option value="rating" ${state.searchSort==='rating'?'selected':''}>Bewertung</option><option value="name" ${state.searchSort==='name'?'selected':''}>Name</option></select></label></div>
-  ${results.length?`<div class="place-list">${results.map(searchResultCard).join('')}</div>`:`<div class="empty">${state.query?'Keine Treffer. Prüfe die Schreibweise oder verwende weniger Suchbegriffe.':'Noch keine Orte gespeichert.'}</div>`}
+  ${hasQuery?`<div class="search-result-head"><strong>${countLabel}</strong><label>Sortierung<select id="searchSort"><option value="relevance" ${state.searchSort==='relevance'?'selected':''}>Relevanz</option><option value="rating" ${state.searchSort==='rating'?'selected':''}>Bewertung</option><option value="name" ${state.searchSort==='name'?'selected':''}>Name</option></select></label></div>`:''}
+  ${hasQuery?(results.length?`<div class="place-list">${results.map(searchResultCard).join('')}</div>`:`<div class="empty">Keine Treffer. Prüfe die Schreibweise oder verwende weniger Suchbegriffe.</div>`):`<div class="empty">Wonach möchtest du suchen?<br>Gib einen Suchbegriff ein.</div>`}
   <div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -775,7 +778,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.47 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.48 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 

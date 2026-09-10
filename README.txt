@@ -37,3 +37,8 @@ v0.3.47:
 - Mehrere Suchwörter werden mit UND-Logik kombiniert.
 - Trefferansicht mit Suchgründen, Bewertung/Sternen und Sortierung nach Relevanz, Bewertung oder Name.
 - Noch keine Schnellfilter; diese folgen als separater Ausbauschritt.
+
+
+v0.3.48:
+- Suche startet mit leerer Trefferfläche.
+- Treffer und Sortierung erscheinen erst nach Eingabe eines Suchbegriffs.
