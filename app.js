@@ -189,6 +189,7 @@ const state = {
   searchSort: 'relevance',
   searchViewMode: 'list',
   searchBrowseMap: false,
+  mapStatusSelection: [],
   searchFiltersOpen: false,
   searchFilters: {types:[], country:'', region:'', minStars:'', minRating:'', pool:false, wellness:false, sauna:false, dog:false, statuses:[]},
   entries: loadEntries()
@@ -834,11 +835,34 @@ function currentSearchResults(){
   else results.sort((a,b)=>(a.entry.name||'').localeCompare(b.entry.name||'','de'));
   return {hasQuery,hasFilters,isActive,results};
 }
-function searchMapMarkerClass(type){
-  if(type==='camping')return 'camping';
-  if(type==='stellplatz')return 'stellplatz';
-  if(type==='reiseziel')return 'reiseziel';
-  return 'unterkunft';
+function mapStatusKey(e){
+  if(e.wantToVisit && e.favorite)return 'wantFavorite';
+  if(e.visited && e.favorite)return 'visitedFavorite';
+  if(e.wantToVisit)return 'want';
+  if(e.visited)return 'visited';
+  return 'neutral';
+}
+function mapStatusLabel(key){
+  return ({want:'Möchte ich besuchen',visited:'Besucht',wantFavorite:'Wunsch-Favorit',visitedFavorite:'Besuchs-Favorit',neutral:'Ohne Status'})[key]||'';
+}
+function mapStatusFilterBar(){
+  const selected=Array.isArray(state.mapStatusSelection)?state.mapStatusSelection:[];
+  const all=selected.length===0;
+  const choices=[['want','Möchte ich besuchen'],['visited','Besucht'],['wantFavorite','Wunsch-Favoriten'],['visitedFavorite','Besuchs-Favoriten']];
+  return `<div class="map-status-filter"><span class="map-status-filter-label">Anzeigen</span><div class="map-status-filter-buttons"><button type="button" class="map-status-filter-btn ${all?'active':''}" data-map-status="all">Alle</button>${choices.map(([key,label])=>`<button type="button" class="map-status-filter-btn ${selected.includes(key)?'active':''}" data-map-status="${key}">${label}</button>`).join('')}</div><div class="map-status-legend"><span><i class="legend-pin want"></i>Möchte ich besuchen</span><span><i class="legend-pin visited"></i>Besucht</span><span><i class="legend-heart want">♥</i>Wunsch-Favorit</span><span><i class="legend-heart visited">♥</i>Besuchs-Favorit</span></div></div>`;
+}
+function mapEntryVisibleByStatus(e){
+  const selected=Array.isArray(state.mapStatusSelection)?state.mapStatusSelection:[];
+  if(selected.length===0)return true;
+  return selected.includes(mapStatusKey(e));
+}
+function searchMapMarkerHtml(e){
+  const key=mapStatusKey(e);
+  if(key==='wantFavorite')return `<div class="search-map-heart want" title="Wunsch-Favorit">♥</div>`;
+  if(key==='visitedFavorite')return `<div class="search-map-heart visited" title="Besuchs-Favorit">♥</div>`;
+  if(key==='want')return `<div class="search-map-marker status-want" title="Möchte ich besuchen">${escapeHtml(typeIcons[e.type]||'●')}</div>`;
+  if(key==='visited')return `<div class="search-map-marker status-visited" title="Besucht">${escapeHtml(typeIcons[e.type]||'●')}</div>`;
+  return `<div class="search-map-marker status-neutral" title="Ohne Status">${escapeHtml(typeIcons[e.type]||'●')}</div>`;
 }
 function searchMapPopupHtml(e){
   const titleMedia=imageById(e,e.titleImageId);
@@ -860,14 +884,16 @@ function initSearchResultsMap(){
   const results=state.searchBrowseMap
     ? state.entries.filter(e=>!e.deleted).map(entry=>({entry,score:0,reasons:[],doc:buildSearchDocument(entry)}))
     : currentSearchResults().results;
-  const mapped=results.map(r=>({r,loc:entryMapLocation(r.entry)})).filter(x=>x.loc);
+  const visibleResults=results.filter(r=>mapEntryVisibleByStatus(r.entry));
+  const mapped=visibleResults.map(r=>({r,loc:entryMapLocation(r.entry)})).filter(x=>x.loc);
   searchResultsMap=L.map(el,{zoomControl:true});
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap-Mitwirkende'}).addTo(searchResultsMap);
   const bounds=[];
   mapped.forEach(({r,loc})=>{
     const e=r.entry;
-    const cls=searchMapMarkerClass(e.type);
-    const icon=L.divIcon({className:'search-map-div-icon',html:`<div class="search-map-marker ${cls}" title="${escapeHtml(typeLabels[e.type]||e.type)}">${escapeHtml(typeIcons[e.type]||'●')}</div>`,iconSize:[36,36],iconAnchor:[18,34],popupAnchor:[0,-30]});
+    const statusKey=mapStatusKey(e);
+    const favoriteShape=statusKey==='wantFavorite'||statusKey==='visitedFavorite';
+    const icon=L.divIcon({className:'search-map-div-icon',html:searchMapMarkerHtml(e),iconSize:[40,40],iconAnchor:[20,favoriteShape?20:38],popupAnchor:[0,favoriteShape?-20:-32]});
     const marker=L.marker([loc.lat,loc.lng],{icon}).addTo(searchResultsMap).bindPopup(searchMapPopupHtml(e),{maxWidth:300,minWidth:230});
     marker.on('popupopen',()=>{
       const btn=document.querySelector(`[data-search-map-detail="${CSS.escape(e.id)}"]`);
@@ -893,13 +919,14 @@ function searchView(){
   if(state.searchBrowseMap){
     return `<section><div class="section-head"><div><div class="eyebrow">Alle Einträge</div><h2>Karte</h2><p>Entdecke deine gespeicherten Orte direkt auf der Karte.</p></div><button type="button" class="btn secondary" data-search-map-back>Zur Suche</button></div>
     <div class="search-result-head search-all-map-head"><strong>${allEntries.length} Einträge · ${allMappedCount} auf Karte</strong></div>
+    ${mapStatusFilterBar()}
     <div class="search-map-shell"><div id="searchResultsMap" class="search-results-map search-all-results-map" aria-label="Karte aller gespeicherten Orte"></div>${allMappedCount===0?`<div class="search-map-note">Für deine gespeicherten Einträge ist noch keine Kartenposition hinterlegt.</div>`:allMappedCount<allEntries.length?`<div class="search-map-note">${allEntries.length-allMappedCount} ${allEntries.length-allMappedCount===1?'Eintrag hat':'Einträge haben'} noch keine Kartenposition und ${allEntries.length-allMappedCount===1?'wird':'werden'} deshalb nicht auf der Karte angezeigt.</div>`:''}</div>
     <div class="footer-brand">powered by viacruz</div></section>`;
   }
   const resultBody=!isActive
     ? `<div class="empty">Wonach möchtest du suchen?<br>Gib einen Suchbegriff ein oder wähle einen Filter.</div>`
     : state.searchViewMode==='map'
-      ? `<div class="search-map-shell"><div id="searchResultsMap" class="search-results-map" aria-label="Karte der Suchtreffer"></div>${mappedCount===0?`<div class="search-map-note">Für diese Treffer ist noch keine Kartenposition gespeichert.</div>`:mappedCount<results.length?`<div class="search-map-note">${results.length-mappedCount} ${results.length-mappedCount===1?'Treffer hat':'Treffer haben'} noch keine Kartenposition und ${results.length-mappedCount===1?'wird':'werden'} deshalb nicht auf der Karte angezeigt.</div>`:''}</div>`
+      ? `${mapStatusFilterBar()}<div class="search-map-shell"><div id="searchResultsMap" class="search-results-map" aria-label="Karte der Suchtreffer"></div>${mappedCount===0?`<div class="search-map-note">Für diese Treffer ist noch keine Kartenposition gespeichert.</div>`:mappedCount<results.length?`<div class="search-map-note">${results.length-mappedCount} ${results.length-mappedCount===1?'Treffer hat':'Treffer haben'} noch keine Kartenposition und ${results.length-mappedCount===1?'wird':'werden'} deshalb nicht auf der Karte angezeigt.</div>`:''}</div>`
       : results.length?`<div class="place-list">${results.map(searchResultCard).join('')}</div>`:`<div class="empty">Keine Treffer. Prüfe deine Suchbegriffe oder Filter.</div>`;
   return `<section><div class="section-head"><div><div class="eyebrow">Alle Einträge</div><h2>Suche</h2><p>Mehrere Wörter werden kombiniert. Beispiel: Campingplatz Bayern Wellness.</p></div></div>
   <div class="toolbar search-toolbar"><input class="searchbox route-search" value="${escapeHtml(state.query)}" placeholder="z. B. Campingplatz Bayern Wellness …"><button class="btn secondary" data-action="clear-search">Zurücksetzen</button></div>
@@ -925,7 +952,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.53 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.54 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -943,6 +970,7 @@ function wireViewEvents(){
   document.querySelector('[data-home-map]')?.addEventListener('click',()=>{state.route='search';state.query='';state.searchBrowseMap=true;render();});
   document.querySelector('[data-search-all-map]')?.addEventListener('click',()=>{state.searchBrowseMap=true;render();});
   document.querySelector('[data-search-map-back]')?.addEventListener('click',()=>{state.searchBrowseMap=false;render();});
+  document.querySelectorAll('[data-map-status]').forEach(b=>b.onclick=()=>{const key=b.dataset.mapStatus;if(key==='all'){state.mapStatusSelection=[];}else{const current=Array.isArray(state.mapStatusSelection)?[...state.mapStatusSelection]:[];if(current.length===0){state.mapStatusSelection=[key];}else if(current.includes(key)){const next=current.filter(v=>v!==key);state.mapStatusSelection=next.length?next:[];}else{state.mapStatusSelection=[...current,key];}}render();});
   const filterPanel=document.getElementById('searchFilterPanel'); if(filterPanel)filterPanel.addEventListener('toggle',()=>{state.searchFiltersOpen=filterPanel.open;});
   document.querySelectorAll('[data-search-type]').forEach(el=>el.onchange=()=>{const f=normalizedSearchFilters(),v=el.dataset.searchType;f.types=el.checked?[...new Set([...f.types,v])]:f.types.filter(x=>x!==v);state.searchFilters=f;render();});
   document.querySelectorAll('[data-search-status]').forEach(el=>el.onchange=()=>{const f=normalizedSearchFilters(),v=el.dataset.searchStatus;f.statuses=el.checked?[...new Set([...f.statuses,v])]:f.statuses.filter(x=>x!==v);state.searchFilters=f;render();});
