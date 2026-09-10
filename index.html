@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.44-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.45-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -463,6 +463,25 @@
             <div class="visit-editor-empty">Noch keine Unterkunft verknüpft.</div>
           </div>
         </div>
+      </section>
+
+      <section class="edit-section" id="holidayDestinationNotesSection" hidden>
+        <div class="edit-section-head">
+          <h3>Hinweise</h3>
+          <p>Praktische Hinweise zum Reiseziel festhalten, ohne persönliche Notizen oder andere Bereiche zu doppeln.</p>
+        </div>
+
+        <label>Wichtige Hinweise
+          <textarea id="holidayDestinationImportantNotes" rows="4" placeholder="z. B. im Winter gesperrt, bei Hochwasser nicht zugänglich, dienstags geschlossen …"></textarea>
+        </label>
+
+        <label>Was sollte ich mitnehmen / beachten?
+          <textarea id="holidayDestinationBringNotes" rows="4" placeholder="z. B. festes Schuhwerk, Badesachen, Bargeld, Jacke mitnehmen …"></textarea>
+        </label>
+
+        <label>Insider-Tipps
+          <textarea id="holidayDestinationInsiderTips" rows="4" placeholder="z. B. am besten vor 9 Uhr kommen, Aussicht vom oberen Parkplatz …"></textarea>
+        </label>
       </section>
 
       <section class="edit-section" id="holidayAccommodationSection">
@@ -2963,6 +2982,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.44-r1"></script>
+  <script src="app.js?v=0.3.45-r1"></script>
 </body>
 </html>
