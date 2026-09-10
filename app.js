@@ -611,6 +611,7 @@ function render(){
   else if(state.route==='urlaub') app.innerHTML = holidayView();
   else if(state.route==='search') app.innerHTML = searchView();
   else if(state.route==='settings') app.innerHTML = settingsView();
+  else if(state.route==='trash') app.innerHTML = trashView();
   wireViewEvents();
   if(state.route==='search' && (state.searchViewMode==='map' || state.searchBrowseMap)){
     const shouldScroll=state.scrollMapToTop===true;
@@ -1015,15 +1016,76 @@ function matchesQuery(e,q){
 }
 
 function settingsView(){
-  const trash=count(e=>e.deleted);
+  const trash=state.entries.filter(e=>e.deleted).length;
   return `<section><div class="section-head"><div><div class="eyebrow">App</div><h2>Einstellungen</h2></div><button class="btn secondary" data-route-go="home">Fertig</button></div>
   <div class="settings-list">
     <div class="setting-card"><h3>Datensicherung erstellen</h3><p>Exportiert deine lokalen Reisezeit-Daten als JSON-Datei. Die Struktur ist bereits versioniert.</p><button class="btn primary" data-action="backup">Datensicherung erstellen</button></div>
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
-    <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
+    <div class="setting-card"><h3>Papierkorb</h3><p>${trash} ${trash===1?'gelöschter Eintrag':'gelöschte Einträge'}. Gelöschte Orte bleiben erhalten, bis du sie wiederherstellst oder endgültig löschst.</p><button class="btn secondary" data-route-go="trash">Papierkorb öffnen${trash?` · ${trash}`:''}</button></div>
     <div class="setting-card"><h3>Navigation</h3><p>Lege fest, welche Karten-App beim Start einer Navigation verwendet werden soll.</p><label class="setting-field">Standard-Navigationsapp<select id="navigationPreference"><option value="ask" ${navigationPreference()==='ask'?'selected':''}>Immer fragen</option><option value="apple" ${navigationPreference()==='apple'?'selected':''}>Apple Karten</option><option value="google" ${navigationPreference()==='google'?'selected':''}>Google Maps</option></select></label><small class="setting-note">Auf Geräten ohne Apple Karten wird bei Auswahl von Apple Karten automatisch Google Maps verwendet.</small></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.58 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.59 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
+}
+
+function trashEntries(){
+  return state.entries.filter(e=>e.deleted).sort((a,b)=>String(b.deletedAt||b.updatedAt||'').localeCompare(String(a.deletedAt||a.updatedAt||'')));
+}
+function trashDateLabel(e){
+  const raw=e.deletedAt||e.updatedAt||'';
+  if(!raw)return 'Löschdatum unbekannt';
+  const d=new Date(raw);
+  return Number.isNaN(d.getTime())?'Löschdatum unbekannt':`Gelöscht am ${d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})}`;
+}
+function trashCard(e){
+  const titleMedia=imageById(e,e.titleImageId);
+  const thumb=titleMedia?.dataUrl?`<img src="${titleMedia.dataUrl}" alt="" />`:`${typeIcons[e.type]||'●'}`;
+  return `<article class="trash-card">
+    <div class="trash-card-main">
+      <div class="place-thumb ${titleMedia?.dataUrl?'has-image':''}">${thumb}</div>
+      <div class="trash-card-text"><strong>${escapeHtml(e.name||'Unbenannter Eintrag')}</strong><span>${escapeHtml(typeLabels[e.type]||e.type||'Eintrag')} · ${escapeHtml(locationText(e))}</span><small>${escapeHtml(trashDateLabel(e))}</small></div>
+    </div>
+    <div class="trash-card-actions"><button type="button" class="btn secondary" data-trash-restore="${escapeHtml(e.id)}">Wiederherstellen</button><button type="button" class="btn danger" data-trash-delete="${escapeHtml(e.id)}">Endgültig löschen</button></div>
+  </article>`;
+}
+function trashView(){
+  const items=trashEntries();
+  return `<section><div class="section-head"><div><div class="eyebrow">Einstellungen</div><h2>Papierkorb</h2><p>Hier bleiben gelöschte Orte erhalten, bis du selbst entscheidest.</p></div><button class="btn secondary" data-route-go="settings">Zurück</button></div>
+    ${items.length?`<div class="trash-toolbar"><strong>${items.length} ${items.length===1?'Eintrag':'Einträge'} im Papierkorb</strong><button type="button" class="btn danger" data-trash-empty>Papierkorb leeren</button></div><div class="trash-list">${items.map(trashCard).join('')}</div>`:`<div class="empty">Der Papierkorb ist leer.</div>`}
+    <div class="footer-brand">powered by viacruz</div></section>`;
+}
+function restoreTrashEntry(id){
+  const e=state.entries.find(item=>item.id===id&&item.deleted);if(!e)return;
+  e.deleted=false;
+  delete e.deletedAt;
+  e.updatedAt=new Date().toISOString();
+  saveEntries();
+  render();
+}
+function removeEntryLinksTo(id){
+  state.entries.forEach(entry=>{
+    const links=entry?.details?.reiseziel?.links?.accommodations;
+    if(Array.isArray(links))entry.details.reiseziel.links.accommodations=links.filter(link=>link?.entryId!==id);
+  });
+}
+async function permanentlyDeleteEntry(id,{skipConfirm=false}={}){
+  const e=state.entries.find(item=>item.id===id&&item.deleted);if(!e)return false;
+  if(!skipConfirm&&!confirm(`„${e.name||'Dieser Eintrag'}“ endgültig löschen?
+
+Der Eintrag und seine Bilder werden dauerhaft entfernt und können nicht wiederhergestellt werden.`))return false;
+  const mediaIds=Array.isArray(e.media)?e.media.map(m=>m?.id).filter(Boolean):[];
+  removeEntryLinksTo(id);
+  state.entries=state.entries.filter(item=>item.id!==id);
+  saveEntries();
+  for(const mediaId of mediaIds){try{await mediaDbDelete(mediaId);}catch(err){console.warn('Bild konnte beim endgültigen Löschen nicht entfernt werden:',mediaId,err);}}
+  return true;
+}
+async function emptyTrash(){
+  const items=trashEntries();if(!items.length)return;
+  if(!confirm(`Papierkorb wirklich leeren?
+
+${items.length} ${items.length===1?'Eintrag wird':'Einträge werden'} einschließlich der zugehörigen Bilder endgültig gelöscht. Das kann nicht rückgängig gemacht werden.`))return;
+  for(const e of [...items])await permanentlyDeleteEntry(e.id,{skipConfirm:true});
+  render();
 }
 
 function wireViewEvents(){
@@ -1065,6 +1127,9 @@ function wireViewEvents(){
   });
   document.querySelectorAll('[data-action="backup"]').forEach(b=>b.onclick=createBackup);
   document.querySelectorAll('[data-action="restore"]').forEach(b=>b.onclick=restoreBackup);
+  document.querySelectorAll('[data-trash-restore]').forEach(b=>b.onclick=()=>restoreTrashEntry(b.dataset.trashRestore));
+  document.querySelectorAll('[data-trash-delete]').forEach(b=>b.onclick=async()=>{if(await permanentlyDeleteEntry(b.dataset.trashDelete))render();});
+  document.querySelector('[data-trash-empty]')?.addEventListener('click',emptyTrash);
 }
 function renderSpecial(kind){
   const app=document.getElementById('app');
@@ -3259,7 +3324,7 @@ function openDetail(id){
   document.getElementById('rememberedDetail').onclick=()=>{e.remembered=!e.remembered;if(e.remembered){e.wantToVisit=false;e.visited=false;}e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
   document.getElementById('wantDetail').onclick=()=>{e.wantToVisit=!e.wantToVisit;if(e.wantToVisit){e.visited=false;e.remembered=false;}e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
   document.getElementById('visitedDetail').onclick=()=>{e.visited=!e.visited;if(e.visited){e.wantToVisit=false;e.remembered=false;}e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id)};
-  document.getElementById('trashDetail').onclick=()=>{if(confirm('Diesen Eintrag in den Papierkorb verschieben?')){e.deleted=true;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();}};
+  document.getElementById('trashDetail').onclick=()=>{if(confirm('Diesen Eintrag in den Papierkorb verschieben?')){const now=new Date().toISOString();e.deleted=true;e.deletedAt=now;e.updatedAt=now;saveEntries();dlg.close();render();}};
   document.getElementById('editBasic').onclick=()=>e.type==='camping'?openCampingEditor(e):e.type==='stellplatz'?openStellplatzEditor(e):isHolidayType(e.type)?openHolidayEditor(e):editBasic(e);
   content.querySelectorAll('.gallery-item img').forEach(img=>img.onclick=()=>openImageViewer(img.src,img.alt||'Gespeichertes Bild'));
   content.querySelectorAll('[data-open-entry-id]').forEach(button=>button.onclick=()=>{

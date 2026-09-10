@@ -42,3 +42,12 @@ v0.3.47:
 v0.3.49:
 - Suche startet mit leerer Trefferfläche.
 - Treffer und Sortierung erscheinen erst nach Eingabe eines Suchbegriffs.
+
+v0.3.59:
+- Papierkorb vollständig umgesetzt.
+- Gelöschte Orte bleiben inklusive Bilder und Daten erhalten.
+- Wiederherstellen einzelner Einträge möglich.
+- Endgültiges Löschen einzelner Einträge mit Sicherheitsabfrage.
+- Papierkorb leeren mit Sicherheitsabfrage.
+- Zugehörige IndexedDB-Bilder werden erst beim endgültigen Löschen entfernt.
+- Verwaiste Reiseziel-Unterkunftsverknüpfungen werden beim endgültigen Löschen bereinigt.
