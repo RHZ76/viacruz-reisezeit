@@ -188,6 +188,7 @@ const state = {
   query: '',
   searchSort: 'relevance',
   searchViewMode: 'list',
+  searchBrowseMap: false,
   searchFiltersOpen: false,
   searchFilters: {types:[], country:'', region:'', minStars:'', minRating:'', pool:false, wellness:false, sauna:false, dog:false, statuses:[]},
   entries: loadEntries()
@@ -562,7 +563,7 @@ function render(){
   else if(state.route==='search') app.innerHTML = searchView();
   else if(state.route==='settings') app.innerHTML = settingsView();
   wireViewEvents();
-  if(state.route==='search' && state.searchViewMode==='map') requestAnimationFrame(initSearchResultsMap);
+  if(state.route==='search' && (state.searchViewMode==='map' || state.searchBrowseMap)) requestAnimationFrame(initSearchResultsMap);
 }
 
 function homeView(){
@@ -856,7 +857,9 @@ function initSearchResultsMap(){
     el.innerHTML='<div class="search-map-message">Die Online-Karte konnte nicht geladen werden. Bitte prüfe deine Internetverbindung.</div>';
     return;
   }
-  const {results}=currentSearchResults();
+  const results=state.searchBrowseMap
+    ? state.entries.filter(e=>!e.deleted).map(entry=>({entry,score:0,reasons:[],doc:buildSearchDocument(entry)}))
+    : currentSearchResults().results;
   const mapped=results.map(r=>({r,loc:entryMapLocation(r.entry)})).filter(x=>x.loc);
   searchResultsMap=L.map(el,{zoomControl:true});
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap-Mitwirkende'}).addTo(searchResultsMap);
@@ -879,11 +882,20 @@ function initSearchResultsMap(){
 }
 function searchView(){
   const {isActive,results}=currentSearchResults();
+  const allEntries=state.entries.filter(e=>!e.deleted);
+  const allMappedCount=allEntries.filter(e=>entryMapLocation(e)).length;
   const mappedCount=results.filter(r=>entryMapLocation(r.entry)).length;
   const countLabel=state.searchViewMode==='map'?`${results.length} Treffer · ${mappedCount} auf Karte`:`${results.length} Treffer`;
   const chips=searchFilterChipData();
   const chipRow=chips.length?`<div class="search-active-filters"><span>Aktive Filter</span><div>${chips.map(c=>`<button type="button" class="search-filter-chip" data-remove-search-filter="${escapeHtml(c.key)}">${escapeHtml(c.label)} <b>×</b></button>`).join('')}</div></div>`:'';
   const modeSwitch=isActive?`<div class="search-view-switch" role="group" aria-label="Trefferansicht"><button type="button" data-search-view="list" class="${state.searchViewMode==='list'?'active':''}">Liste</button><button type="button" data-search-view="map" class="${state.searchViewMode==='map'?'active':''}">Karte</button></div>`:'';
+  const allMapButton=`<button type="button" class="search-all-map-btn" data-search-all-map><span class="search-all-map-icon">🗺️</span><span><strong>Karte</strong><small>Alle gespeicherten Orte auf der Karte anzeigen</small></span><span class="chev">›</span></button>`;
+  if(state.searchBrowseMap){
+    return `<section><div class="section-head"><div><div class="eyebrow">Alle Einträge</div><h2>Karte</h2><p>Entdecke deine gespeicherten Orte direkt auf der Karte.</p></div><button type="button" class="btn secondary" data-search-map-back>Zur Suche</button></div>
+    <div class="search-result-head search-all-map-head"><strong>${allEntries.length} Einträge · ${allMappedCount} auf Karte</strong></div>
+    <div class="search-map-shell"><div id="searchResultsMap" class="search-results-map search-all-results-map" aria-label="Karte aller gespeicherten Orte"></div>${allMappedCount===0?`<div class="search-map-note">Für deine gespeicherten Einträge ist noch keine Kartenposition hinterlegt.</div>`:allMappedCount<allEntries.length?`<div class="search-map-note">${allEntries.length-allMappedCount} ${allEntries.length-allMappedCount===1?'Eintrag hat':'Einträge haben'} noch keine Kartenposition und ${allEntries.length-allMappedCount===1?'wird':'werden'} deshalb nicht auf der Karte angezeigt.</div>`:''}</div>
+    <div class="footer-brand">powered by viacruz</div></section>`;
+  }
   const resultBody=!isActive
     ? `<div class="empty">Wonach möchtest du suchen?<br>Gib einen Suchbegriff ein oder wähle einen Filter.</div>`
     : state.searchViewMode==='map'
@@ -891,6 +903,7 @@ function searchView(){
       : results.length?`<div class="place-list">${results.map(searchResultCard).join('')}</div>`:`<div class="empty">Keine Treffer. Prüfe deine Suchbegriffe oder Filter.</div>`;
   return `<section><div class="section-head"><div><div class="eyebrow">Alle Einträge</div><h2>Suche</h2><p>Mehrere Wörter werden kombiniert. Beispiel: Campingplatz Bayern Wellness.</p></div></div>
   <div class="toolbar search-toolbar"><input class="searchbox route-search" value="${escapeHtml(state.query)}" placeholder="z. B. Campingplatz Bayern Wellness …"><button class="btn secondary" data-action="clear-search">Zurücksetzen</button></div>
+  ${allMapButton}
   ${searchFilterPanel()}
   ${chipRow}
   ${isActive?`<div class="search-result-toolbar"><div class="search-result-head"><strong>${countLabel}</strong><label>Sortierung<select id="searchSort"><option value="relevance" ${state.searchSort==='relevance'?'selected':''}>Relevanz</option><option value="rating" ${state.searchSort==='rating'?'selected':''}>Bewertung</option><option value="name" ${state.searchSort==='name'?'selected':''}>Name</option></select></label></div>${modeSwitch}</div>`:''}
@@ -912,21 +925,23 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.51 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.52 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
 function wireViewEvents(){
-  document.querySelectorAll('[data-route-go]').forEach(b=>b.onclick=()=>{state.route=b.dataset.routeGo;state.query='';render();});
+  document.querySelectorAll('[data-route-go]').forEach(b=>b.onclick=()=>{state.route=b.dataset.routeGo;state.query='';state.searchBrowseMap=false;render();});
   document.querySelectorAll('[data-action="new"]').forEach(b=>b.onclick=()=>{
     if(state.route==='urlaub' && !b.dataset.pretype) openHolidayEditor();
     else openEntryDialog(b.dataset.pretype);
   });
   document.querySelectorAll('[data-detail]').forEach(b=>b.onclick=()=>openDetail(b.dataset.detail));
-  document.querySelectorAll('.route-search').forEach(i=>i.oninput=()=>{state.query=i.value;render(); const next=document.querySelector('.route-search'); if(next){next.focus();next.setSelectionRange(next.value.length,next.value.length)}});
+  document.querySelectorAll('.route-search').forEach(i=>i.oninput=()=>{state.searchBrowseMap=false;state.query=i.value;render(); const next=document.querySelector('.route-search'); if(next){next.focus();next.setSelectionRange(next.value.length,next.value.length)}});
   document.querySelectorAll('[data-action="clear-search"]').forEach(b=>b.onclick=()=>{state.query='';state.searchFilters=emptySearchFilters();render();});
   document.getElementById('searchSort')?.addEventListener('change',ev=>{state.searchSort=ev.target.value||'relevance';render();});
-  document.querySelectorAll('[data-search-view]').forEach(b=>b.onclick=()=>{state.searchViewMode=b.dataset.searchView==='map'?'map':'list';render();});
+  document.querySelectorAll('[data-search-view]').forEach(b=>b.onclick=()=>{state.searchBrowseMap=false;state.searchViewMode=b.dataset.searchView==='map'?'map':'list';render();});
+  document.querySelector('[data-search-all-map]')?.addEventListener('click',()=>{state.searchBrowseMap=true;render();});
+  document.querySelector('[data-search-map-back]')?.addEventListener('click',()=>{state.searchBrowseMap=false;render();});
   const filterPanel=document.getElementById('searchFilterPanel'); if(filterPanel)filterPanel.addEventListener('toggle',()=>{state.searchFiltersOpen=filterPanel.open;});
   document.querySelectorAll('[data-search-type]').forEach(el=>el.onchange=()=>{const f=normalizedSearchFilters(),v=el.dataset.searchType;f.types=el.checked?[...new Set([...f.types,v])]:f.types.filter(x=>x!==v);state.searchFilters=f;render();});
   document.querySelectorAll('[data-search-status]').forEach(el=>el.onchange=()=>{const f=normalizedSearchFilters(),v=el.dataset.searchStatus;f.statuses=el.checked?[...new Set([...f.statuses,v])]:f.statuses.filter(x=>x!==v);state.searchFilters=f;render();});
