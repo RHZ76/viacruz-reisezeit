@@ -236,6 +236,7 @@ const state = {
   searchSort: 'relevance',
   searchViewMode: 'list',
   searchBrowseMap: false,
+  scrollMapToTop: false,
   mapStatusSelection: [],
   searchFiltersOpen: false,
   searchFilters: {types:[], country:'', region:'', minStars:'', minRating:'', pool:false, wellness:false, sauna:false, dog:false, statuses:[]},
@@ -611,7 +612,14 @@ function render(){
   else if(state.route==='search') app.innerHTML = searchView();
   else if(state.route==='settings') app.innerHTML = settingsView();
   wireViewEvents();
-  if(state.route==='search' && (state.searchViewMode==='map' || state.searchBrowseMap)) requestAnimationFrame(initSearchResultsMap);
+  if(state.route==='search' && (state.searchViewMode==='map' || state.searchBrowseMap)){
+    const shouldScroll=state.scrollMapToTop===true;
+    state.scrollMapToTop=false;
+    requestAnimationFrame(()=>{
+      if(shouldScroll)window.scrollTo({top:0,left:0,behavior:'auto'});
+      initSearchResultsMap();
+    });
+  }
 }
 
 function homeView(){
@@ -952,10 +960,21 @@ function initSearchResultsMap(){
     });
     bounds.push([loc.lat,loc.lng]);
   });
-  if(bounds.length===1)searchResultsMap.setView(bounds[0],14);
-  else if(bounds.length>1)searchResultsMap.fitBounds(bounds,{padding:[30,30],maxZoom:14});
-  else searchResultsMap.setView([51.1657,10.4515],6);
-  setTimeout(()=>searchResultsMap?.invalidateSize(),60);
+  const fitVisibleMarkers=()=>{
+    if(!searchResultsMap)return;
+    searchResultsMap.invalidateSize();
+    if(bounds.length===1){
+      // Bewusst mit geografischem Überblick statt Straßen-Nahansicht.
+      searchResultsMap.setView(bounds[0],6);
+    }else if(bounds.length>1){
+      // Immer alle aktuell sichtbaren Marker vollständig in den Ausschnitt einpassen.
+      searchResultsMap.fitBounds(bounds,{padding:[42,42],maxZoom:10});
+    }else{
+      searchResultsMap.setView([51.1657,10.4515],6);
+    }
+  };
+  fitVisibleMarkers();
+  setTimeout(fitVisibleMarkers,80);
 }
 function searchView(){
   const {isActive,results}=currentSearchResults();
@@ -1003,7 +1022,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Lege fest, welche Karten-App beim Start einer Navigation verwendet werden soll.</p><label class="setting-field">Standard-Navigationsapp<select id="navigationPreference"><option value="ask" ${navigationPreference()==='ask'?'selected':''}>Immer fragen</option><option value="apple" ${navigationPreference()==='apple'?'selected':''}>Apple Karten</option><option value="google" ${navigationPreference()==='google'?'selected':''}>Google Maps</option></select></label><small class="setting-note">Auf Geräten ohne Apple Karten wird bei Auswahl von Apple Karten automatisch Google Maps verwendet.</small></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.56 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.57 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1018,9 +1037,9 @@ function wireViewEvents(){
   document.querySelectorAll('[data-action="clear-search"]').forEach(b=>b.onclick=()=>{state.query='';state.searchFilters=emptySearchFilters();render();});
   document.getElementById('searchSort')?.addEventListener('change',ev=>{state.searchSort=ev.target.value||'relevance';render();});
   document.getElementById('navigationPreference')?.addEventListener('change',ev=>{updateSetting('navigationPreference',ev.target.value||'ask');});
-  document.querySelectorAll('[data-search-view]').forEach(b=>b.onclick=()=>{state.searchBrowseMap=false;state.searchViewMode=b.dataset.searchView==='map'?'map':'list';render();});
-  document.querySelector('[data-home-map]')?.addEventListener('click',()=>{state.route='search';state.query='';state.searchBrowseMap=true;render();});
-  document.querySelector('[data-search-all-map]')?.addEventListener('click',()=>{state.searchBrowseMap=true;render();});
+  document.querySelectorAll('[data-search-view]').forEach(b=>b.onclick=()=>{state.searchBrowseMap=false;state.searchViewMode=b.dataset.searchView==='map'?'map':'list';if(state.searchViewMode==='map')state.scrollMapToTop=true;render();});
+  document.querySelector('[data-home-map]')?.addEventListener('click',()=>{state.route='search';state.query='';state.searchBrowseMap=true;state.scrollMapToTop=true;render();});
+  document.querySelector('[data-search-all-map]')?.addEventListener('click',()=>{state.searchBrowseMap=true;state.scrollMapToTop=true;render();});
   document.querySelector('[data-search-map-back]')?.addEventListener('click',()=>{state.searchBrowseMap=false;render();});
   document.querySelectorAll('[data-map-status]').forEach(b=>b.onclick=()=>{const key=b.dataset.mapStatus;if(key==='all'){state.mapStatusSelection=[];}else{const current=Array.isArray(state.mapStatusSelection)?[...state.mapStatusSelection]:[];if(current.length===0){state.mapStatusSelection=[key];}else if(current.includes(key)){const next=current.filter(v=>v!==key);state.mapStatusSelection=next.length?next:[];}else{state.mapStatusSelection=[...current,key];}}render();});
   const filterPanel=document.getElementById('searchFilterPanel'); if(filterPanel)filterPanel.addEventListener('toggle',()=>{state.searchFiltersOpen=filterPanel.open;});
