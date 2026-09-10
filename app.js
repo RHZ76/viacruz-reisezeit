@@ -507,7 +507,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.38 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.39 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1370,6 +1370,19 @@ function holidayDetailCards(e){
     const summary=[scope,categories.slice(0,2).join(' · ')].filter(Boolean).join(' · ')||'Reiseziel & Kategorie';
     destinationCard=`<details class="detail-accordion"><summary><span><small>Reiseziel &amp; Kategorie</small><strong>${escapeHtml(summary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${rows||'<div class="detail-empty">Noch keine Kategorien oder Merkmale gespeichert.</div>'}</div></details>`;
   }
+  let visitPlanningCard='';
+  if(e.type==='reiseziel'){
+    const v=ensureHolidayVisitPlanning(e);
+    const yesNo={yes:'Ja',no:'Nein'};
+    const ticketLabels={not_required:'Nicht erforderlich',possible:'Möglich',recommended:'Empfohlen',required:'Erforderlich'};
+    const bestLabels={spring:'Frühling',summer:'Sommer',autumn:'Herbst',winter:'Winter',advent:'Weihnachten / Advent',year_round:'Ganzjährig'};
+    const duration=v.duration!=null?`${formatNumber(v.duration)} ${v.durationUnit==='days'?(Number(v.duration)===1?'Tag':'Tage'):(Number(v.duration)===1?'Stunde':'Stunden')}`:'';
+    const season=v.yearRound==='no'?[formatDate(v.seasonFrom),formatDate(v.seasonUntil)].filter(Boolean).join(' bis '):'';
+    const best=(v.bestTime||[]).map(x=>bestLabels[x]||x).join(' · ');
+    const rows=[detailRow('Ganzjährig besuchbar',yesNo[v.yearRound]||''),detailRow('Saison',season),detailRow('Öffnungszeiten bekannt',yesNo[v.hoursKnown]||''),v.hours?`<div class="detail-note"><span>Öffnungszeiten</span><p>${escapeHtml(v.hours).replace(/\n/g,'<br>')}</p></div>`:'',detailRow('Empfohlene Aufenthaltsdauer',duration),detailRow('Reservierung / Ticket vorab',ticketLabels[v.ticket]||''),detailRow('Beste Reise- / Besuchszeit',best),v.notes?`<div class="detail-note"><span>Hinweise zum Besuch</span><p>${escapeHtml(v.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
+    const summary=[duration,ticketLabels[v.ticket],best].filter(Boolean).slice(0,2).join(' · ')||'Besuch & Öffnungszeiten';
+    visitPlanningCard=`<details class="detail-accordion"><summary><span><small>Besuch &amp; Öffnungszeiten</small><strong>${escapeHtml(summary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${rows||'<div class="detail-empty">Noch keine Angaben zum Besuch gespeichert.</div>'}</div></details>`;
+  }
   const personal=ensureHolidayPersonal(e);
   const statusText=e.visited?'Besucht':e.wantToVisit?'Möchte ich besuchen':'';
   const favoriteText=e.favorite?'Favorit':'';
@@ -1391,7 +1404,7 @@ function holidayDetailCards(e){
   const personalRows=[detailRow('Status',[statusText,favoriteText].filter(Boolean).join(' · ')),e.why?`<div class="detail-note"><span>Warum gespeichert?</span><p>${escapeHtml(e.why).replace(/\n/g,'<br>')}</p></div>`:'',ratingRows,detailRow('Würde ich wiederkommen?',returnText),visits.length?`<div class="detail-note"><span>Besuchshistorie</span>${visitRows}</div>`:'',e.notes?`<div class="detail-note"><span>Persönliche Notizen</span><p>${escapeHtml(e.notes).replace(/\n/g,'<br>')}</p></div>`:''].filter(Boolean).join('');
   const personalSummary=[statusText,favoriteText,ratingAverage!=null?`${formatNumber(ratingAverage,1)} / 5`:'',visits.length?`${visits.length} ${visits.length===1?'Besuch':'Besuche'}`:''].filter(Boolean).slice(0,3).join(' · ')||'Persönlich';
   const personalCard=`<details class="detail-accordion"><summary><span><small>Persönlich</small><strong>${escapeHtml(personalSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${personalRows||'<div class="detail-empty">Noch keine persönlichen Angaben gespeichert.</div>'}</div></details>`;
-  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${destinationCard}${accommodationCard}${priceCard}${stayCard}${foodCard}${holidayLeisureCard}${holidayLocationCard}${holidayDogCard}${personalCard}</div>`;
+  return `<div class="detail-accordions"><details class="detail-accordion" open><summary><span><small>Grunddaten</small><strong>${escapeHtml(basicSummary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${basicRows||'<div class="detail-empty">Noch keine weiteren Grunddaten gespeichert.</div>'}</div></details>${destinationCard}${visitPlanningCard}${accommodationCard}${priceCard}${stayCard}${foodCard}${holidayLeisureCard}${holidayLocationCard}${holidayDogCard}${personalCard}</div>`;
 }
 
 let holidayEditMode='create';
@@ -1571,6 +1584,12 @@ function ensureHolidayDestination(e){
   if(!Array.isArray(d.destination.characters))d.destination.characters=[];
   return d.destination;
 }
+function ensureHolidayVisitPlanning(e){
+  const d=ensureHolidayDetails(e);
+  if(!d.visitPlanning||typeof d.visitPlanning!=='object')d.visitPlanning={};
+  if(!Array.isArray(d.visitPlanning.bestTime))d.visitPlanning.bestTime=[];
+  return d.visitPlanning;
+}
 function holidayDestinationSettings(kind){
   const key=kind==='character'?'holidayDestinationCustomCharacters':'holidayDestinationCustomCategories';
   const value=loadSettings()[key];
@@ -1643,6 +1662,17 @@ function updateHolidayDestinationConditionalFields(){
   const section=document.getElementById('holidayDestinationSection');
   if(section)section.hidden=type!=='reiseziel';
 }
+function updateHolidayVisitPlanningConditionalFields(){
+  const type=document.getElementById('holidayEntryType')?.value||'hotel';
+  const section=document.getElementById('holidayVisitPlanningSection');
+  if(section)section.hidden=type!=='reiseziel';
+  const yearRound=document.getElementById('holidayVisitYearRound')?.value||'unknown';
+  const seasonWrap=document.getElementById('holidayVisitSeasonWrap');
+  if(seasonWrap)seasonWrap.hidden=yearRound!=='no';
+  const hoursKnown=document.getElementById('holidayVisitHoursKnown')?.value||'unknown';
+  const hoursWrap=document.getElementById('holidayVisitHoursWrap');
+  if(hoursWrap)hoursWrap.hidden=hoursKnown!=='yes';
+}
 function updateHolidayBasicConditionalFields(){
   const type=document.getElementById('holidayEntryType')?.value||'hotel';
   const booking=document.getElementById('holidayBookingWrap');
@@ -1652,6 +1682,7 @@ function updateHolidayBasicConditionalFields(){
     websiteLabel.childNodes[0].nodeValue=type==='reiseziel'?'Website des Reiseziels\n          ':'Website der Unterkunft\n          ';
   }
   updateHolidayDestinationConditionalFields();
+  updateHolidayVisitPlanningConditionalFields();
   updateHolidayAccommodationConditionalFields();
   updateHolidayPriceConditionalFields();
   updateHolidayStayConditionalFields();
@@ -1690,6 +1721,17 @@ function openHolidayEditor(entry=null,pretype='hotel'){
   setField('holidayDestinationScope',destination.scope||'unknown');
   setField('holidayDestinationWish',destination.wish||'');
   renderHolidayDestinationChoices(destination.categories||[],destination.characters||[]);
+  const visitPlanning=entry&&type==='reiseziel'?ensureHolidayVisitPlanning(entry):{};
+  setField('holidayVisitYearRound',visitPlanning.yearRound||'unknown');
+  setField('holidayVisitSeasonFrom',visitPlanning.seasonFrom||'');
+  setField('holidayVisitSeasonUntil',visitPlanning.seasonUntil||'');
+  setField('holidayVisitHoursKnown',visitPlanning.hoursKnown||'unknown');
+  setField('holidayVisitHours',visitPlanning.hours||'');
+  setField('holidayVisitDuration',visitPlanning.duration);
+  setField('holidayVisitDurationUnit',visitPlanning.durationUnit||'hours');
+  setField('holidayVisitTicket',visitPlanning.ticket||'unknown');
+  setCheckboxGroup('holidayVisitBestTime',visitPlanning.bestTime||[]);
+  setField('holidayVisitNotes',visitPlanning.notes||'');
   const acc=entry&&isAccommodationHolidayType(type)?ensureHolidayAccommodation(entry):{};
   setField('holidayAccMaxPersons',acc.maxPersons); setField('holidayAccBedrooms',acc.bedrooms); setField('holidayAccBeds',acc.beds); setField('holidayAccBathrooms',acc.bathrooms); setField('holidayAccSize',acc.size); setField('holidayAccBathroomType',acc.bathroomType||'unknown');
   setField('holidayAccWifi',acc.wifi||'unknown'); setField('holidayAccWifiBilling',acc.wifiBilling||'unknown'); setField('holidayAccWifiPrice',acc.wifiPrice);
@@ -1868,6 +1910,17 @@ function saveHolidayBasic(ev){
     destination.categories=[...currentHolidayDestinationSelections('category')];
     destination.characters=[...currentHolidayDestinationSelections('character')];
     destination.wish=(wishField?.value||'').trim();
+    const visitPlanning=ensureHolidayVisitPlanning(entry);
+    visitPlanning.yearRound=document.getElementById('holidayVisitYearRound')?.value||'unknown';
+    visitPlanning.seasonFrom=visitPlanning.yearRound==='no'?(document.getElementById('holidayVisitSeasonFrom')?.value||''):'';
+    visitPlanning.seasonUntil=visitPlanning.yearRound==='no'?(document.getElementById('holidayVisitSeasonUntil')?.value||''):'';
+    visitPlanning.hoursKnown=document.getElementById('holidayVisitHoursKnown')?.value||'unknown';
+    visitPlanning.hours=visitPlanning.hoursKnown==='yes'?(document.getElementById('holidayVisitHours')?.value||'').trim():'';
+    visitPlanning.duration=numericField('holidayVisitDuration');
+    visitPlanning.durationUnit=document.getElementById('holidayVisitDurationUnit')?.value||'hours';
+    visitPlanning.ticket=document.getElementById('holidayVisitTicket')?.value||'unknown';
+    visitPlanning.bestTime=getCheckboxGroup('holidayVisitBestTime');
+    visitPlanning.notes=(document.getElementById('holidayVisitNotes')?.value||'').trim();
   }
   const personal=ensureHolidayPersonal(entry);
   const personalStatus=document.getElementById('holidayPersonalStatus').value;
@@ -1936,6 +1989,9 @@ document.getElementById('holidayDogAlone')?.addEventListener('change',updateHoli
 document.getElementById('addHolidayDestinationCategory')?.addEventListener('click',()=>addHolidayDestinationCustom('category'));
 document.getElementById('addHolidayDestinationCharacter')?.addEventListener('click',()=>addHolidayDestinationCustom('character'));
 ['holidayDestinationNewCategory','holidayDestinationNewCharacter'].forEach(id=>document.getElementById(id)?.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();addHolidayDestinationCustom(id.endsWith('Character')?'character':'category');}}));
+
+document.getElementById('holidayVisitYearRound')?.addEventListener('change',updateHolidayVisitPlanningConditionalFields);
+document.getElementById('holidayVisitHoursKnown')?.addEventListener('change',updateHolidayVisitPlanningConditionalFields);
 document.getElementById('holidayDestinationSection')?.addEventListener('click',ev=>{
   const btn=ev.target.closest('.destination-delete-choice'); if(!btn)return;
   deleteHolidayDestinationCustom(btn.dataset.destinationKind,btn.dataset.destinationLabel);

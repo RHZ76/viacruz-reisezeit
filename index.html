@@ -10,7 +10,7 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.38-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.39-r1" />
 </head>
 <body>
   <div class="app-shell">
@@ -243,6 +243,66 @@
 
         <label>Was möchte ich dort sehen / erleben?
           <textarea id="holidayDestinationWish" rows="4" placeholder="z. B. Altstadt ansehen, Aussichtspunkt besuchen, regionale Spezialitäten probieren …"></textarea>
+        </label>
+      </section>
+
+      <section class="edit-section" id="holidayVisitPlanningSection" hidden>
+        <div class="edit-section-head">
+          <h3>Besuch &amp; Öffnungszeiten</h3>
+          <p>Besuchszeit, Saison, Öffnungszeiten und Ticketplanung festhalten.</p>
+        </div>
+
+        <div class="grid-2">
+          <label>Ganzjährig besuchbar
+            <select id="holidayVisitYearRound">
+              <option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option>
+            </select>
+          </label>
+          <div id="holidayVisitSeasonWrap" hidden>
+            <div class="grid-2">
+              <label>Saison von<input id="holidayVisitSeasonFrom" type="date" /></label>
+              <label>Saison bis<input id="holidayVisitSeasonUntil" type="date" /></label>
+            </div>
+          </div>
+        </div>
+
+        <label>Öffnungszeiten bekannt
+          <select id="holidayVisitHoursKnown">
+            <option value="unknown">Unbekannt</option><option value="yes">Ja</option><option value="no">Nein</option>
+          </select>
+        </label>
+        <label id="holidayVisitHoursWrap" hidden>Öffnungszeiten
+          <textarea id="holidayVisitHours" rows="3" placeholder="z. B. Mo–Fr 10–18 Uhr, Sa/So 9–19 Uhr"></textarea>
+        </label>
+
+        <div class="field-group">
+          <div class="field-group-title">Empfohlene Aufenthaltsdauer</div>
+          <div class="grid-2 unit-grid-wide">
+            <label>Dauer<input id="holidayVisitDuration" type="number" min="0" step="0.5" inputmode="decimal" placeholder="z. B. 2" /></label>
+            <label>Einheit<select id="holidayVisitDurationUnit"><option value="hours">Stunden</option><option value="days">Tage</option></select></label>
+          </div>
+        </div>
+
+        <label>Reservierung / Ticket vorab
+          <select id="holidayVisitTicket">
+            <option value="unknown">Unbekannt</option><option value="not_required">Nicht erforderlich</option><option value="possible">Möglich</option><option value="recommended">Empfohlen</option><option value="required">Erforderlich</option>
+          </select>
+        </label>
+
+        <div class="field-group">
+          <div class="field-group-title">Beste Reise- / Besuchszeit <span class="field-help-inline">Mehrfachauswahl</span></div>
+          <div class="option-grid" id="holidayVisitBestTime">
+            <label class="check-option"><input type="checkbox" value="spring" /> Frühling</label>
+            <label class="check-option"><input type="checkbox" value="summer" /> Sommer</label>
+            <label class="check-option"><input type="checkbox" value="autumn" /> Herbst</label>
+            <label class="check-option"><input type="checkbox" value="winter" /> Winter</label>
+            <label class="check-option"><input type="checkbox" value="advent" /> Weihnachten / Advent</label>
+            <label class="check-option"><input type="checkbox" value="year_round" /> Ganzjährig</label>
+          </div>
+        </div>
+
+        <label>Hinweise zum Besuch
+          <textarea id="holidayVisitNotes" rows="4" placeholder="z. B. früh kommen, Zeitfenster beachten, saisonale Besonderheiten …"></textarea>
         </label>
       </section>
 
@@ -2744,6 +2804,6 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.38-r1"></script>
+  <script src="app.js?v=0.3.39-r1"></script>
 </body>
 </html>
