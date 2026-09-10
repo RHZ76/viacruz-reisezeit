@@ -855,7 +855,7 @@ function settingsView(){
     <div class="setting-card"><h3>Datensicherung wiederherstellen</h3><p>Importiert eine zuvor erstellte Reisezeit-Datensicherung. Bestehende Daten werden erst nach Bestätigung ersetzt.</p><input id="restoreFile" type="file" accept="application/json" style="height:auto;padding:10px"><button class="btn secondary" data-action="restore" style="margin-top:10px">Wiederherstellen</button></div>
     <div class="setting-card"><h3>Papierkorb</h3><p>${trash} gelöschte Einträge. In dieser Grundversion werden gelöschte Orte zunächst nur markiert und nicht sofort endgültig entfernt.</p></div>
     <div class="setting-card"><h3>Navigation</h3><p>Die Auswahl der Standard-Navigationsapp und die Karten-/Markerlogik folgen im nächsten Ausbauschritt auf dieser gemeinsamen Datenbasis.</p></div>
-    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.49 · Datenformat 1</p></div>
+    <div class="setting-card"><h3>viacruz Reisezeit</h3><p>Version 0.3.50 · Datenformat 1</p></div>
   </div><div class="footer-brand">powered by viacruz</div></section>`;
 }
 
@@ -1013,6 +1013,10 @@ document.getElementById('entryForm').addEventListener('submit', e=>{
   if(!entry.name) return;
   state.entries.push(entry); saveEntries(); closeEntryDialog(); render(); openDetail(entry.id);
 });
+
+document.getElementById('cancelLocationPicker')?.addEventListener('click',closeLocationPicker);
+document.getElementById('saveLocationPicker')?.addEventListener('click',saveLocationPicker);
+document.getElementById('locationPickerDialog')?.addEventListener('cancel',ev=>{ev.preventDefault();closeLocationPicker();});
 
 document.querySelectorAll('.nav-item').forEach(b=>b.onclick=()=>{state.route=b.dataset.route;state.query='';render();});
 document.getElementById('settingsBtn').onclick=()=>{state.route='settings';render();};
@@ -1571,12 +1575,103 @@ function reverseLinkedDestinationsCard(e){
   const summary=`${linked.length} ${linked.length===1?'Reiseziel':'Reiseziele'} verknüpft`;
   return `<div class="detail-accordions linked-destinations-accordions"><details class="detail-accordion"><summary><span><small>Verknüpfte Reiseziele</small><strong>${escapeHtml(summary)}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${cards}</div></details></div>`;
 }
+
+function entryMapLocation(e){
+  const loc=e?.location;
+  if(!loc || !Number.isFinite(Number(loc.lat)) || !Number.isFinite(Number(loc.lng))) return null;
+  return {lat:Number(loc.lat),lng:Number(loc.lng),source:loc.source||'',updatedAt:loc.updatedAt||''};
+}
+function mapLocationSummary(e){
+  const loc=entryMapLocation(e);
+  if(!loc)return 'Noch keine Kartenposition festgelegt';
+  return 'Standort gespeichert';
+}
+function mapLocationCard(e){
+  const loc=entryMapLocation(e);
+  const preview=loc?`<div class="location-map-preview"><iframe title="Kartenposition von ${escapeHtml(e.name||'Eintrag')}" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=${loc.lng-0.008}%2C${loc.lat-0.005}%2C${loc.lng+0.008}%2C${loc.lat+0.005}&layer=mapnik&marker=${loc.lat}%2C${loc.lng}"></iframe></div>`:'';
+  const saved=loc?`<div class="location-saved"><span>📍</span><div><strong>Standort gespeichert</strong><small>${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}</small></div></div>`:`<div class="detail-empty">Noch keine Kartenposition festgelegt.</div>`;
+  return `<details class="detail-accordion map-navigation-card"><summary><span><small>Karte &amp; Navigation</small><strong>${escapeHtml(mapLocationSummary(e))}</strong></span><span class="accordion-chevron">⌄</span></summary><div class="accordion-body">${saved}${preview}<div class="location-actions"><button type="button" class="btn secondary" data-map-action="address">📍 Adresse übernehmen</button><button type="button" class="btn secondary" data-map-action="current">◎ Aktuelle Position verwenden</button><button type="button" class="btn secondary" data-map-action="pick">🗺 Position auf Karte festlegen</button>${loc?'<button type="button" class="btn danger" data-map-action="remove">Standort löschen</button>':''}</div><p class="field-help location-help">Die Kartenposition gehört nur zu diesem Eintrag. Adresse und übrige Daten bleiben unverändert.</p></div></details>`;
+}
+function insertMapCardAfterBasic(html,e){
+  const card=mapLocationCard(e);
+  const pos=html.indexOf('</details>');
+  if(pos<0)return card+html;
+  return html.slice(0,pos+10)+card+html.slice(pos+10);
+}
+async function geocodeEntryAddress(e){
+  const query=[e.address,e.town,e.region,e.country].filter(Boolean).join(', ');
+  if(!query){alert('Für diesen Eintrag ist noch keine Adresse oder Ortsangabe gespeichert.');return;}
+  try{
+    const url=`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=de&q=${encodeURIComponent(query)}`;
+    const res=await fetch(url,{headers:{'Accept':'application/json'}});
+    if(!res.ok)throw new Error('Geocoding fehlgeschlagen');
+    const data=await res.json();
+    if(!Array.isArray(data)||!data.length){alert('Zu dieser Adresse konnte keine eindeutige Kartenposition gefunden werden. Bitte setze den Standort direkt auf der Karte.');return;}
+    e.location={lat:Number(data[0].lat),lng:Number(data[0].lon),source:'address',updatedAt:new Date().toISOString()};
+    e.updatedAt=new Date().toISOString(); saveEntries();
+    const dlg=document.getElementById('detailDialog'); if(dlg.open)dlg.close(); render(); openDetail(e.id);
+  }catch(err){
+    alert('Die Adresse konnte gerade nicht über die Online-Karte bestimmt werden. Bitte prüfe die Internetverbindung oder setze den Standort direkt auf der Karte.');
+  }
+}
+function useCurrentEntryPosition(e){
+  if(!navigator.geolocation){alert('Die aktuelle Position wird von diesem Gerät oder Browser nicht unterstützt.');return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    e.location={lat:pos.coords.latitude,lng:pos.coords.longitude,source:'current',updatedAt:new Date().toISOString()};
+    e.updatedAt=new Date().toISOString(); saveEntries();
+    const dlg=document.getElementById('detailDialog'); if(dlg.open)dlg.close(); render(); openDetail(e.id);
+  },err=>{
+    const msg=err?.code===1?'Der Zugriff auf deinen Standort wurde nicht erlaubt.':'Die aktuelle Position konnte nicht bestimmt werden.';
+    alert(msg);
+  },{enableHighAccuracy:true,timeout:12000,maximumAge:30000});
+}
+let locationPickerMap=null, locationPickerMarker=null, locationPickerEntryId=null;
+function openLocationPicker(e){
+  const dlg=document.getElementById('locationPickerDialog');
+  if(!dlg){alert('Der Karten-Dialog ist nicht verfügbar.');return;}
+  if(typeof L==='undefined'){alert('Die Online-Karte konnte nicht geladen werden. Bitte prüfe deine Internetverbindung.');return;}
+  locationPickerEntryId=e.id;
+  const current=entryMapLocation(e);
+  document.getElementById('locationPickerTitle').textContent=e.name||'Standort festlegen';
+  document.getElementById('locationPickerHint').textContent='Tippe auf die Karte oder verschiebe den Marker an die gewünschte Position.';
+  dlg.showModal();
+  setTimeout(()=>{
+    if(locationPickerMap){locationPickerMap.remove();locationPickerMap=null;locationPickerMarker=null;}
+    const center=current?[current.lat,current.lng]:[51.1657,10.4515];
+    locationPickerMap=L.map('locationPickerMap',{zoomControl:true}).setView(center,current?15:6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap-Mitwirkende'}).addTo(locationPickerMap);
+    const setMarker=latlng=>{
+      if(locationPickerMarker) locationPickerMarker.setLatLng(latlng);
+      else locationPickerMarker=L.marker(latlng,{draggable:true}).addTo(locationPickerMap);
+    };
+    if(current)setMarker(center);
+    locationPickerMap.on('click',ev=>setMarker(ev.latlng));
+    locationPickerMap.invalidateSize();
+  },80);
+}
+function closeLocationPicker(){
+  const dlg=document.getElementById('locationPickerDialog');
+  if(locationPickerMap){locationPickerMap.remove();locationPickerMap=null;locationPickerMarker=null;}
+  locationPickerEntryId=null;
+  if(dlg?.open)dlg.close();
+}
+function saveLocationPicker(){
+  if(!locationPickerEntryId||!locationPickerMarker){alert('Bitte setze zuerst einen Marker auf der Karte.');return;}
+  const e=state.entries.find(x=>x.id===locationPickerEntryId); if(!e)return;
+  const ll=locationPickerMarker.getLatLng();
+  e.location={lat:ll.lat,lng:ll.lng,source:'map',updatedAt:new Date().toISOString()};
+  e.updatedAt=new Date().toISOString(); saveEntries();
+  const id=e.id; closeLocationPicker();
+  const detail=document.getElementById('detailDialog'); if(detail.open)detail.close(); render(); openDetail(id);
+}
+
 function entryTypeDetailCards(e){
   let html='';
   if(e.type==='camping') html=campingDetailCards(e);
   else if(e.type==='stellplatz') html=stellplatzDetailCards(e);
   else if(isHolidayType(e.type)) html=holidayDetailCards(e);
   else html=`<div class="info-card"><small>Technisches Fundament</small><strong>Gemeinsame ID · zentrale Standortfelder · Besuchshistorie · Medienliste · typbezogene Details</strong></div>`;
+  html=insertMapCardAfterBasic(html,e);
   return html+reverseLinkedDestinationsCard(e);
 }
 
@@ -2957,6 +3052,13 @@ function openDetail(id){
     if(!targetId||targetId===id)return;
     if(dlg.open)dlg.close();
     openDetail(targetId);
+  });
+  content.querySelectorAll('[data-map-action]').forEach(button=>button.onclick=()=>{
+    const action=button.dataset.mapAction;
+    if(action==='address')geocodeEntryAddress(e);
+    else if(action==='current')useCurrentEntryPosition(e);
+    else if(action==='pick')openLocationPicker(e);
+    else if(action==='remove'&&confirm('Nur die gespeicherte Kartenposition dieses Eintrags löschen?')){e.location=null;e.updatedAt=new Date().toISOString();saveEntries();dlg.close();render();openDetail(id);}
   });
 }
 

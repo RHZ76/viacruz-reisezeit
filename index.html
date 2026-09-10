@@ -10,7 +10,8 @@
   <title>viacruz Reisezeit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=0.3.49-r1" />
+  <link rel="stylesheet" href="styles.css?v=0.3.50-r1" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
 </head>
 <body>
   <div class="app-shell">
@@ -2982,6 +2983,16 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=0.3.49-r1"></script>
+
+  <dialog id="locationPickerDialog" class="sheet location-picker-dialog">
+    <div class="sheet-card location-picker-card">
+      <div class="sheet-head"><div><div class="eyebrow">Karte &amp; Navigation</div><h2 id="locationPickerTitle">Standort festlegen</h2><p id="locationPickerHint">Tippe auf die Karte oder verschiebe den Marker.</p></div><button type="button" class="icon-btn close" id="cancelLocationPicker">×</button></div>
+      <div id="locationPickerMap" class="location-picker-map" aria-label="Karte zum Festlegen des Standorts"></div>
+      <div class="sheet-actions"><button type="button" class="btn secondary" onclick="closeLocationPicker()">Abbrechen</button><button type="button" class="btn primary" id="saveLocationPicker">Standort übernehmen</button></div>
+    </div>
+  </dialog>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="app.js?v=0.3.50-r1"></script>
 </body>
 </html>
